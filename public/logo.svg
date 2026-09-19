@@ -1,10 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Hard Shadow -->
   <rect x="12" y="12" width="96" height="96" rx="14" fill="#121212" />
+  
+  <!-- Main Card Body -->
   <rect x="8" y="8" width="96" height="96" rx="14" fill="#FFD000" stroke="#121212" stroke-width="6" />
+  
+  <!-- Svelte-style Geometric Lightning / Hub Symbol -->
+  <!-- Background Accent Pill inside -->
   <path d="M 32 30 L 78 30 C 86 30 88 38 82 44 L 64 60 C 60 64 62 70 70 70 L 82 70 C 88 70 90 78 84 84 L 74 92 C 68 98 52 98 44 90 L 38 82" 
         fill="none" stroke="#FF6B9D" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
   <path d="M 32 30 L 78 30 C 86 30 88 38 82 44 L 64 60 C 60 64 62 70 70 70 L 82 70 C 88 70 90 78 84 84 L 74 92 C 68 98 52 98 44 90 L 38 82" 
         fill="none" stroke="#121212" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Center Star/Dot Accent -->
   <circle cx="44" cy="48" r="6" fill="#00D4FF" stroke="#121212" stroke-width="4" />
   <circle cx="76" cy="72" r="6" fill="#00E575" stroke="#121212" stroke-width="4" />
 </svg>
