@@ -1,11 +1,18 @@
 <script lang="ts">
-  let { title = "SVELTE HUB", subtitle = "Central Dashboard untuk Akses Cepat Semua Aplikasi Svelte" } = $props();
+  const envTitle = import.meta.env.VITE_APP_TITLE || "SVELTE HUB";
+  const envLogo = import.meta.env.VITE_APP_LOGO_URL || "/logo.svg";
+
+  let {
+    title = envTitle,
+    subtitle = "Central Dashboard untuk Akses Cepat Semua Aplikasi Svelte",
+    logoUrl = envLogo
+  } = $props();
 </script>
 
 <header class="w-full flex justify-center">
   <div class="nb-card w-full flex flex-col items-center text-center p-6 md:p-9 gap-5 relative overflow-hidden bg-nb-surface">
     <div class="inline-flex items-center justify-center p-2 transition-transform duration-200 hover:-rotate-3 hover:scale-105">
-      <img src="/logo.svg" alt="Svelte Hub Logo" class="w-24 h-24 md:w-28 md:h-28 block" />
+      <img src={logoUrl} alt="{title} Logo" class="w-24 h-24 md:w-28 md:h-28 block" />
     </div>
     
     <div class="flex flex-col items-center gap-3">
