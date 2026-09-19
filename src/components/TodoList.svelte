@@ -1,5 +1,6 @@
 <script lang="ts">
   import ConfirmModal from './ConfirmModal.svelte';
+  import { i18nStore } from '../stores/i18nStore';
 
   interface SubTask {
     id: string;
@@ -243,16 +244,16 @@
   <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
     <div class="inline-flex items-center gap-2.5 bg-nb-yellow px-4.5 py-2 border-3 border-nb-black shadow-nb rounded-md text-lg md:text-xl font-extrabold uppercase tracking-wide">
       <span>📝</span>
-      <span>CATATAN & TO-DO LIST</span>
+      <span>{$i18nStore.t('todo.title')}</span>
     </div>
 
     <div class="flex gap-2">
       <span class="nb-badge bg-nb-yellow">
-        {remainingCount} PENDING
+        {remainingCount} {$i18nStore.t('todo.pending')}
       </span>
       {#if completedCount > 0}
         <span class="nb-badge bg-nb-green">
-          {completedCount} SELESAI
+          {completedCount} {$i18nStore.t('todo.completed')}
         </span>
       {/if}
     </div>
@@ -265,7 +266,7 @@
         <textarea
           bind:value={newTodoText}
           onkeydown={handleTodoKeydown}
-          placeholder="Tulis tugas atau catatan baru di sini..."
+          placeholder={$i18nStore.t('todo.placeholder')}
           rows="2"
           class="nb-input grow resize-y min-h-[56px] leading-relaxed"
           data-testid="todo-input"
@@ -276,7 +277,7 @@
           data-testid="todo-add-button"
         >
           <span>+</span>
-          <span>TAMBAH</span>
+          <span>{$i18nStore.t('todo.addButton')}</span>
         </button>
       </div>
 
@@ -284,7 +285,7 @@
       <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500 select-none">
         <span>💡</span>
         <span>
-          Tekan <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-nb-yellow text-nb-black font-mono text-[11px] shadow-[1px_1px_0px_#121212]">Enter</kbd> untuk menyimpan, <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-gray-200 text-nb-black font-mono text-[11px] shadow-[1px_1px_0px_#121212]">Shift + Enter</kbd> untuk baris baru
+          {$i18nStore.t('todo.shortcutPrefix')} <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-nb-yellow text-nb-black font-mono text-[11px] shadow-[1px_1px_0px_#121212]">Enter</kbd> {$i18nStore.t('todo.shortcutToSave')}, <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-gray-200 text-nb-black font-mono text-[11px] shadow-[1px_1px_0px_#121212]">Shift + Enter</kbd> {$i18nStore.t('todo.shortcutForNewLine')}
         </span>
       </div>
     </form>
@@ -298,7 +299,7 @@
           onclick={() => (filter = 'all')}
           data-testid="filter-all"
         >
-          SEMUA ({todos.length})
+          {$i18nStore.t('todo.filterAll')} ({todos.length})
         </button>
         <button
           type="button"
@@ -306,7 +307,7 @@
           onclick={() => (filter = 'active')}
           data-testid="filter-active"
         >
-          BELUM ({remainingCount})
+          {$i18nStore.t('todo.filterActive')} ({remainingCount})
         </button>
         <button
           type="button"
@@ -314,7 +315,7 @@
           onclick={() => (filter = 'done')}
           data-testid="filter-done"
         >
-          SELESAI ({completedCount})
+          {$i18nStore.t('todo.filterDone')} ({completedCount})
         </button>
       </div>
 
@@ -325,7 +326,7 @@
           onclick={clearCompleted}
           data-testid="clear-completed-button"
         >
-          HAPUS YANG SELESAI
+          {$i18nStore.t('todo.clearCompleted')}
         </button>
       {/if}
     </div>
@@ -334,7 +335,7 @@
     <ul class="list-none flex flex-col gap-4 p-0 m-0">
       {#if filteredTodos.length === 0}
         <li class="p-9 text-center border-2 border-dashed border-gray-300 rounded-md text-gray-500 font-semibold">
-          <p class="m-0">Belum ada catatan di kategori ini. Yuk tambah baru! ✨</p>
+          <p class="m-0">{$i18nStore.t('todo.emptyState')}</p>
         </li>
       {:else}
         {#each filteredTodos as todo (todo.id)}
@@ -385,9 +386,9 @@
                   type="button"
                   onclick={() => toggleExpand(todo.id)}
                   class="nb-badge shrink-0 cursor-pointer {subDoneCount === subList.length ? 'bg-nb-green' : 'bg-nb-yellow'}"
-                  title="Lihat sub-tasks"
+                  title={$i18nStore.t('todo.subtasksTitle')}
                 >
-                  {subDoneCount}/{subList.length} SUB-TASKS
+                  {subDoneCount}/{subList.length} {$i18nStore.t('todo.subtasksCount')}
                 </button>
               {/if}
 
@@ -396,8 +397,8 @@
                 type="button"
                 class="w-8 h-8 shrink-0 border-2 border-nb-black bg-[#ff4757] text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#121212] hover:-translate-x-0.25 hover:-translate-y-0.25 hover:shadow-[3px_3px_0px_#121212] active:translate-x-0.25 active:translate-y-0.25 active:shadow-[1px_1px_0px_#121212] transition-all duration-100"
                 onclick={() => promptDeleteTodo(todo)}
-                title="Hapus catatan"
-                aria-label="Hapus catatan"
+                title={$i18nStore.t('todo.deleteNote')}
+                aria-label={$i18nStore.t('todo.deleteNote')}
                 data-testid={`delete-todo-${todo.id}`}
               >
                 ✕
@@ -436,8 +437,8 @@
                           type="button"
                           class="w-6 h-6 shrink-0 border border-nb-black bg-gray-100 hover:bg-[#ff4757] hover:text-white text-gray-600 font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
                           onclick={() => promptDeleteSubTask(todo.id, sub)}
-                          title="Hapus sub-task"
-                          aria-label="Hapus sub-task"
+                          title={$i18nStore.t('todo.deleteSubtask')}
+                          aria-label={$i18nStore.t('todo.deleteSubtask')}
                           data-testid={`delete-subtask-${sub.id}`}
                         >
                           ✕
@@ -447,7 +448,7 @@
                   </ul>
                 {:else}
                   <p class="text-xs text-gray-500 font-semibold italic pl-4 sm:pl-6 m-0">
-                    Belum ada sub-task. Tambahkan langkah pengerjaan di bawah:
+                    {$i18nStore.t('todo.subtasksEmpty')}
                   </p>
                 {/if}
 
@@ -459,7 +460,7 @@
                   <textarea
                     bind:value={subTaskInputs[todo.id]}
                     onkeydown={(e) => handleSubTaskKeydown(todo.id, e)}
-                    placeholder="Tambah sub-task baru... (Shift + Enter: baris baru)"
+                    placeholder={$i18nStore.t('todo.subtaskPlaceholder')}
                     rows="1"
                     class="w-full text-xs font-semibold px-3 py-1.5 border-2 border-nb-black rounded shadow-[1px_1px_0px_#121212] bg-white outline-none focus:shadow-[2px_2px_0px_#121212] resize-y min-h-[34px] leading-snug"
                     data-testid={`input-subtask-${todo.id}`}
@@ -469,7 +470,7 @@
                     class="nb-btn bg-nb-blue text-xs font-bold px-3 py-1.5 shadow-[1px_1px_0px_#121212] border-2 border-nb-black shrink-0 self-start h-auto"
                     data-testid={`button-add-subtask-${todo.id}`}
                   >
-                    + SUB
+                    {$i18nStore.t('todo.subtaskAddButton')}
                   </button>
                 </form>
               </div>
@@ -483,13 +484,13 @@
   <!-- Deletion Confirmation Modal -->
   <ConfirmModal
     isOpen={deleteTarget !== null}
-    title={deleteTarget?.type === 'todo' ? 'HAPUS CATATAN' : 'HAPUS SUB-TASK'}
+    title={deleteTarget?.type === 'todo' ? $i18nStore.t('todo.confirmModalDeleteNoteTitle') : $i18nStore.t('todo.confirmModalDeleteSubtaskTitle')}
     message={deleteTarget?.type === 'todo'
-      ? 'Apakah Anda yakin ingin menghapus catatan ini beserta seluruh sub-task di dalamnya?'
-      : 'Apakah Anda yakin ingin menghapus sub-task ini?'}
+      ? $i18nStore.t('todo.confirmModalDeleteNoteMsg')
+      : $i18nStore.t('todo.confirmModalDeleteSubtaskMsg')}
     itemText={deleteTarget?.text || ''}
-    confirmText="YA, HAPUS"
-    cancelText="BATAL"
+    confirmText={$i18nStore.t('action.delete')}
+    cancelText={$i18nStore.t('action.cancel')}
     onConfirm={handleConfirmDelete}
     onCancel={handleCancelDelete}
   />

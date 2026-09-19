@@ -3,6 +3,7 @@
   import Navbar from './components/Navbar.svelte';
   import AlertContainer from './components/AlertContainer.svelte';
   import { env } from './lib/env';
+  import { i18nStore } from './stores/i18nStore';
 </script>
 
 <AlertContainer />
@@ -25,9 +26,9 @@
 
   <footer class="nb-card flex items-center justify-between flex-wrap gap-4 bg-nb-yellow p-5 sm:px-6 mt-auto">
     <div>
-      <p class="text-base font-extrabold m-0">⚡ <strong>SVELTE HUB</strong> — Personal Dashboard</p>
+      <p class="text-base font-extrabold m-0">{$i18nStore.t('footer.title')}</p>
       <small class="text-xs font-semibold text-gray-800">
-        Built with Svelte 5, Vite, Tailwind CSS, Zustand, & Neo Brutalism aesthetic
+        {$i18nStore.t('footer.subtitle')}
       </small>
     </div>
     <a
@@ -35,8 +36,9 @@
       target="_blank"
       rel="noopener noreferrer"
       class="nb-btn bg-white text-xs px-4 py-2"
+      data-testid="footer-github-link"
     >
-      GITHUB REPO ↗
+      {$i18nStore.t('footer.github')}
     </a>
   </footer>
 </div>

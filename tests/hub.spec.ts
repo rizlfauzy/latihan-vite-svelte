@@ -321,29 +321,37 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(navbarHeader).toBeInViewport();
   });
 
-  test('Language switcher toggles UI between Indonesian and English translations', async ({ page }) => {
-    // Initial ID text
-    const appGridTitle = page.locator('[data-testid="app-grid-section"] h2, [data-testid="app-grid-section"] span').filter({ hasText: /HUB APLIKASI SVELTE|SVELTE APPS HUB/i });
+  test('Language switcher toggles UI between Indonesian and English translations across entire app', async ({ page }) => {
+    // Initial ID text on Home page
     await expect(page.getByText('HUB APLIKASI SVELTE')).toBeVisible();
     await expect(page.getByText('TAMBAH APLIKASI')).toBeVisible();
+    await expect(page.getByText('CATATAN & TO-DO LIST')).toBeVisible();
+    await expect(page.locator('[data-testid="filter-all"]')).toContainText('SEMUA');
+    await expect(page.locator('[data-testid="footer-github-link"]')).toContainText('GITHUB REPO ↗');
 
     // Click language switcher to EN
     const langBtn = page.locator('[data-testid="lang-switcher-btn"]');
     await langBtn.click();
 
-    // Verify English translations are rendered
+    // Verify English translations on Home page
     await expect(page.getByText('SVELTE APPS HUB')).toBeVisible();
     await expect(page.getByText('ADD APPLICATION')).toBeVisible();
     await expect(page.locator('[data-testid="apps-counter"]')).toContainText('CONNECTED APPS');
+    await expect(page.getByText('NOTES & TO-DO LIST')).toBeVisible();
+    await expect(page.locator('[data-testid="filter-all"]')).toContainText('ALL');
     await expect(langBtn).toContainText('EN');
 
-    // Click language switcher back to ID
-    await langBtn.click();
+    // Navigate to Company Profile in English
+    await page.locator('[data-testid="nav-link-company-profile"]').click();
+    await expect(page.locator('[data-testid="cp-vision-title"]')).toHaveText('OUR VISION');
+    await expect(page.locator('[data-testid="cp-mission-title"]')).toHaveText('OUR MISSION');
+    await expect(page.locator('[data-testid="cp-back-btn"]')).toContainText('BACK TO DASHBOARD');
 
-    // Verify Indonesian translations are restored
-    await expect(page.getByText('HUB APLIKASI SVELTE')).toBeVisible();
-    await expect(page.getByText('TAMBAH APLIKASI')).toBeVisible();
-    await expect(page.locator('[data-testid="apps-counter"]')).toContainText('APPS TERHUBUNG');
+    // Toggle back to Indonesian while on Company Profile
+    await langBtn.click();
+    await expect(page.locator('[data-testid="cp-vision-title"]')).toHaveText('VISI KAMI');
+    await expect(page.locator('[data-testid="cp-mission-title"]')).toHaveText('MISI KAMI');
+    await expect(page.locator('[data-testid="cp-back-btn"]')).toContainText('KEMBALI KE DASHBOARD');
     await expect(langBtn).toContainText('ID');
   });
 });
