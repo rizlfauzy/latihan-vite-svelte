@@ -6,6 +6,10 @@
 
 <div class="flex flex-col gap-10 w-full">
   <Hero />
-  <AppGrid />
-  <TodoList />
+  <div id="apps-hub" class="scroll-mt-24">
+    <AppGrid />
+  </div>
+  <div id="todo-list" class="scroll-mt-24">
+    <TodoList />
+  </div>
 </div>

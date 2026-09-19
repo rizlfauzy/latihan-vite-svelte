@@ -5,7 +5,7 @@
 
 <div class="flex flex-col gap-8 w-full" data-testid="company-profile-container">
   <!-- Header / Hero Section -->
-  <section class="nb-card bg-nb-yellow p-6 sm:p-8 relative overflow-hidden">
+  <section id="profile" class="nb-card bg-nb-yellow p-6 sm:p-8 relative overflow-hidden scroll-mt-24">
     <div class="inline-flex items-center gap-2 bg-white px-3 py-1 border-2 border-nb-black shadow-nb-sm text-xs font-black uppercase mb-4">
       <span>🏢</span>
       <span data-testid="cp-badge">{$i18nStore.t('cp.badge')}</span>
@@ -57,7 +57,7 @@
   </section>
 
   <!-- Visi & Misi -->
-  <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <section id="vision-mission" class="grid grid-cols-1 md:grid-cols-2 gap-6 scroll-mt-24">
     <div class="nb-card bg-white p-6 flex flex-col gap-3">
       <div class="flex items-center gap-2">
         <span class="text-2xl">🎯</span>
@@ -86,7 +86,7 @@
   </section>
 
   <!-- Core Services & Tech Stack -->
-  <section class="nb-card bg-white p-6 sm:p-8">
+  <section id="services" class="nb-card bg-white p-6 sm:p-8 scroll-mt-24">
     <div class="inline-flex items-center gap-2 bg-nb-blue text-nb-black px-3 py-1 border-2 border-nb-black shadow-nb-sm text-xs font-black uppercase mb-5">
       <span>🛠️</span>
       <span>{$i18nStore.t('cp.servicesBadge')}</span>
@@ -114,7 +114,7 @@
   </section>
 
   <!-- PIC & Leadership -->
-  <section class="nb-card bg-nb-purple p-6 sm:p-8">
+  <section id="contact" class="nb-card bg-nb-purple p-6 sm:p-8 scroll-mt-24">
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
       <div>
         <div class="inline-flex items-center gap-2 bg-white px-3 py-1 border-2 border-nb-black shadow-nb-sm text-xs font-black uppercase mb-2">
