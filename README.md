@@ -1,47 +1,142 @@
-# Svelte + TS + Vite
+# ⚡ Svelte Hub — Neo Brutalism Personal Dashboard
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+> **Personal Hub & Dashboard** untuk menghubungkan semua aplikasi berbasis Svelte yang pernah dibuat ke dalam satu tempat terpusat, dilengkapi catatan cepat / to-do list, dan siap dijalankan dengan Docker.
 
-## Recommended IDE Setup
+![Svelte 5](https://img.shields.io/badge/Svelte-5.x-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Design](https://img.shields.io/badge/Style-Neo_Brutalism-FFD000?style=for-the-badge)
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+---
 
-## Need an official Svelte framework?
+## 🎨 Fitur Utama
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+- 🚀 **App Hub Grid**: Menampilkan koleksi aplikasi Svelte dalam tata letak kartu interaktif dengan animasi dan hard-shadow khas Neo Brutalism.
+- 🎯 **Hero Branding**: Logo custom di tengah halaman, badge status, dan favicon tab yang sinkron.
+- 📝 **To-Do List & Quick Notes**: Fitur manajemen catatan/tugas cepat dengan filter (*Semua*, *Belum*, *Selesai*) dan persistensi otomatis di `localStorage`.
+- ⚡ **Neo Brutalism Aesthetic**: Desain visual unik dengan border tebal (solid black), shadow tajam tanpa blur, warna-warna kontras cerah, dan tipografi ekspresif.
+- 🐳 **Dockerized Production**: Multi-stage build menggunakan Bun dan Nginx Alpine yang sangat ringan dan cepat.
 
-## Technical considerations
+---
 
-**Why use this over SvelteKit?**
+## 🛠️ Tech Stack
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+| Komponen | Teknologi | Deskripsi |
+|---|---|---|
+| **Framework** | Svelte 5 | Frontend framework reaktif dengan Runes (`$state`, `$derived`, `$effect`) |
+| **Bundler** | Vite 8 | Lightning-fast development & build tool |
+| **Bahasa** | TypeScript | Type safety & intellisense |
+| **Styling** | Plain CSS | Custom Neo Brutalism design system tokens |
+| **Penyimpanan** | LocalStorage | Persistensi data catatan tanpa perlu database server |
+| **Container** | Docker + Nginx | Multi-stage builder & production web server |
+| **Package Manager** | Bun | Fast package manager & script runner |
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+---
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+## 🚀 Memulai (Getting Started)
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+### Prasyarat
+- [Bun](https://bun.sh/) (atau Node.js v18+)
+- [Docker](https://www.docker.com/) (opsional, untuk containerization)
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+### 1. Jalankan Mode Development
 
-**Why include `.vscode/extensions.json`?**
+```bash
+# Clone repository
+git clone https://github.com/rizlfauzy/latihan-vite-svelte.git
+cd latihan-vite-svelte
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+# Install dependensi
+bun install
 
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+# Jalankan dev server
+bun run dev
 ```
+
+Aplikasi akan berjalan di `http://localhost:8888` (atau port yang ditentukan Vite).
+
+---
+
+### 2. Build untuk Production
+
+```bash
+# Type check & bundle build
+bun run check
+bun run build
+
+# Preview build lokal
+bun run preview
+```
+
+Output static file akan digenerate ke folder `dist/`.
+
+---
+
+### 3. Jalankan via Docker
+
+Aplikasi sudah dilengkapi dengan `Dockerfile` dan `docker-compose.yml` multi-stage:
+
+```bash
+# Build dan jalankan container
+docker compose up --build -d
+
+# Periksa status container
+docker compose ps
+
+# Hentikan container
+docker compose down
+```
+
+Buka browser di: **`http://localhost:8080`**
+
+---
+
+## 📁 Struktur Direktori
+
+```text
+├── public/
+│   ├── favicon.svg       # Favicon tab browser
+│   └── logo.svg          # Logo utama Neo Brutalism
+├── src/
+│   ├── assets/           # Aset statis & logo
+│   ├── data/
+│   │   └── apps.ts       # Konfigurasi data daftar aplikasi hub
+│   ├── lib/
+│   │   ├── AppCard.svelte   # Kartu aplikasi interaktif
+│   │   ├── AppGrid.svelte   # Grid kumpulan aplikasi
+│   │   ├── Hero.svelte      # Hero section dengan logo di tengah
+│   │   └── TodoList.svelte  # Widget to-do list & quick notes
+│   ├── app.css           # Design system tokens & utility classes Neo Brutalism
+│   ├── App.svelte        # Komponen root aplikasi
+│   └── main.ts           # Entry point aplikasi
+├── Dockerfile            # Multi-stage Docker configuration
+├── docker-compose.yml    # Docker Compose spec (port 8080)
+├── nginx.conf            # Nginx SPA config dengan caching & gzip
+├── PRD.md                # Product Requirements Document
+└── README.md             # Dokumentasi proyek
+```
+
+---
+
+## ➕ Cara Menambah Aplikasi Baru ke Hub
+
+Buka file [`src/data/apps.ts`](src/data/apps.ts) dan tambahkan item baru ke dalam array `svelteApps`:
+
+```typescript
+{
+  id: "nama-app-unik",
+  name: "Nama Aplikasi Kamu",
+  description: "Deskripsi singkat tentang aplikasi.",
+  url: "https://url-aplikasi-kamu.com",
+  icon: "🚀", // Emoji atau icon
+  category: "Kategori", // e.g. Tools, Game, Portfolio
+  color: "var(--nb-yellow)" // var(--nb-pink) / var(--nb-blue) / var(--nb-green)
+}
+```
+
+---
+
+## 📜 Lisensi & Kontributor
+
+Dikembangkan oleh **[Rizal Fauzi](https://github.com/rizlfauzy)**.
+Open source untuk keperluan belajar dan eksplorasi ekosistem Svelte.
