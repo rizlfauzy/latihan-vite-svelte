@@ -169,4 +169,60 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const devBadge = page.getByText(/DEV MODE/i);
     await expect(devBadge).toBeVisible();
   });
+
+  test('Navbar renders and navigates to Company Profile and back to Dashboard via SPA routing', async ({ page }) => {
+    const navHome = page.locator('[data-testid="nav-link-home"]');
+    const navCompany = page.locator('[data-testid="nav-link-company-profile"]');
+
+    await expect(navHome).toBeVisible();
+    await expect(navCompany).toBeVisible();
+
+    // Click company profile link
+    await navCompany.click();
+    await expect(page).toHaveURL(/.*company-profile/);
+    await expect(page.getByText('SVELTE HUB TECH LABS')).toBeVisible();
+    await expect(page.getByText('VISI KAMI')).toBeVisible();
+    await expect(page.getByText('MISI KAMI')).toBeVisible();
+    await expect(page.getByText('Rizal Fauzi')).toBeVisible();
+
+    // Click back to dashboard link
+    await navHome.click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByText('HUB APLIKASI SVELTE')).toBeVisible();
+  });
+
+  test('Add App button in debug mode opens modal, submits new app to Zustand store, and updates App Grid', async ({ page }) => {
+    // Verify Add App button exists in debug mode
+    const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
+    await expect(openAddBtn).toBeVisible();
+
+    // Open modal
+    await openAddBtn.click();
+    const modalBackdrop = page.locator('[data-testid="add-app-modal-backdrop"]');
+    await expect(modalBackdrop).toBeVisible();
+
+    // Fill form
+    const appName = 'E2E Automated App';
+    await page.locator('[data-testid="input-app-name"]').fill(appName);
+    await page.locator('[data-testid="input-app-url"]').fill('https://example.com/e2e');
+    await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi uji otomatis Playwright');
+    await page.locator('[data-testid="input-app-pic"]').fill('Tester Playwright');
+    await page.locator('[data-testid="input-app-wa"]').fill('628999888777');
+
+    // Submit form
+    await page.locator('[data-testid="btn-submit-add-app"]').click();
+
+    // Verify modal is closed
+    await expect(modalBackdrop).not.toBeVisible();
+
+    // Verify new app appears in the grid
+    await expect(page.getByText(appName)).toBeVisible();
+    await expect(page.getByText('Aplikasi uji otomatis Playwright')).toBeVisible();
+    await expect(page.getByText('Tester Playwright')).toBeVisible();
+
+    // Verify app counter incremented to 7
+    const counterBadge = page.locator('[data-testid="apps-counter"]');
+    await expect(counterBadge).toContainText('7 APPS TERHUBUNG');
+  });
 });
+
