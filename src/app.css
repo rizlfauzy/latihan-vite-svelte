@@ -10,10 +10,14 @@
   --color-nb-green: #00e575;
   --color-nb-purple: #b388ff;
   --color-nb-orange: #ff8c42;
+  --color-nb-red: #ff4757;
+  --color-nb-wa: #25d366;
 
+  --shadow-nb-xs: 1px 1px 0px #121212;
+  --shadow-nb-sm: 2px 2px 0px #121212;
+  --shadow-nb-md: 3px 3px 0px #121212;
   --shadow-nb: 4px 4px 0px #121212;
   --shadow-nb-lg: 7px 7px 0px #121212;
-  --shadow-nb-sm: 2px 2px 0px #121212;
 
   --font-sans: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

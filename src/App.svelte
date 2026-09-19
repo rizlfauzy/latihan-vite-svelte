@@ -7,7 +7,7 @@
 
 {#if env.isDev}
   <aside class="fixed top-4 right-4 z-50 pointer-events-none" aria-label="Environment indicator">
-    <div class="nb-badge bg-nb-yellow text-nb-black border-2 border-nb-black px-3 py-1.5 shadow-[3px_3px_0px_#121212] flex items-center gap-2 font-black text-xs">
+    <div class="nb-badge bg-nb-yellow text-nb-black border-2 border-nb-black px-3 py-1.5 shadow-nb-md flex items-center gap-2 font-black text-xs">
       <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
       <span>DEV MODE ({env.appEnv})</span>
     </div>

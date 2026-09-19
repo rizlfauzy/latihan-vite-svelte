@@ -158,7 +158,7 @@
       {#if completedCount > 0}
         <button
           type="button"
-          class="nb-btn bg-[#ff4757] text-white text-xs px-3.5 py-1.5"
+          class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5"
           onclick={clearCompleted}
         >
           HAPUS YANG SELESAI
@@ -175,7 +175,7 @@
       {:else}
         {#each filteredTodos as todo (todo.id)}
           <li
-            class="flex items-center justify-between gap-3.5 p-3.5 sm:px-4.5 border-2 border-nb-black rounded-md shadow-[2px_2px_0px_#121212] transition-all duration-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-nb {todo.done
+            class="flex items-center justify-between gap-3.5 p-3.5 sm:px-4.5 border-2 border-nb-black rounded-md shadow-nb-sm transition-all duration-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-nb {todo.done
               ? 'bg-gray-100 opacity-75'
               : 'bg-gray-50'}"
           >
@@ -187,7 +187,7 @@
                 class="nb-checkbox"
               />
               <span
-                class="text-base font-semibold leading-snug break-words {todo.done
+                class="text-base font-semibold leading-snug wrap-break-word {todo.done
                   ? 'line-through decoration-2 decoration-nb-black text-gray-500'
                   : 'text-nb-black'}"
               >
@@ -197,7 +197,7 @@
 
             <button
               type="button"
-              class="w-8 h-8 shrink-0 border-2 border-nb-black bg-[#ff4757] text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#121212] hover:-translate-x-0.25 hover:-translate-y-0.25 hover:shadow-[3px_3px_0px_#121212] active:translate-x-0.25 active:translate-y-0.25 active:shadow-[1px_1px_0px_#121212] transition-all duration-100"
+              class="w-8 h-8 shrink-0 border-2 border-nb-black bg-nb-red text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-nb-md active:translate-x-0.5 active:translate-y-0.5 active:shadow-nb-xs transition-all duration-100"
               onclick={() => deleteTodo(todo.id)}
               title="Hapus catatan"
               aria-label="Hapus catatan"
