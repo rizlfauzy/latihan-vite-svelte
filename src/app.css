@@ -31,6 +31,60 @@ body {
   background-image: radial-gradient(var(--color-nb-black) 1px, transparent 1px);
   background-size: 24px 24px;
   font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Dark Mode Neo Brutalism Styles */
+html.dark {
+  --color-nb-bg: #141416;
+  --color-nb-surface: #202026;
+  --color-nb-black: #0c0c0e;
+}
+
+html.dark body {
+  background-color: #141416;
+  color: #f4f4f5;
+  background-image: radial-gradient(#3f3f46 1.5px, transparent 1.5px);
+}
+
+html.dark .bg-white {
+  background-color: #202026 !important;
+  color: #f4f4f5;
+}
+
+html.dark .bg-gray-50 {
+  background-color: #18181c !important;
+}
+
+html.dark .bg-gray-100 {
+  background-color: #272730 !important;
+}
+
+html.dark .bg-\[\#faf8f5\] {
+  background-color: #18181c !important;
+}
+
+html.dark .text-nb-black {
+  color: #f4f4f5;
+}
+
+html.dark .text-gray-800,
+html.dark .text-gray-700 {
+  color: #e4e4e7 !important;
+}
+
+html.dark .text-gray-600,
+html.dark .text-gray-500 {
+  color: #a1a1aa !important;
+}
+
+html.dark .border-gray-300 {
+  border-color: #3f3f46 !important;
+}
+
+html.dark .shadow-nb,
+html.dark .nb-card {
+  box-shadow: 4px 4px 0px #000000;
 }
 
 /* Neo Brutalism Reusable Utility Classes */
