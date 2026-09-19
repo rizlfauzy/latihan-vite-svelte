@@ -4,7 +4,8 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    // Clear localStorage before each test so tests are idempotent
+    // Clear localStorage and reset apps before each test so tests are idempotent
+    await page.request.post('/api/apps/reset');
     await page.addInitScript(() => {
       window.localStorage.clear();
     });
@@ -218,8 +219,8 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(modalBackdrop).not.toBeVisible();
 
     // Verify new app appears in the grid
-    await expect(page.getByText(appName)).toBeVisible();
-    await expect(page.getByText('Aplikasi uji otomatis Playwright')).toBeVisible();
+    await expect(page.locator('[data-testid="apps-list"]').getByRole('heading', { name: appName })).toBeVisible();
+    await expect(page.locator('[data-testid="apps-list"]').getByText('Aplikasi uji otomatis Playwright')).toBeVisible();
     await expect(page.getByText('Tester Playwright')).toBeVisible();
 
     // Verify app counter incremented to 7
@@ -262,9 +263,90 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const counterBadge = page.locator('[data-testid="apps-counter"]');
     await expect(counterBadge).toContainText(`${countBefore - 1} APPS TERHUBUNG`);
 
+    // Verify alert toast appeared
+    const alertToast = page.locator('[data-testid="alert-toast"]');
+    await expect(alertToast.first()).toBeVisible();
+
     // Reset apps to restore original state
     await page.request.post('/api/apps/reset');
   });
+
+  test('Edit App button in debug mode opens modal, updates app data, and shows alert toast', async ({ page }) => {
+    // Find edit button on the first app card
+    const firstEditBtn = page.locator('[data-testid^="btn-edit-app-"]').first();
+    await expect(firstEditBtn).toBeVisible();
+
+    // Open edit modal
+    await firstEditBtn.click();
+    const editModal = page.locator('[data-testid="edit-app-modal"]');
+    await expect(editModal).toBeVisible();
+
+    // Edit app name
+    const editedName = 'Portfolio Pro Edition';
+    const nameInput = page.locator('[data-testid="input-edit-app-name"]');
+    await nameInput.fill(editedName);
+
+    // Submit edit form
+    await page.locator('[data-testid="btn-submit-edit-app"]').click();
+
+    // Modal should close
+    await expect(editModal).not.toBeVisible();
+
+    // New name should be rendered on the card
+    await expect(page.locator('[data-testid="apps-list"]').getByRole('heading', { name: editedName })).toBeVisible();
+
+    // Toast alert should be visible
+    const alertToast = page.locator('[data-testid="alert-toast"]');
+    await expect(alertToast.first()).toBeVisible();
+    await expect(page.locator('[data-testid="alert-message"]').first()).toContainText('berhasil diperbarui');
+
+    // Dismiss alert via close button
+    const closeBtn = page.locator('[data-testid="alert-close-btn"]').first();
+    await closeBtn.click();
+    await expect(alertToast).toHaveCount(0);
+
+    // Reset apps to restore original state
+    await page.request.post('/api/apps/reset');
+  });
+
+  test('Sticky Navbar has sticky positioning and remains visible at the top during scroll', async ({ page }) => {
+    const navbarHeader = page.locator('[data-testid="navbar-header"]');
+    await expect(navbarHeader).toBeVisible();
+    await expect(navbarHeader).toHaveClass(/sticky/);
+
+    // Scroll down the page
+    await page.evaluate(() => window.scrollTo(0, 600));
+
+    // Navbar should still be within viewport
+    await expect(navbarHeader).toBeInViewport();
+  });
+
+  test('Language switcher toggles UI between Indonesian and English translations', async ({ page }) => {
+    // Initial ID text
+    const appGridTitle = page.locator('[data-testid="app-grid-section"] h2, [data-testid="app-grid-section"] span').filter({ hasText: /HUB APLIKASI SVELTE|SVELTE APPS HUB/i });
+    await expect(page.getByText('HUB APLIKASI SVELTE')).toBeVisible();
+    await expect(page.getByText('TAMBAH APLIKASI')).toBeVisible();
+
+    // Click language switcher to EN
+    const langBtn = page.locator('[data-testid="lang-switcher-btn"]');
+    await langBtn.click();
+
+    // Verify English translations are rendered
+    await expect(page.getByText('SVELTE APPS HUB')).toBeVisible();
+    await expect(page.getByText('ADD APPLICATION')).toBeVisible();
+    await expect(page.locator('[data-testid="apps-counter"]')).toContainText('CONNECTED APPS');
+    await expect(langBtn).toContainText('EN');
+
+    // Click language switcher back to ID
+    await langBtn.click();
+
+    // Verify Indonesian translations are restored
+    await expect(page.getByText('HUB APLIKASI SVELTE')).toBeVisible();
+    await expect(page.getByText('TAMBAH APLIKASI')).toBeVisible();
+    await expect(page.locator('[data-testid="apps-counter"]')).toContainText('APPS TERHUBUNG');
+    await expect(langBtn).toContainText('ID');
+  });
 });
+
 
 

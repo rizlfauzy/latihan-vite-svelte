@@ -1,12 +1,20 @@
 <script lang="ts">
+  import { i18nStore } from '../stores/i18nStore';
+
   const envTitle = import.meta.env.VITE_APP_TITLE || "SVELTE HUB";
   const envLogo = import.meta.env.VITE_APP_LOGO_URL || "/logo.svg";
 
   let {
     title = envTitle,
-    subtitle = "Central Dashboard untuk Akses Cepat Semua Aplikasi Svelte",
+    subtitle,
     logoUrl = envLogo
+  }: {
+    title?: string;
+    subtitle?: string;
+    logoUrl?: string;
   } = $props();
+
+  const resolvedSubtitle = $derived(subtitle ?? $i18nStore.t('hero.subtitle'));
 </script>
 
 <header class="w-full flex justify-center">
@@ -17,16 +25,16 @@
     
     <div class="flex flex-col items-center gap-3">
       <div class="flex gap-2 flex-wrap justify-center">
-        <span class="nb-badge bg-nb-pink text-white">⚡ SVELTE 5</span>
-        <span class="nb-badge bg-nb-blue">🚀 VITE</span>
-        <span class="nb-badge bg-nb-green">🐳 DOCKER READY</span>
+        <span class="nb-badge bg-nb-pink text-white">{$i18nStore.t('hero.badgeSvelte')}</span>
+        <span class="nb-badge bg-nb-blue">{$i18nStore.t('hero.badgeVite')}</span>
+        <span class="nb-badge bg-nb-green">{$i18nStore.t('hero.badgeDocker')}</span>
       </div>
 
       <h1 class="text-3xl md:text-5xl font-black tracking-tight uppercase m-0 leading-tight">
         {title}
       </h1>
       <p class="text-sm md:text-lg text-gray-700 font-semibold max-w-xl m-0 leading-snug">
-        {subtitle}
+        {resolvedSubtitle}
       </p>
     </div>
   </div>
