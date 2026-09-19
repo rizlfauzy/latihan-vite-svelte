@@ -83,7 +83,7 @@
         {/if}
 
         <p class="text-xs font-semibold text-gray-500 m-0">
-          * Catatan yang dihapus tidak dapat dipulihkan kembali.
+          * Item yang dihapus tidak dapat dipulihkan kembali.
         </p>
       </div>
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { env } from './env';
+  import { env } from '../../lib/env';
 </script>
 
 <div class="flex flex-col gap-8 w-full">

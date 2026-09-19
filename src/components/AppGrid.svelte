@@ -3,7 +3,7 @@
   import type { AppItem } from '../data/apps';
   import AppCard from './AppCard.svelte';
   import AddAppModal from './AddAppModal.svelte';
-  import { env } from './env';
+  import { env } from '../lib/env';
 
   let { apps }: { apps?: AppItem[] } = $props();
 

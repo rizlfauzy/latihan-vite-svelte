@@ -1,6 +1,6 @@
 <script lang="ts">
   import { router } from '../router';
-  import { env } from './env';
+  import { env } from '../lib/env';
 
   let mobileMenuOpen = $state(false);
 

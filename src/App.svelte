@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Router } from 'sv-router';
-  import Navbar from './lib/Navbar.svelte';
+  import Navbar from './components/Navbar.svelte';
   import { env } from './lib/env';
 </script>
 
