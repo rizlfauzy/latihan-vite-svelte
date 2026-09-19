@@ -1,88 +1,14 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
+import idLocale from '../i18n/id.json';
+import enLocale from '../i18n/en.json';
 
 export type Locale = 'id' | 'en';
 
-export interface Translations {
-  [key: string]: string;
-}
+export type Translations = Record<string, string>;
 
 const dictionaries: Record<Locale, Translations> = {
-  id: {
-    // Navbar
-    'nav.brand': 'SVELTE HUB',
-    'nav.debug': 'DEBUG ON',
-    'nav.home': '🚀 APPS & DASHBOARD',
-    'nav.company': '🏢 COMPANY PROFILE',
-    'nav.github': 'GITHUB ↗',
-    'nav.menu': '☰ MENU',
-    'nav.close': '✕ TUTUP',
-
-    // Hero
-    'hero.subtitle': 'Central Dashboard untuk Akses Cepat Semua Aplikasi Svelte',
-    'hero.badgeSvelte': '⚡ SVELTE 5',
-    'hero.badgeVite': '🚀 VITE',
-    'hero.badgeDocker': '🐳 DOCKER READY',
-
-    // App Grid
-    'grid.title': 'HUB APLIKASI SVELTE',
-    'grid.addApp': 'TAMBAH APLIKASI',
-    'grid.connected': 'APPS TERHUBUNG',
-    'grid.openApp': 'BUKA APLIKASI',
-    'grid.contactPic': 'HUBUNGI PIC (WHATSAPP)',
-    'grid.pic': '👤 PIC:',
-    'grid.deleteTooltip': 'Hapus Aplikasi (Debug Mode)',
-    'grid.editTooltip': 'Edit Aplikasi (Debug Mode)',
-
-    // Common Modal & Actions
-    'action.cancel': 'BATAL',
-    'action.save': '💾 SIMPAN PERUBAHAN',
-    'action.add': '🚀 TAMBAHKAN APLIKASI',
-    'action.delete': 'YA, HAPUS',
-    'action.deleteApp': 'YA, HAPUS APLIKASI',
-
-    // Footer
-    'footer.title': '⚡ SVELTE HUB — Personal Dashboard',
-    'footer.subtitle': 'Dibangun dengan Svelte 5, Vite, Tailwind CSS, Zustand, & estetika Neo Brutalism',
-    'footer.github': 'GITHUB REPO ↗',
-  },
-  en: {
-    // Navbar
-    'nav.brand': 'SVELTE HUB',
-    'nav.debug': 'DEBUG ON',
-    'nav.home': '🚀 APPS & DASHBOARD',
-    'nav.company': '🏢 COMPANY PROFILE',
-    'nav.github': 'GITHUB ↗',
-    'nav.menu': '☰ MENU',
-    'nav.close': '✕ CLOSE',
-
-    // Hero
-    'hero.subtitle': 'Central Dashboard for Rapid Access to All Svelte Micro Apps',
-    'hero.badgeSvelte': '⚡ SVELTE 5',
-    'hero.badgeVite': '🚀 VITE',
-    'hero.badgeDocker': '🐳 DOCKER READY',
-
-    // App Grid
-    'grid.title': 'SVELTE APPS HUB',
-    'grid.addApp': 'ADD APPLICATION',
-    'grid.connected': 'CONNECTED APPS',
-    'grid.openApp': 'OPEN APPLICATION',
-    'grid.contactPic': 'CONTACT PIC (WHATSAPP)',
-    'grid.pic': '👤 PIC:',
-    'grid.deleteTooltip': 'Delete Application (Debug Mode)',
-    'grid.editTooltip': 'Edit Application (Debug Mode)',
-
-    // Common Modal & Actions
-    'action.cancel': 'CANCEL',
-    'action.save': '💾 SAVE CHANGES',
-    'action.add': '🚀 ADD APPLICATION',
-    'action.delete': 'YES, DELETE',
-    'action.deleteApp': 'YES, DELETE APP',
-
-    // Footer
-    'footer.title': '⚡ SVELTE HUB — Personal Dashboard',
-    'footer.subtitle': 'Built with Svelte 5, Vite, Tailwind CSS, Zustand, & Neo Brutalism aesthetic',
-    'footer.github': 'GITHUB REPO ↗',
-  },
+  id: idLocale,
+  en: enLocale,
 };
 
 const STORAGE_KEY = 'svelte_hub_locale';
