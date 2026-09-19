@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ConfirmModal from './ConfirmModal.svelte';
+
   interface SubTask {
     id: string;
     text: string;
@@ -13,6 +15,11 @@
     createdAt: number;
     subTasks?: SubTask[];
   }
+
+  type DeleteTarget =
+    | { type: 'todo'; id: string; text: string }
+    | { type: 'subtask'; todoId: string; subTaskId: string; text: string }
+    | null;
 
   const STORAGE_KEY = 'svelte_hub_todos';
 
@@ -83,6 +90,9 @@
   // Track input text for new sub-task per todo
   let subTaskInputs = $state<Record<string, string>>({});
 
+  // Target item for deletion confirmation modal
+  let deleteTarget = $state<DeleteTarget>(null);
+
   $effect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
@@ -127,8 +137,39 @@
     todos = todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
   }
 
+  function promptDeleteTodo(todo: Todo) {
+    deleteTarget = {
+      type: 'todo',
+      id: todo.id,
+      text: todo.text
+    };
+  }
+
   function deleteTodo(id: string) {
     todos = todos.filter((t) => t.id !== id);
+  }
+
+  function promptDeleteSubTask(todoId: string, sub: SubTask) {
+    deleteTarget = {
+      type: 'subtask',
+      todoId,
+      subTaskId: sub.id,
+      text: sub.text
+    };
+  }
+
+  function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === 'todo') {
+      deleteTodo(deleteTarget.id);
+    } else if (deleteTarget.type === 'subtask') {
+      deleteSubTask(deleteTarget.todoId, deleteTarget.subTaskId);
+    }
+    deleteTarget = null;
+  }
+
+  function handleCancelDelete() {
+    deleteTarget = null;
   }
 
   function clearCompleted() {
@@ -325,7 +366,7 @@
               <button
                 type="button"
                 class="w-8 h-8 shrink-0 border-2 border-nb-black bg-[#ff4757] text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#121212] hover:-translate-x-0.25 hover:-translate-y-0.25 hover:shadow-[3px_3px_0px_#121212] active:translate-x-0.25 active:translate-y-0.25 active:shadow-[1px_1px_0px_#121212] transition-all duration-100"
-                onclick={() => deleteTodo(todo.id)}
+                onclick={() => promptDeleteTodo(todo)}
                 title="Hapus catatan"
                 aria-label="Hapus catatan"
                 data-testid={`delete-todo-${todo.id}`}
@@ -365,7 +406,7 @@
                         <button
                           type="button"
                           class="w-6 h-6 shrink-0 border border-nb-black bg-gray-100 hover:bg-[#ff4757] hover:text-white text-gray-600 font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
-                          onclick={() => deleteSubTask(todo.id, sub.id)}
+                          onclick={() => promptDeleteSubTask(todo.id, sub)}
                           title="Hapus sub-task"
                           aria-label="Hapus sub-task"
                           data-testid={`delete-subtask-${sub.id}`}
@@ -408,4 +449,18 @@
       {/if}
     </ul>
   </div>
+
+  <!-- Deletion Confirmation Modal -->
+  <ConfirmModal
+    isOpen={deleteTarget !== null}
+    title={deleteTarget?.type === 'todo' ? 'HAPUS CATATAN' : 'HAPUS SUB-TASK'}
+    message={deleteTarget?.type === 'todo'
+      ? 'Apakah Anda yakin ingin menghapus catatan ini beserta seluruh sub-task di dalamnya?'
+      : 'Apakah Anda yakin ingin menghapus sub-task ini?'}
+    itemText={deleteTarget?.text || ''}
+    confirmText="YA, HAPUS"
+    cancelText="BATAL"
+    onConfirm={handleConfirmDelete}
+    onCancel={handleCancelDelete}
+  />
 </section>

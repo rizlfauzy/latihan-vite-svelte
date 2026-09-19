@@ -99,12 +99,49 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     // Progress badge should update to 1/1
     await expect(firstTodo.getByText('1/1 SUB-TASKS')).toBeVisible();
 
-    // Delete the sub-task
+    // Delete the sub-task (triggers confirmation modal)
     const deleteSubBtn = firstTodo.locator('[data-testid^="delete-subtask-"]').first();
     await deleteSubBtn.click();
 
+    // Verify confirmation modal appears
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+
     // Verify subtask is removed
     await expect(firstTodo.getByText('Langkah 1: Setup database')).not.toBeVisible();
+  });
+
+  test('Confirmation modal prevents accidental deletion and supports cancel, backdrop click, and Escape key', async ({ page }) => {
+    const firstTodo = page.locator('[data-testid^="todo-item-"]').first();
+    const todoText = await firstTodo.locator('label span').first().innerText();
+
+    // Click delete on parent todo
+    const deleteBtn = firstTodo.locator('[data-testid^="delete-todo-"]').first();
+    await deleteBtn.click();
+
+    // Verify modal is open
+    const modal = page.locator('[data-testid="confirm-modal"]');
+    await expect(modal).toBeVisible();
+    await expect(page.getByText('HAPUS CATATAN', { exact: true })).toBeVisible();
+
+    // Test Cancel button: click Batal, modal closes, todo remains
+    await page.locator('[data-testid="modal-cancel-button"]').click();
+    await expect(modal).not.toBeVisible();
+    await expect(page.getByText(todoText)).toBeVisible();
+
+    // Reopen modal and test Escape key
+    await deleteBtn.click();
+    await expect(modal).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(modal).not.toBeVisible();
+    await expect(page.getByText(todoText)).toBeVisible();
+
+    // Reopen modal and test confirming deletion
+    await deleteBtn.click();
+    await expect(modal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(modal).not.toBeVisible();
+    await expect(page.getByText(todoText)).not.toBeVisible();
   });
 
   test('Dev Mode indicator badge is visible in development environment', async ({ page }) => {
