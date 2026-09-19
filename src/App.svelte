@@ -1,8 +1,11 @@
 <script lang="ts">
   import { Router } from 'sv-router';
   import Navbar from './components/Navbar.svelte';
+  import AlertContainer from './components/AlertContainer.svelte';
   import { env } from './lib/env';
 </script>
+
+<AlertContainer />
 
 {#if env.isDev}
   <aside class="fixed bottom-4 right-4 z-50 pointer-events-none" aria-label="Environment indicator">
