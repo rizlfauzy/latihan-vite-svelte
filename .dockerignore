@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-ssr
+.git
+.gitignore
+.vscode
+.gemini
+*.log
+PRD.md
+implementation_plan.md
+walkthrough.md
