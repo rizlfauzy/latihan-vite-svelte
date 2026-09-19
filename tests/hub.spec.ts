@@ -81,7 +81,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(firstTodo).toContainText(parentTaskTitle);
 
     // Add a subtask under this parent task
-    const subTaskInput = firstTodo.locator('input[placeholder*="Tambah sub-task"]');
+    const subTaskInput = firstTodo.locator('[data-testid^="input-subtask-"]');
     await subTaskInput.fill('Langkah 1: Setup database');
     const addSubButton = firstTodo.locator('button', { hasText: '+ SUB' });
     await addSubButton.click();
@@ -142,6 +142,27 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="modal-confirm-button"]').click();
     await expect(modal).not.toBeVisible();
     await expect(page.getByText(todoText)).not.toBeVisible();
+  });
+
+  test('Multiline input with Shift+Enter creates a task with line breaks and Enter submits', async ({ page }) => {
+    // Verify keyboard shortcut info is displayed
+    await expect(page.getByText(/Tekan Enter untuk menyimpan, Shift \+ Enter untuk baris baru/i)).toBeVisible();
+
+    const todoInput = page.locator('[data-testid="todo-input"]');
+    await todoInput.focus();
+    await page.keyboard.type('Catatan Baris 1');
+    await page.keyboard.press('Shift+Enter');
+    await page.keyboard.type('Catatan Baris 2');
+
+    // Press Enter without Shift to submit
+    await page.keyboard.press('Enter');
+
+    // Verify task is added and contains both lines
+    const firstTodo = page.locator('[data-testid^="todo-item-"]').first();
+    await expect(firstTodo).toContainText('Catatan Baris 1\nCatatan Baris 2');
+
+    // Verify input is cleared
+    await expect(todoInput).toHaveValue('');
   });
 
   test('Dev Mode indicator badge is visible in development environment', async ({ page }) => {

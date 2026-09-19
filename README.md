@@ -18,6 +18,8 @@
 - 🎯 **Hero Branding & Dynamic Env**: Logo tengah, favicon, dan title aplikasi dapat diganti dinamis lewat Environment Variables (`.env`).
 - 🛠️ **Dev Mode Indicator**: Indikator visual real-time saat aplikasi berjalan di mode development.
 - 📝 **To-Do List & Sub-Tasks**: Fitur manajemen catatan/tugas cepat dengan sub-tasks bertingkat, expand/collapse, counter progres sub-task (`X/Y`), filter status (*Semua*, *Belum*, *Selesai*), dan persistensi otomatis di `localStorage`.
+- ⌨️ **Multiline & Keyboard Shortcuts**: Dukungan input multi-baris dengan shortcut `Shift + Enter` (baris baru) dan `Enter` (simpan cepat) disertai teks panduan intuitif.
+- ⚠️ **Neo Brutalism Confirm Modal**: Pop-up modal konfirmasi hapus interaktif dengan backdrop blur dan dukungan tombol `Escape` untuk mencegah kehilangan data secara tidak sengaja.
 - 🎭 **Automated UI Testing**: E2E automated test suite menggunakan Playwright untuk menjamin keandalan antarmuka dan interaktivitas.
 - ⚡ **Neo Brutalism Aesthetic**: Desain visual unik dengan border tebal (solid black), shadow tajam tanpa blur, warna-warna kontras cerah, dan tipografi ekspresif.
 - 🐳 **Dockerized Production**: Multi-stage build menggunakan Bun dan Nginx Alpine yang sangat ringan dan cepat.

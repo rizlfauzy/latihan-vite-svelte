@@ -112,7 +112,7 @@
     })
   );
 
-  function addTodo(e?: SubmitEvent) {
+  function addTodo(e?: Event) {
     if (e) e.preventDefault();
     const trimmed = newTodoText.trim();
     if (!trimmed) return;
@@ -131,6 +131,13 @@
 
     expandedTodoIds[newId] = true;
     newTodoText = '';
+  }
+
+  function handleTodoKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      addTodo();
+    }
   }
 
   function toggleTodo(id: string) {
@@ -180,7 +187,7 @@
     expandedTodoIds[id] = !expandedTodoIds[id];
   }
 
-  function addSubTask(todoId: string, e?: SubmitEvent) {
+  function addSubTask(todoId: string, e?: Event) {
     if (e) e.preventDefault();
     const inputVal = (subTaskInputs[todoId] || '').trim();
     if (!inputVal) return;
@@ -202,6 +209,13 @@
 
     subTaskInputs[todoId] = '';
     expandedTodoIds[todoId] = true;
+  }
+
+  function handleSubTaskKeydown(todoId: string, e: KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      addSubTask(todoId);
+    }
   }
 
   function toggleSubTask(todoId: string, subTaskId: string) {
@@ -246,18 +260,33 @@
 
   <div class="nb-card flex flex-col gap-5 bg-nb-surface">
     <!-- Form Tambah Todo -->
-    <form onsubmit={addTodo} class="flex flex-col sm:flex-row gap-3">
-      <input
-        type="text"
-        bind:value={newTodoText}
-        placeholder="Tulis tugas atau catatan baru di sini..."
-        class="nb-input grow"
-        data-testid="todo-input"
-      />
-      <button type="submit" class="nb-btn bg-nb-pink whitespace-nowrap px-6" data-testid="todo-add-button">
-        <span>+</span>
-        <span>TAMBAH</span>
-      </button>
+    <form onsubmit={addTodo} class="flex flex-col gap-2">
+      <div class="flex flex-col sm:flex-row gap-3 items-stretch">
+        <textarea
+          bind:value={newTodoText}
+          onkeydown={handleTodoKeydown}
+          placeholder="Tulis tugas atau catatan baru di sini..."
+          rows="2"
+          class="nb-input grow resize-y min-h-[56px] leading-relaxed"
+          data-testid="todo-input"
+        ></textarea>
+        <button
+          type="submit"
+          class="nb-btn bg-nb-pink whitespace-nowrap px-6 py-3 self-start sm:self-auto flex items-center justify-center gap-1.5"
+          data-testid="todo-add-button"
+        >
+          <span>+</span>
+          <span>TAMBAH</span>
+        </button>
+      </div>
+
+      <!-- Shortcut Info Helper -->
+      <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500 select-none">
+        <span>💡</span>
+        <span>
+          Tekan <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-nb-yellow text-nb-black font-mono text-[11px] shadow-[1px_1px_0px_#121212]">Enter</kbd> untuk menyimpan, <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-gray-200 text-nb-black font-mono text-[11px] shadow-[1px_1px_0px_#121212]">Shift + Enter</kbd> untuk baris baru
+        </span>
+      </div>
     </form>
 
     <!-- Filters & Action Toolbar -->
@@ -342,7 +371,7 @@
                   data-testid={`checkbox-todo-${todo.id}`}
                 />
                 <span
-                  class="text-base font-bold leading-snug break-words {todo.done
+                  class="text-base font-bold leading-snug break-words whitespace-pre-wrap {todo.done
                     ? 'line-through decoration-2 decoration-nb-black text-gray-500'
                     : 'text-nb-black'}"
                 >
@@ -395,7 +424,7 @@
                             data-testid={`checkbox-subtask-${sub.id}`}
                           />
                           <span
-                            class="text-sm font-semibold leading-tight break-words {sub.done
+                            class="text-sm font-semibold leading-tight break-words whitespace-pre-wrap {sub.done
                               ? 'line-through text-gray-500'
                               : 'text-nb-black'}"
                           >
@@ -425,18 +454,19 @@
                 <!-- Add Sub-task Input Form -->
                 <form
                   onsubmit={(e) => addSubTask(todo.id, e)}
-                  class="flex gap-2 pl-4 sm:pl-6 pt-1"
+                  class="flex gap-2 pl-4 sm:pl-6 pt-1 items-stretch"
                 >
-                  <input
-                    type="text"
+                  <textarea
                     bind:value={subTaskInputs[todo.id]}
-                    placeholder="Tambah sub-task baru..."
-                    class="w-full text-xs font-semibold px-3 py-1.5 border-2 border-nb-black rounded shadow-[1px_1px_0px_#121212] bg-white outline-none focus:shadow-[2px_2px_0px_#121212]"
+                    onkeydown={(e) => handleSubTaskKeydown(todo.id, e)}
+                    placeholder="Tambah sub-task baru... (Shift + Enter: baris baru)"
+                    rows="1"
+                    class="w-full text-xs font-semibold px-3 py-1.5 border-2 border-nb-black rounded shadow-[1px_1px_0px_#121212] bg-white outline-none focus:shadow-[2px_2px_0px_#121212] resize-y min-h-[34px] leading-snug"
                     data-testid={`input-subtask-${todo.id}`}
-                  />
+                  ></textarea>
                   <button
                     type="submit"
-                    class="nb-btn bg-nb-blue text-xs font-bold px-3 py-1.5 shadow-[1px_1px_0px_#121212] border-2 border-nb-black shrink-0"
+                    class="nb-btn bg-nb-blue text-xs font-bold px-3 py-1.5 shadow-[1px_1px_0px_#121212] border-2 border-nb-black shrink-0 self-start h-auto"
                     data-testid={`button-add-subtask-${todo.id}`}
                   >
                     + SUB
