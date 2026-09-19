@@ -4,59 +4,27 @@
   import TodoList from './lib/TodoList.svelte';
 </script>
 
-<main class="hub-layout">
-  <Hero />
-  <AppGrid />
-  <TodoList />
-</main>
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 pb-16 flex flex-col gap-10 min-h-screen">
+  <main class="flex flex-col gap-10 w-full">
+    <Hero />
+    <AppGrid />
+    <TodoList />
+  </main>
 
-<footer class="hub-footer nb-card">
-  <div class="footer-text">
-    <p>⚡ <strong>SVELTE HUB</strong> — Personal Dashboard</p>
-    <small>Built with Svelte 5, Vite, & Neo Brutalism aesthetic</small>
-  </div>
-  <a
-    href="https://github.com/rizlfauzy/latihan-vite-svelte"
-    target="_blank"
-    rel="noopener noreferrer"
-    class="nb-btn nb-btn-white footer-btn"
-  >
-    GITHUB REPO ↗
-  </a>
-</footer>
-
-<style>
-  .hub-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
-    width: 100%;
-  }
-
-  .hub-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    background: var(--nb-yellow);
-    padding: 20px 24px;
-  }
-
-  .footer-text p {
-    font-size: 16px;
-    font-weight: 800;
-    margin: 0;
-  }
-
-  .footer-text small {
-    font-size: 13px;
-    font-weight: 600;
-    color: #333333;
-  }
-
-  .footer-btn {
-    padding: 8px 16px;
-    font-size: 13px;
-  }
-</style>
+  <footer class="nb-card flex items-center justify-between flex-wrap gap-4 bg-nb-yellow p-5 sm:px-6">
+    <div>
+      <p class="text-base font-extrabold m-0">⚡ <strong>SVELTE HUB</strong> — Personal Dashboard</p>
+      <small class="text-xs font-semibold text-gray-800">
+        Built with Svelte 5, Vite, Tailwind CSS, & Neo Brutalism aesthetic
+      </small>
+    </div>
+    <a
+      href="https://github.com/rizlfauzy/latihan-vite-svelte"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="nb-btn bg-white text-xs px-4 py-2"
+    >
+      GITHUB REPO ↗
+    </a>
+  </footer>
+</div>

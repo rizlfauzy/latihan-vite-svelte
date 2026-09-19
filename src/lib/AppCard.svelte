@@ -8,107 +8,31 @@
   href={app.url}
   target="_blank"
   rel="noopener noreferrer"
-  class="app-card nb-card nb-card-interactive"
+  class="nb-card nb-card-interactive group flex flex-col justify-between gap-4 no-underline text-inherit cursor-pointer bg-nb-surface"
 >
-  <div class="card-top">
-    <div class="icon-box" style="background: {app.color};">
-      <span class="app-icon">{app.icon}</span>
+  <div class="flex items-center justify-between gap-2.5">
+    <div
+      class="w-12 h-12 border-2 border-nb-black rounded-md shadow-[2px_2px_0px_#121212] flex items-center justify-center"
+      style="background: {app.color};"
+    >
+      <span class="text-2xl leading-none">{app.icon}</span>
     </div>
     <span class="nb-badge" style="background: {app.color};">
       {app.category}
     </span>
   </div>
 
-  <div class="card-body">
-    <h3 class="app-title">{app.name}</h3>
-    <p class="app-desc">{app.description}</p>
+  <div class="flex flex-col gap-2 grow">
+    <h3 class="text-xl font-extrabold m-0">{app.name}</h3>
+    <p class="text-sm text-gray-600 font-medium leading-relaxed m-0">{app.description}</p>
   </div>
 
-  <div class="card-footer">
-    <span class="link-label">
+  <div class="pt-3 border-t-2 border-dashed border-gray-200">
+    <span class="text-xs font-extrabold font-mono inline-flex items-center gap-1 tracking-wider">
       BUKA APLIKASI
-      <span class="arrow">↗</span>
+      <span class="text-base transition-transform duration-150 group-hover:translate-x-1 group-hover:-translate-y-1">
+        ↗
+      </span>
     </span>
   </div>
 </a>
-
-<style>
-  .app-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 16px;
-    text-decoration: none;
-    color: inherit;
-    cursor: pointer;
-    background: var(--nb-surface);
-  }
-
-  .card-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  .icon-box {
-    width: 48px;
-    height: 48px;
-    border: var(--nb-border-sm);
-    border-radius: 6px;
-    box-shadow: 2px 2px 0px var(--nb-black);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .app-icon {
-    font-size: 24px;
-    line-height: 1;
-  }
-
-  .card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex-grow: 1;
-  }
-
-  .app-title {
-    font-size: 20px;
-    font-weight: 800;
-    margin: 0;
-  }
-
-  .app-desc {
-    font-size: 14px;
-    color: #555555;
-    font-weight: 500;
-    line-height: 1.4;
-    margin: 0;
-  }
-
-  .card-footer {
-    padding-top: 12px;
-    border-top: 2px dashed #e0e0e0;
-  }
-
-  .link-label {
-    font-size: 13px;
-    font-weight: 800;
-    font-family: var(--font-mono);
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    letter-spacing: 0.5px;
-  }
-
-  .arrow {
-    font-size: 16px;
-    transition: transform 0.15s ease;
-  }
-
-  .app-card:hover .arrow {
-    transform: translate(2px, -2px);
-  }
-</style>

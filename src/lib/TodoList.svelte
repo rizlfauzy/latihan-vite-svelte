@@ -95,60 +95,60 @@
   }
 </script>
 
-<section class="todo-section">
-  <div class="section-header">
-    <div class="section-title">
+<section class="w-full">
+  <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+    <div class="inline-flex items-center gap-2.5 bg-nb-yellow px-4.5 py-2 border-3 border-nb-black shadow-nb rounded-md text-lg md:text-xl font-extrabold uppercase tracking-wide">
       <span>📝</span>
       <span>CATATAN & TO-DO LIST</span>
     </div>
 
-    <div class="header-badges">
-      <span class="nb-badge" style="background: var(--nb-yellow);">
+    <div class="flex gap-2">
+      <span class="nb-badge bg-nb-yellow">
         {remainingCount} PENDING
       </span>
       {#if completedCount > 0}
-        <span class="nb-badge" style="background: var(--nb-green);">
+        <span class="nb-badge bg-nb-green">
           {completedCount} SELESAI
         </span>
       {/if}
     </div>
   </div>
 
-  <div class="todo-card nb-card">
+  <div class="nb-card flex flex-col gap-5 bg-nb-surface">
     <!-- Form Tambah Todo -->
-    <form onsubmit={addTodo} class="todo-form">
+    <form onsubmit={addTodo} class="flex flex-col sm:flex-row gap-3">
       <input
         type="text"
         bind:value={newTodoText}
         placeholder="Tulis tugas atau catatan baru di sini..."
-        class="nb-input todo-input"
+        class="nb-input grow"
       />
-      <button type="submit" class="nb-btn nb-btn-pink add-btn">
+      <button type="submit" class="nb-btn bg-nb-pink whitespace-nowrap px-6">
         <span>+</span>
         <span>TAMBAH</span>
       </button>
     </form>
 
     <!-- Filters & Action Toolbar -->
-    <div class="todo-toolbar">
-      <div class="filter-group">
+    <div class="flex justify-between items-center flex-wrap gap-3 pb-3 border-b-2 border-dashed border-gray-300">
+      <div class="flex gap-2 flex-wrap">
         <button
           type="button"
-          class="nb-btn filter-btn {filter === 'all' ? 'active-filter' : 'nb-btn-white'}"
+          class="nb-btn text-xs px-3.5 py-1.5 {filter === 'all' ? 'bg-nb-yellow' : 'bg-white'}"
           onclick={() => (filter = 'all')}
         >
           SEMUA ({todos.length})
         </button>
         <button
           type="button"
-          class="nb-btn filter-btn {filter === 'active' ? 'active-filter' : 'nb-btn-white'}"
+          class="nb-btn text-xs px-3.5 py-1.5 {filter === 'active' ? 'bg-nb-yellow' : 'bg-white'}"
           onclick={() => (filter = 'active')}
         >
           BELUM ({remainingCount})
         </button>
         <button
           type="button"
-          class="nb-btn filter-btn {filter === 'done' ? 'active-filter' : 'nb-btn-white'}"
+          class="nb-btn text-xs px-3.5 py-1.5 {filter === 'done' ? 'bg-nb-yellow' : 'bg-white'}"
           onclick={() => (filter = 'done')}
         >
           SELESAI ({completedCount})
@@ -158,7 +158,7 @@
       {#if completedCount > 0}
         <button
           type="button"
-          class="nb-btn nb-btn-danger clear-btn"
+          class="nb-btn bg-[#ff4757] text-white text-xs px-3.5 py-1.5"
           onclick={clearCompleted}
         >
           HAPUS YANG SELESAI
@@ -167,27 +167,37 @@
     </div>
 
     <!-- List Items -->
-    <ul class="todo-list">
+    <ul class="list-none flex flex-col gap-3 p-0 m-0">
       {#if filteredTodos.length === 0}
-        <li class="empty-state">
-          <p>Belum ada catatan di kategori ini. Yuk tambah baru! ✨</p>
+        <li class="p-9 text-center border-2 border-dashed border-gray-300 rounded-md text-gray-500 font-semibold">
+          <p class="m-0">Belum ada catatan di kategori ini. Yuk tambah baru! ✨</p>
         </li>
       {:else}
         {#each filteredTodos as todo (todo.id)}
-          <li class="todo-item {todo.done ? 'is-done' : ''}">
-            <label class="todo-label">
+          <li
+            class="flex items-center justify-between gap-3.5 p-3.5 sm:px-4.5 border-2 border-nb-black rounded-md shadow-[2px_2px_0px_#121212] transition-all duration-100 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-nb {todo.done
+              ? 'bg-gray-100 opacity-75'
+              : 'bg-gray-50'}"
+          >
+            <label class="flex items-center gap-3 cursor-pointer grow select-none">
               <input
                 type="checkbox"
                 checked={todo.done}
                 onchange={() => toggleTodo(todo.id)}
                 class="nb-checkbox"
               />
-              <span class="todo-text">{todo.text}</span>
+              <span
+                class="text-base font-semibold leading-snug break-words {todo.done
+                  ? 'line-through decoration-2 decoration-nb-black text-gray-500'
+                  : 'text-nb-black'}"
+              >
+                {todo.text}
+              </span>
             </label>
 
             <button
               type="button"
-              class="delete-btn"
+              class="w-8 h-8 shrink-0 border-2 border-nb-black bg-[#ff4757] text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#121212] hover:-translate-x-0.25 hover:-translate-y-0.25 hover:shadow-[3px_3px_0px_#121212] active:translate-x-0.25 active:translate-y-0.25 active:shadow-[1px_1px_0px_#121212] transition-all duration-100"
               onclick={() => deleteTodo(todo.id)}
               title="Hapus catatan"
               aria-label="Hapus catatan"
@@ -200,161 +210,3 @@
     </ul>
   </div>
 </section>
-
-<style>
-  .todo-section {
-    width: 100%;
-  }
-
-  .header-badges {
-    display: flex;
-    gap: 8px;
-  }
-
-  .todo-card {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .todo-form {
-    display: flex;
-    gap: 12px;
-  }
-
-  .todo-input {
-    flex-grow: 1;
-  }
-
-  .add-btn {
-    white-space: nowrap;
-    padding-inline: 24px;
-  }
-
-  .todo-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding-bottom: 12px;
-    border-bottom: 2px dashed #dddddd;
-  }
-
-  .filter-group {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .filter-btn {
-    padding: 6px 14px;
-    font-size: 13px;
-  }
-
-  .active-filter {
-    background: var(--nb-yellow);
-    box-shadow: var(--nb-shadow);
-  }
-
-  .clear-btn {
-    padding: 6px 14px;
-    font-size: 12px;
-  }
-
-  .todo-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .todo-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 14px 18px;
-    background: #fafafa;
-    border: var(--nb-border-sm);
-    border-radius: 6px;
-    box-shadow: 2px 2px 0px var(--nb-black);
-    transition: transform 0.1s ease, background-color 0.15s ease;
-  }
-
-  .todo-item:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 4px 4px 0px var(--nb-black);
-  }
-
-  .todo-item.is-done {
-    background: #f0f0f0;
-    opacity: 0.75;
-  }
-
-  .todo-item.is-done .todo-text {
-    text-decoration: line-through 2px var(--nb-black);
-    color: #666666;
-  }
-
-  .todo-label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    flex-grow: 1;
-  }
-
-  .todo-text {
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.4;
-    word-break: break-word;
-  }
-
-  .delete-btn {
-    width: 32px;
-    height: 32px;
-    border: var(--nb-border-sm);
-    background: #ff4757;
-    color: #ffffff;
-    font-weight: 900;
-    font-size: 15px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 2px 2px 0px var(--nb-black);
-    transition: transform 0.1s ease;
-  }
-
-  .delete-btn:hover {
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0px var(--nb-black);
-  }
-
-  .delete-btn:active {
-    transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0px var(--nb-black);
-  }
-
-  .empty-state {
-    padding: 36px 20px;
-    text-align: center;
-    border: 2px dashed #cccccc;
-    border-radius: 6px;
-    color: #666666;
-    font-weight: 600;
-  }
-
-  @media (max-width: 640px) {
-    .todo-form {
-      flex-direction: column;
-    }
-
-    .add-btn {
-      width: 100%;
-    }
-  }
-</style>
