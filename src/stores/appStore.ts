@@ -1,50 +1,61 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
 import { svelteApps, type AppItem } from '../data/apps';
-
-const STORAGE_KEY = 'svelte_hub_apps';
-
-function loadInitialApps(): AppItem[] {
-  if (typeof window === 'undefined') return svelteApps;
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error('Failed to load apps from localStorage', err);
-  }
-  return svelteApps;
-}
+import { env } from '../lib/env';
 
 export interface AppStoreState {
   apps: AppItem[];
-  addApp: (newApp: AppItem) => void;
-  resetApps: () => void;
+  addApp: (newApp: AppItem) => Promise<void>;
+  deleteApp: (id: string) => Promise<void>;
+  resetApps: () => Promise<void>;
 }
 
 const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set, get) => ({
-  apps: loadInitialApps(),
-  addApp: (newApp: AppItem) => {
-    const updated = [newApp, ...get().apps];
+  apps: [...svelteApps],
+
+  addApp: async (newApp: AppItem) => {
+    // Optimistically update Zustand store & UI
+    const updated = [newApp, ...get().apps.filter((a) => a.id !== newApp.id)];
     set({ apps: updated });
-    if (typeof window !== 'undefined') {
+
+    // Write directly to apps.ts via dev server API
+    if (typeof window !== 'undefined' && env.enableDebug) {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        await fetch('/api/apps', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newApp),
+        });
       } catch (err) {
-        console.error('Failed to persist apps to localStorage', err);
+        console.error('[appStore] Failed to write new app to apps.ts via /api/apps', err);
       }
     }
   },
-  resetApps: () => {
-    set({ apps: svelteApps });
+
+  deleteApp: async (id: string) => {
+    // Optimistically update Zustand store & UI
+    const updated = get().apps.filter((a) => a.id !== id);
+    set({ apps: updated });
+
+    // Delete directly from apps.ts via dev server API
+    if (typeof window !== 'undefined' && env.enableDebug) {
+      try {
+        await fetch(`/api/apps/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+      } catch (err) {
+        console.error('[appStore] Failed to delete app from apps.ts via /api/apps', err);
+      }
+    }
+  },
+
+  resetApps: async () => {
+    set({ apps: [...svelteApps] });
+
     if (typeof window !== 'undefined') {
       try {
-        localStorage.removeItem(STORAGE_KEY);
+        await fetch('/api/apps/reset', { method: 'POST' });
       } catch (err) {
-        console.error('Failed to clear apps in localStorage', err);
+        console.error('[appStore] Failed to reset apps.ts', err);
       }
     }
   },
@@ -54,6 +65,7 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
 export const appStore = {
   ...rawStore,
   addApp: (newApp: AppItem) => rawStore.getState().addApp(newApp),
+  deleteApp: (id: string) => rawStore.getState().deleteApp(id),
   resetApps: () => rawStore.getState().resetApps(),
   subscribe(run: (state: AppStoreState) => void) {
     run(rawStore.getState());
