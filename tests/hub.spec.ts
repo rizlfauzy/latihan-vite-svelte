@@ -354,6 +354,68 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(page.locator('[data-testid="cp-back-btn"]')).toContainText('KEMBALI KE DASHBOARD');
     await expect(langBtn).toContainText('ID');
   });
+
+  test('Sub-menu navigation toggles dropdowns and triggers smooth scrolling to target section IDs', async ({ page }) => {
+    // Open Apps dropdown on Desktop
+    const appsDropdownToggle = page.locator('[data-testid="nav-dropdown-toggle-home"]');
+    await appsDropdownToggle.click();
+
+    const appsSubmenu = page.locator('[data-testid="nav-submenu-home"]');
+    await expect(appsSubmenu).toBeVisible();
+
+    // Click To-Do List sublink
+    const todoSublink = page.locator('[data-testid="nav-sublink-todo-list"]');
+    await todoSublink.click();
+    await expect(appsSubmenu).not.toBeVisible();
+    await expect(page.locator('#todo-list')).toBeVisible();
+
+    // Open Company Profile dropdown from Home page
+    const companyDropdownToggle = page.locator('[data-testid="nav-dropdown-toggle-company"]');
+    await companyDropdownToggle.click();
+
+    const companySubmenu = page.locator('[data-testid="nav-submenu-company"]');
+    await expect(companySubmenu).toBeVisible();
+
+    // Click Services sublink (should navigate to /company-profile and scroll to #services)
+    const servicesSublink = page.locator('[data-testid="nav-sublink-services"]');
+    await servicesSublink.click();
+
+    await expect(page).toHaveURL(/.*company-profile/);
+    await expect(page.locator('#services')).toBeVisible();
+  });
+
+  test('Dark mode toggle switches between light and dark themes with localStorage persistence', async ({ page }) => {
+    const html = page.locator('html');
+    const themeBtn = page.locator('[data-testid="theme-toggle-btn"]');
+
+    // Click to toggle to dark mode
+    await themeBtn.click();
+    await expect(html).toHaveClass(/dark/);
+    const savedDark = await page.evaluate(() => localStorage.getItem('svelte_hub_theme'));
+    expect(savedDark).toBe('dark');
+
+    // Click to toggle back to light mode
+    await themeBtn.click();
+    await expect(html).not.toHaveClass(/dark/);
+    const savedLight = await page.evaluate(() => localStorage.getItem('svelte_hub_theme'));
+    expect(savedLight).toBe('light');
+  });
+
+  test('PWA Manifest and Service Worker are configured and accessible', async ({ page }) => {
+    // Verify Manifest
+    const manifestRes = await page.request.get('/manifest.json');
+    expect(manifestRes.status()).toBe(200);
+    const manifestJson = await manifestRes.json();
+    expect(manifestJson.name).toContain('Svelte Hub');
+    expect(manifestJson.display).toBe('standalone');
+    expect(manifestJson.icons.length).toBeGreaterThan(0);
+
+    // Verify Service Worker file
+    const swRes = await page.request.get('/sw.js');
+    expect(swRes.status()).toBe(200);
+    const swText = await swRes.text();
+    expect(swText).toContain('CACHE_NAME');
+  });
 });
 
 

@@ -1,0 +1,24 @@
+{
+  "name": "Svelte Hub — Neo Brutalism Personal Dashboard",
+  "short_name": "SvelteHub",
+  "description": "Central personal dashboard for all Svelte micro-apps with Neo Brutalism aesthetic",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#141416",
+  "theme_color": "#ffd000",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/svg+xml"
+    }
+  ]
+}
