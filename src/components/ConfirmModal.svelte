@@ -11,7 +11,7 @@
   }
 
   let {
-    isOpen = false,
+    isOpen = $bindable(false),
     title = 'KONFIRMASI HAPUS',
     message = 'Apakah Anda yakin ingin menghapus item ini?',
     itemText = '',

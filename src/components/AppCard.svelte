@@ -1,12 +1,22 @@
 <script lang="ts">
   import type { AppItem } from '../data/apps';
+  import { env } from '../lib/env';
+  import { appStore } from '../stores/appStore';
+  import ConfirmModal from './ConfirmModal.svelte';
 
   let { app }: { app: AppItem } = $props();
+
+  let isDeleteModalOpen = $state(false);
 
   const waMessage = $derived(
     encodeURIComponent(`Halo ${app.picName}, saya ingin bertanya dan konsultasi mengenai aplikasi "${app.name}" di Svelte Hub.`)
   );
   const waUrl = $derived(`https://wa.me/${app.picWhatsapp}?text=${waMessage}`);
+
+  function handleDeleteConfirm() {
+    appStore.deleteApp(app.id);
+    isDeleteModalOpen = false;
+  }
 </script>
 
 <div class="nb-card nb-card-interactive group flex flex-col justify-between gap-4 bg-nb-surface text-nb-black relative">
@@ -17,9 +27,24 @@
     >
       <span class="text-2xl leading-none">{app.icon}</span>
     </div>
-    <span class="nb-badge" style="background: {app.color};">
-      {app.category}
-    </span>
+
+    <div class="flex items-center gap-2">
+      <span class="nb-badge" style="background: {app.color};">
+        {app.category}
+      </span>
+
+      {#if env.enableDebug}
+        <button
+          type="button"
+          class="nb-btn bg-red-400 hover:bg-red-500 text-xs px-2 py-1 flex items-center justify-center font-black transition-all"
+          onclick={() => (isDeleteModalOpen = true)}
+          title="Hapus Aplikasi (Debug Mode)"
+          data-testid="btn-delete-app-{app.id}"
+        >
+          🗑️
+        </button>
+      {/if}
+    </div>
   </div>
 
   <div class="flex flex-col gap-2 grow">
@@ -56,4 +81,16 @@
       </span>
     </a>
   </div>
+
+  {#if env.enableDebug}
+    <ConfirmModal
+      bind:isOpen={isDeleteModalOpen}
+      title="HAPUS APLIKASI"
+      message="Apakah Anda yakin ingin menghapus aplikasi ini langsung dari apps.ts?"
+      itemText="{app.name} ({app.category})"
+      confirmText="YA, HAPUS APLIKASI"
+      onConfirm={handleDeleteConfirm}
+      onCancel={() => (isDeleteModalOpen = false)}
+    />
+  {/if}
 </div>

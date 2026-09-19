@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Svelte Hub — UI & E2E Tests', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     // Clear localStorage before each test so tests are idempotent
     await page.addInitScript(() => {
@@ -223,6 +225,46 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     // Verify app counter incremented to 7
     const counterBadge = page.locator('[data-testid="apps-counter"]');
     await expect(counterBadge).toContainText('7 APPS TERHUBUNG');
+
+    // Reset apps to keep git working tree clean
+    await page.request.post('/api/apps/reset');
+  });
+
+  test('Delete App button in debug mode opens confirmation modal and removes app from grid', async ({ page }) => {
+    // Check initial count
+    const initialWaButtons = page.getByRole('link', { name: /HUBUNGI PIC/i });
+    const countBefore = await initialWaButtons.count();
+
+    // Find the first delete button on an app card
+    const firstDeleteBtn = page.locator('[data-testid^="btn-delete-app-"]').first();
+    await expect(firstDeleteBtn).toBeVisible();
+
+    // Click delete button
+    await firstDeleteBtn.click();
+
+    // Confirm modal should appear
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await expect(page.getByText('HAPUS APLIKASI', { exact: true })).toBeVisible();
+
+    // Cancel first to verify it does not delete
+    await page.locator('[data-testid="modal-cancel-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+    expect(await initialWaButtons.count()).toBe(countBefore);
+
+    // Click delete again and confirm
+    await firstDeleteBtn.click();
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+
+    // Count should be decremented
+    const counterBadge = page.locator('[data-testid="apps-counter"]');
+    await expect(counterBadge).toContainText(`${countBefore - 1} APPS TERHUBUNG`);
+
+    // Reset apps to restore original state
+    await page.request.post('/api/apps/reset');
   });
 });
+
 
