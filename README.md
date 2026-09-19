@@ -1,9 +1,10 @@
 # ⚡ Svelte Hub — Neo Brutalism Personal Dashboard
 
-> **Personal Hub & Dashboard** untuk menghubungkan semua aplikasi berbasis Svelte yang pernah dibuat ke dalam satu tempat terpusat, dilengkapi catatan cepat / to-do list, dan siap dijalankan dengan Docker.
+> **Personal Hub & Dashboard** untuk menghubungkan semua aplikasi berbasis Svelte yang pernah dibuat ke dalam satu tempat terpusat, dilengkapi catatan cepat / to-do list, kontak WhatsApp PIC tiap aplikasi, konfigurasi environment variables, dan siap dijalankan dengan Docker.
 
 ![Svelte 5](https://img.shields.io/badge/Svelte-5.x-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Design](https://img.shields.io/badge/Style-Neo_Brutalism-FFD000?style=for-the-badge)
 
@@ -12,7 +13,9 @@
 ## 🎨 Fitur Utama
 
 - 🚀 **App Hub Grid**: Menampilkan koleksi aplikasi Svelte dalam tata letak kartu interaktif dengan animasi dan hard-shadow khas Neo Brutalism.
-- 🎯 **Hero Branding**: Logo custom di tengah halaman, badge status, dan favicon tab yang sinkron.
+- 💬 **WhatsApp PIC Contact**: Setiap kartu aplikasi dilengkapi nama penanggung jawab (PIC) dan tombol direct WhatsApp untuk tanya jawab / troubleshooting.
+- 🎯 **Hero Branding & Dynamic Env**: Logo tengah, favicon, dan title aplikasi dapat diganti dinamis lewat Environment Variables (`.env`).
+- 🛠️ **Dev Mode Indicator**: Indikator visual real-time saat aplikasi berjalan di mode development.
 - 📝 **To-Do List & Quick Notes**: Fitur manajemen catatan/tugas cepat dengan filter (*Semua*, *Belum*, *Selesai*) dan persistensi otomatis di `localStorage`.
 - ⚡ **Neo Brutalism Aesthetic**: Desain visual unik dengan border tebal (solid black), shadow tajam tanpa blur, warna-warna kontras cerah, dan tipografi ekspresif.
 - 🐳 **Dockerized Production**: Multi-stage build menggunakan Bun dan Nginx Alpine yang sangat ringan dan cepat.
@@ -25,11 +28,34 @@
 |---|---|---|
 | **Framework** | Svelte 5 | Frontend framework reaktif dengan Runes (`$state`, `$derived`, `$effect`) |
 | **Bundler** | Vite 8 | Lightning-fast development & build tool |
+| **Styling** | Tailwind CSS v4 | Utility-first CSS framework dengan kustom `@theme` Neo Brutalism |
 | **Bahasa** | TypeScript | Type safety & intellisense |
-| **Styling** | Plain CSS | Custom Neo Brutalism design system tokens |
 | **Penyimpanan** | LocalStorage | Persistensi data catatan tanpa perlu database server |
 | **Container** | Docker + Nginx | Multi-stage builder & production web server |
 | **Package Manager** | Bun | Fast package manager & script runner |
+
+---
+
+## ⚙️ Konfigurasi Environment Variables
+
+Aplikasi mendukung konfigurasi dinamis via environment variables. Salin file template:
+
+```bash
+cp .env.example .env
+```
+
+Isi variabel yang tersedia:
+
+| Variabel | Default | Deskripsi |
+|---|---|---|
+| `VITE_APP_TITLE` | `⚡ Svelte Hub — Personal Dashboard` | Judul aplikasi di browser tab & header |
+| `VITE_APP_LOGO_URL` | `/logo.svg` | Path/URL logo yang tampil di tengah halaman |
+| `VITE_APP_FAVICON_URL` | `/favicon.svg` | Path/URL favicon tab browser |
+| `VITE_APP_ENV` | `development` / `production` | Penanda environment aplikasi |
+| `VITE_ENABLE_DEBUG` | `true` / `false` | Menampilkan log debug di browser console |
+| `VITE_API_BASE_URL` | `http://localhost:8888/api` | Base URL endpoint API jika ada backend |
+
+> **Catatan Keamanan:** File `.env` dan `.env.*` (selain `.env.example`) sudah dikecualikan di `.gitignore` untuk mencegah kebocoran konfigurasi.
 
 ---
 
@@ -100,18 +126,20 @@ Buka browser di: **`http://localhost:8080`**
 ├── src/
 │   ├── assets/           # Aset statis & logo
 │   ├── data/
-│   │   └── apps.ts       # Konfigurasi data daftar aplikasi hub
+│   │   └── apps.ts       # Konfigurasi daftar aplikasi hub & PIC WhatsApp
 │   ├── lib/
-│   │   ├── AppCard.svelte   # Kartu aplikasi interaktif
+│   │   ├── env.ts           # Type-safe helper environment variables
+│   │   ├── AppCard.svelte   # Kartu aplikasi interaktif + kontak PIC WA
 │   │   ├── AppGrid.svelte   # Grid kumpulan aplikasi
 │   │   ├── Hero.svelte      # Hero section dengan logo di tengah
 │   │   └── TodoList.svelte  # Widget to-do list & quick notes
-│   ├── app.css           # Design system tokens & utility classes Neo Brutalism
-│   ├── App.svelte        # Komponen root aplikasi
+│   ├── app.css           # Tailwind CSS v4 & theme tokens Neo Brutalism
+│   ├── App.svelte        # Komponen root aplikasi & dev indicator
 │   └── main.ts           # Entry point aplikasi
 ├── Dockerfile            # Multi-stage Docker configuration
 ├── docker-compose.yml    # Docker Compose spec (port 8080)
 ├── nginx.conf            # Nginx SPA config dengan caching & gzip
+├── .env.example          # Contoh template konfigurasi environment
 ├── PRD.md                # Product Requirements Document
 └── README.md             # Dokumentasi proyek
 ```
@@ -129,8 +157,10 @@ Buka file [`src/data/apps.ts`](src/data/apps.ts) dan tambahkan item baru ke dala
   description: "Deskripsi singkat tentang aplikasi.",
   url: "https://url-aplikasi-kamu.com",
   icon: "🚀", // Emoji atau icon
-  category: "Kategori", // e.g. Tools, Game, Portfolio
-  color: "var(--nb-yellow)" // var(--nb-pink) / var(--nb-blue) / var(--nb-green)
+  category: "Productivity", // Kategori app
+  color: "var(--color-nb-yellow)", // var(--color-nb-pink) / var(--color-nb-blue)
+  picName: "Nama PIC", // Nama penanggung jawab
+  picWhatsapp: "6281234567890" // Nomor WA format internasional
 }
 ```
 

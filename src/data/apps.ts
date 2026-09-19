@@ -6,6 +6,8 @@ export interface AppItem {
   icon: string;
   category: string;
   color: string;
+  picName: string;
+  picWhatsapp: string;
 }
 
 export const svelteApps: AppItem[] = [
@@ -16,7 +18,9 @@ export const svelteApps: AppItem[] = [
     url: "https://github.com/rizlfauzy",
     icon: "💼",
     category: "Portfolio",
-    color: "var(--nb-yellow)"
+    color: "var(--color-nb-yellow)",
+    picName: "Rizal Fauzi",
+    picWhatsapp: "6281234567890"
   },
   {
     id: "todo-svelte",
@@ -25,7 +29,9 @@ export const svelteApps: AppItem[] = [
     url: "https://svelte.dev",
     icon: "✅",
     category: "Productivity",
-    color: "var(--nb-green)"
+    color: "var(--color-nb-green)",
+    picName: "Rizal (Core Dev)",
+    picWhatsapp: "6281234567890"
   },
   {
     id: "weather-app",
@@ -34,7 +40,9 @@ export const svelteApps: AppItem[] = [
     url: "https://vite.dev",
     icon: "🌤️",
     category: "Utility",
-    color: "var(--nb-blue)"
+    color: "var(--color-nb-blue)",
+    picName: "Rizal (Maintainer)",
+    picWhatsapp: "6281234567890"
   },
   {
     id: "markdown-editor",
@@ -43,7 +51,9 @@ export const svelteApps: AppItem[] = [
     url: "https://github.com",
     icon: "📝",
     category: "Writing",
-    color: "var(--nb-pink)"
+    color: "var(--color-nb-pink)",
+    picName: "Rizal Fauzi",
+    picWhatsapp: "6281234567890"
   },
   {
     id: "finance-tracker",
@@ -52,7 +62,9 @@ export const svelteApps: AppItem[] = [
     url: "https://svelte.dev/docs/svelte/overview",
     icon: "💰",
     category: "Finance",
-    color: "var(--nb-purple)"
+    color: "var(--color-nb-purple)",
+    picName: "Rizal (Finance Lead)",
+    picWhatsapp: "6281234567890"
   },
   {
     id: "code-snippets",
@@ -61,6 +73,8 @@ export const svelteApps: AppItem[] = [
     url: "https://vitejs.dev",
     icon: "⚡",
     category: "DevTools",
-    color: "var(--nb-orange)"
+    color: "var(--color-nb-orange)",
+    picName: "Rizal Fauzi",
+    picWhatsapp: "6281234567890"
   }
 ];
