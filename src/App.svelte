@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Router } from 'sv-router';
-  import Navbar from './components/Navbar.svelte';
-  import AlertContainer from './components/AlertContainer.svelte';
-  import { env } from './lib/env';
-  import { i18nStore } from './stores/i18nStore';
+  import Navbar from '@/components/Navbar.svelte';
+  import AlertContainer from '@/components/AlertContainer.svelte';
+  import { env } from '@/lib/env';
+  import { i18nStore } from '@/stores/i18nStore';
 </script>
 
 <AlertContainer />

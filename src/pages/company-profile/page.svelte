@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { env } from '../../lib/env';
-  import { i18nStore } from '../../stores/i18nStore';
+  import { env } from '@/lib/env';
+  import { i18nStore } from '@/stores/i18nStore';
 </script>
 
 <div class="flex flex-col gap-8 w-full" data-testid="company-profile-container">

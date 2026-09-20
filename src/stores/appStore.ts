@@ -1,7 +1,7 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
-import { svelteApps, type AppItem } from '../data/apps';
-import { env } from '../lib/env';
-import { alertStore } from './alertStore';
+import { svelteApps, type AppItem } from '@/data/apps';
+import { env } from '@/lib/env';
+import { alertStore } from '@/stores/alertStore';
 
 export interface AppStoreState {
   apps: AppItem[];

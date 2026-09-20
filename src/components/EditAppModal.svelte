@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { appStore } from '../stores/appStore';
-  import type { AppItem } from '../data/apps';
+  import { appStore } from '@/stores/appStore';
+  import type { AppItem } from '@/data/apps';
 
   let {
     isOpen = $bindable(false),
@@ -151,7 +151,7 @@
 
       <!-- Error Message Banner -->
       {#if errorMessage}
-        <div class="nb-card bg-[#ff4757] text-white p-3 border-2 border-nb-black text-xs font-black flex items-center gap-2">
+        <div class="nb-card bg-nb-red text-white p-3 border-2 border-nb-black text-xs font-black flex items-center gap-2">
           <span>⚠️</span>
           <span>{errorMessage}</span>
         </div>

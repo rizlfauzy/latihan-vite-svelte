@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { appStore } from '../stores/appStore';
-  import type { AppItem } from '../data/apps';
+  import { appStore } from '@/stores/appStore';
+  import type { AppItem } from '@/data/apps';
   import AppCard from './AppCard.svelte';
   import AddAppModal from './AddAppModal.svelte';
   import EditAppModal from './EditAppModal.svelte';
   import ConfirmModal from './ConfirmModal.svelte';
-  import { env } from '../lib/env';
-  import { i18nStore } from '../stores/i18nStore';
+  import { env } from '@/lib/env';
+  import { i18nStore } from '@/stores/i18nStore';
 
   let { apps }: { apps?: AppItem[] } = $props();
 
@@ -25,7 +25,7 @@
 
 <section class="w-full" data-testid="app-grid-section">
   <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
-    <div class="inline-flex items-center gap-2.5 bg-nb-yellow px-4.5 py-2 border-3 border-nb-black shadow-nb rounded-md text-lg md:text-xl font-extrabold uppercase tracking-wide">
+    <div class="inline-flex items-center gap-2.5 bg-nb-yellow px-4.5 py-2 border-3 border-nb-black shadow-nb rounded-md text-lg md:text-xl font-extrabold uppercase tracking-wide text-black">
       <span>🚀</span>
       <span>{$i18nStore.t('grid.title')}</span>
     </div>
