@@ -1,5 +1,6 @@
 <script lang="ts">
   import ConfirmModal from './ConfirmModal.svelte';
+  import SkeletonTodo from './SkeletonTodo.svelte';
   import { alertStore } from '@/stores/alertStore';
   import { i18nStore } from '@/stores/i18nStore';
   import { todoStore, type Todo, type SubTask } from '@/stores/todoStore';
@@ -26,6 +27,7 @@
   let deleteTarget = $state<DeleteTarget>(null);
 
   const todos = $derived($todoStore.todos);
+  const isLoading = $derived($todoStore.isLoading);
 
   const remainingCount = $derived(todos.filter((t) => !t.done).length);
   const completedCount = $derived(todos.filter((t) => t.done).length);
@@ -225,7 +227,13 @@
 
     <!-- List Items -->
     <ul class="list-none flex flex-col gap-4 p-0 m-0">
-      {#if filteredTodos.length === 0}
+      {#if isLoading}
+        <div class="flex flex-col gap-3" data-testid="todos-skeleton-list">
+          <SkeletonTodo />
+          <SkeletonTodo />
+          <SkeletonTodo />
+        </div>
+      {:else if filteredTodos.length === 0}
         <li class="p-9 text-center border-2 border-dashed border-gray-300 rounded-md text-gray-500 font-semibold">
           <p class="m-0">{$i18nStore.t('todo.emptyState')}</p>
         </li>

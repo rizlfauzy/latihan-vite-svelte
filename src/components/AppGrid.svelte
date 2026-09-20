@@ -5,11 +5,13 @@
   import AddAppModal from './AddAppModal.svelte';
   import EditAppModal from './EditAppModal.svelte';
   import ConfirmModal from './ConfirmModal.svelte';
+  import SkeletonCard from './SkeletonCard.svelte';
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
 
   let { apps }: { apps?: AppItem[] } = $props();
 
+  let isLoading = $derived($appStore.isLoading);
   let allApps = $derived(apps ?? $appStore.apps);
   let searchQuery = $state('');
   let selectedCategory = $state('ALL');
@@ -145,8 +147,14 @@
     </div>
   </div>
 
-  <!-- Apps Grid / Empty State -->
-  {#if filteredApps.length === 0}
+  <!-- Apps Grid / Skeleton / Empty State -->
+  {#if isLoading}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="apps-skeleton-list">
+      {#each [1, 2, 3, 4, 5, 6] as idx (idx)}
+        <SkeletonCard />
+      {/each}
+    </div>
+  {:else if filteredApps.length === 0}
     <div class="nb-card bg-white p-8 text-center flex flex-col items-center justify-center gap-3 border-3 border-dashed" data-testid="apps-empty-state">
       <span class="text-4xl">🔎</span>
       <p class="font-extrabold text-base text-gray-700 max-w-md m-0">
