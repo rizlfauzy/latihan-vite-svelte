@@ -28,6 +28,12 @@
   "grid.pic": "👤 PIC:",
   "grid.deleteTooltip": "Hapus Aplikasi (Debug Mode)",
   "grid.editTooltip": "Edit Aplikasi (Debug Mode)",
+  "grid.searchPlaceholder": "Cari nama aplikasi atau nama PIC...",
+  "grid.categoryAll": "SEMUA",
+  "grid.filterCategory": "Kategori:",
+  "grid.emptySearch": "Tidak ada aplikasi yang cocok dengan pencarian atau filter ini. Yuk ubah kata kuncinya! ✨",
+  "grid.resetFilter": "RESET PENCARIAN & FILTER",
+  "grid.showingCount": "DITEMUKAN",
 
   "action.cancel": "BATAL",
   "action.save": "💾 SIMPAN PERUBAHAN",

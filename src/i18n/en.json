@@ -28,6 +28,12 @@
   "grid.pic": "👤 PIC:",
   "grid.deleteTooltip": "Delete Application (Debug Mode)",
   "grid.editTooltip": "Edit Application (Debug Mode)",
+  "grid.searchPlaceholder": "Search by app name or PIC...",
+  "grid.categoryAll": "ALL",
+  "grid.filterCategory": "Category:",
+  "grid.emptySearch": "No apps match your search or selected filter. Try different keywords! ✨",
+  "grid.resetFilter": "RESET SEARCH & FILTERS",
+  "grid.showingCount": "FOUND",
 
   "action.cancel": "CANCEL",
   "action.save": "💾 SAVE CHANGES",
