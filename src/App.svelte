@@ -24,21 +24,12 @@
     <Router />
   </main>
 
-  <footer class="nb-card flex items-center justify-between flex-wrap gap-4 bg-nb-yellow p-5 sm:px-6 mt-auto">
+  <footer class="nb-card flex items-center justify-between flex-wrap gap-4 bg-nb-yellow p-5 sm:px-6 mt-auto text-black">
     <div>
       <p class="text-base font-extrabold m-0">{$i18nStore.t('footer.title')}</p>
-      <small class="text-xs font-semibold text-gray-800">
+      <small class="text-xs font-semibold text-gray-800!">
         {$i18nStore.t('footer.subtitle')}
       </small>
     </div>
-    <a
-      href="https://github.com/rizlfauzy/latihan-vite-svelte"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="nb-btn bg-white text-xs px-4 py-2"
-      data-testid="footer-github-link"
-    >
-      {$i18nStore.t('footer.github')}
-    </a>
   </footer>
 </div>
