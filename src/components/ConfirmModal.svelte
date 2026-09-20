@@ -1,5 +1,6 @@
 <script lang="ts">
   import { i18nStore } from '@/stores/i18nStore';
+  import SkeletonModal from '@/components/SkeletonModal.svelte';
 
   interface Props {
     isOpen: boolean;
@@ -8,6 +9,7 @@
     itemText?: string;
     confirmText?: string;
     cancelText?: string;
+    isLoading?: boolean;
     onConfirm: () => void;
     onCancel: () => void;
   }
@@ -19,6 +21,7 @@
     itemText = '',
     confirmText,
     cancelText,
+    isLoading = false,
     onConfirm,
     onCancel
   }: Props = $props();
@@ -59,6 +62,9 @@
       aria-labelledby="modal-title"
       data-testid="confirm-modal"
     >
+      {#if isLoading}
+        <SkeletonModal />
+      {:else}
       <!-- Modal Header -->
       <div class="flex items-center justify-between gap-3 border-b-2 border-nb-black pb-3">
         <div class="inline-flex items-center gap-2 bg-nb-yellow px-3 py-1 border-2 border-nb-black rounded font-black text-sm uppercase text-black">
@@ -114,6 +120,7 @@
           {resolvedConfirmText}
         </button>
       </div>
+      {/if}
     </div>
   </div>
 {/if}

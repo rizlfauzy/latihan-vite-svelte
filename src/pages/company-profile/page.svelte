@@ -2,6 +2,13 @@
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
   import CustomSelect from '@/components/CustomSelect.svelte';
+  import SkeletonCompanyProfile from '@/components/SkeletonCompanyProfile.svelte';
+
+  let {
+    isLoading = $bindable(false),
+  }: {
+    isLoading?: boolean;
+  } = $props();
 
   const serviceOptions = [
     { label: 'Frontend Development (Svelte 5)', value: 'frontend', icon: '⚡' },
@@ -12,8 +19,17 @@
   ];
 
   let selectedServices = $state<string[]>(['frontend']);
+
+  if (typeof window !== 'undefined') {
+    (window as any).__setCompanyProfileLoading = (loading: boolean) => {
+      isLoading = loading;
+    };
+  }
 </script>
 
+{#if isLoading}
+  <SkeletonCompanyProfile />
+{:else}
 <div class="flex flex-col gap-8 w-full" data-testid="company-profile-container">
   <!-- Header / Hero Section -->
   <section id="profile" class="nb-card bg-nb-yellow p-6 sm:p-8 relative overflow-hidden scroll-mt-24">
@@ -173,3 +189,4 @@
     </div>
   </section>
 </div>
+{/if}

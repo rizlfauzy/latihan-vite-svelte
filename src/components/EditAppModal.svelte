@@ -3,14 +3,17 @@
   import type { AppItem } from '@/data/apps';
   import { i18nStore } from '@/stores/i18nStore';
   import CustomSelect from './CustomSelect.svelte';
+  import SkeletonModal from './SkeletonModal.svelte';
 
   let {
     isOpen = $bindable(false),
     app,
+    isLoading = false,
     onClose,
   }: {
     isOpen: boolean;
     app: AppItem;
+    isLoading?: boolean;
     onClose?: () => void;
   } = $props();
 
@@ -143,6 +146,9 @@
       aria-labelledby="edit-app-title"
       data-testid="edit-app-modal"
     >
+      {#if isLoading}
+        <SkeletonModal />
+      {:else}
       <!-- Modal Header -->
       <div class="flex items-center justify-between gap-3 border-b-2 border-nb-black pb-3">
         <div class="inline-flex items-center gap-2 bg-nb-blue px-3 py-1 border-2 border-nb-black rounded font-black text-sm uppercase text-black">
@@ -334,6 +340,7 @@
           </button>
         </div>
       </form>
+      {/if}
     </div>
   </div>
 {/if}

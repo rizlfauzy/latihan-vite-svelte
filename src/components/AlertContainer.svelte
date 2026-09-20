@@ -21,6 +21,26 @@
   data-testid="alert-container"
 >
   {#each $alertStore.alerts as alert (alert.id)}
+    {#if alert.type === 'skeleton'}
+      <div
+        class="pointer-events-auto nb-card p-3 sm:p-3.5 flex flex-col gap-2 shadow-nb-md border-3 border-nb-black overflow-hidden relative bg-white dark:bg-[#202026]"
+        transition:slide={{ duration: 200 }}
+        role="status"
+        aria-live="polite"
+        data-testid="skeleton-alert"
+      >
+        <div class="flex items-start justify-between gap-3 w-full">
+          <div class="flex items-start gap-2.5 flex-1">
+            <div class="w-6 h-6 nb-skeleton-box rounded-md shrink-0"></div>
+            <div class="flex flex-col gap-1.5 flex-1">
+              <div class="h-3 w-16 nb-skeleton-box rounded-sm"></div>
+              <div class="h-4 w-44 nb-skeleton-box rounded-sm"></div>
+            </div>
+          </div>
+          <div class="w-6 h-6 nb-skeleton-box rounded shrink-0"></div>
+        </div>
+      </div>
+    {:else}
     <div
       class="pointer-events-auto nb-card p-3 sm:p-3.5 flex flex-col gap-2 shadow-nb-md border-3 border-nb-black overflow-hidden relative group {bgClasses[alert.type] || 'bg-white text-nb-black'}"
       transition:slide={{ duration: 200 }}
@@ -68,6 +88,7 @@
         ></div>
       </div>
     </div>
+    {/if}
   {/each}
 </aside>
 

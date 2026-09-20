@@ -27,6 +27,7 @@ export interface TodoStoreState {
   addSubTask: (todoId: string, text: string) => Promise<void>;
   toggleSubTask: (todoId: string, subTaskId: string) => Promise<void>;
   deleteSubTask: (todoId: string, subTaskId: string) => Promise<void>;
+  resetTodos: () => void;
 }
 
 const STORAGE_KEY = 'svelte_hub_todos';
@@ -130,17 +131,19 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
       if (error) throw error;
       if (data && data.length > 0) {
         const fetched = data.map(mapRowToTodo);
-        const currentTodos = get().todos;
-        const newLocal = currentTodos.filter((ct) => !fetched.some((f) => f.id === ct.id));
-        const merged = [...newLocal, ...fetched];
-        set({ todos: merged });
-        saveLocalTodos(merged);
+        set({ todos: fetched });
+        saveLocalTodos(fetched);
       }
     } catch (err) {
       console.warn('[todoStore] Failed to fetch todos from Supabase, using local todos', err);
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  resetTodos: () => {
+    set({ todos: [...defaultTodos], isLoading: false });
+    saveLocalTodos(defaultTodos);
   },
 
   addTodo: async (text: string) => {
@@ -295,6 +298,7 @@ export const todoStore = {
   addSubTask: (todoId: string, text: string) => rawStore.getState().addSubTask(todoId, text),
   toggleSubTask: (todoId: string, subTaskId: string) => rawStore.getState().toggleSubTask(todoId, subTaskId),
   deleteSubTask: (todoId: string, subTaskId: string) => rawStore.getState().deleteSubTask(todoId, subTaskId),
+  resetTodos: () => rawStore.getState().resetTodos(),
   subscribe(run: (state: TodoStoreState) => void) {
     run(rawStore.getState());
     return rawStore.subscribe((state) => run(state));
