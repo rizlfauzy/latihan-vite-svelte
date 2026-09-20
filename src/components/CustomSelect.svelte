@@ -197,7 +197,7 @@
     >
       <!-- Search Box inside dropdown -->
       <div class="relative">
-        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs select-none text-gray-500">
+        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs select-none text-gray-500 z-10 pointer-events-none">
           🔍
         </span>
         <input

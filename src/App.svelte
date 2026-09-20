@@ -31,14 +31,5 @@
         {$i18nStore.t('footer.subtitle')}
       </small>
     </div>
-    <a
-      href="https://github.com/rizlfauzy/latihan-vite-svelte"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="nb-btn bg-white text-xs px-4 py-2 text-black"
-      data-testid="footer-github-link"
-    >
-      {$i18nStore.t('footer.github')}
-    </a>
   </footer>
 </div>

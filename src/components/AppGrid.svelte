@@ -178,8 +178,8 @@
 
     <ConfirmModal
       isOpen={appToDelete !== null}
-      title="HAPUS APLIKASI"
-      message="Apakah Anda yakin ingin menghapus aplikasi ini langsung dari apps.ts?"
+      title={$i18nStore.t('grid.confirmModalDeleteAppTitle')}
+      message={$i18nStore.t('grid.confirmModalDeleteAppMsg')}
       itemText={appToDelete ? `${appToDelete.name} (${appToDelete.category})` : ''}
       confirmText={$i18nStore.t('action.deleteApp')}
       cancelText={$i18nStore.t('action.cancel')}

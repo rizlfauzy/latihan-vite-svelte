@@ -327,7 +327,6 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(page.getByText('TAMBAH APLIKASI')).toBeVisible();
     await expect(page.getByText('CATATAN & TO-DO LIST')).toBeVisible();
     await expect(page.locator('[data-testid="filter-all"]')).toContainText('SEMUA');
-    await expect(page.locator('[data-testid="footer-github-link"]')).toContainText('GITHUB REPO ↗');
 
     // Click language switcher to EN
     const langBtn = page.locator('[data-testid="lang-switcher-btn"]');
@@ -573,6 +572,38 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="btn-close-edit-app"]').click();
 
     // Switch language back to ID
+    await langBtn.click();
+  });
+
+  test('ConfirmModal supports dynamic i18n translations in ID and EN', async ({ page }) => {
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    const firstDeleteBtn = page.locator('[data-testid^="btn-delete-app-"]').first();
+    const langBtn = page.locator('[data-testid="lang-switcher-btn"]');
+
+    // In default ID locale
+    await firstDeleteBtn.click();
+    await expect(confirmModal).toBeVisible();
+    await expect(page.locator('#modal-title')).toHaveText('HAPUS APLIKASI');
+    await expect(page.locator('[data-testid="modal-cancel-button"]')).toHaveText('BATAL');
+    await expect(page.locator('[data-testid="modal-confirm-button"]')).toHaveText('YA, HAPUS APLIKASI');
+    await expect(confirmModal).toContainText('Item yang dihapus tidak dapat dipulihkan kembali');
+    await page.locator('[data-testid="modal-cancel-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+
+    // Switch to EN
+    await langBtn.click();
+
+    // In EN locale
+    await firstDeleteBtn.click();
+    await expect(confirmModal).toBeVisible();
+    await expect(page.locator('#modal-title')).toHaveText('DELETE APPLICATION');
+    await expect(page.locator('[data-testid="modal-cancel-button"]')).toHaveText('CANCEL');
+    await expect(page.locator('[data-testid="modal-confirm-button"]')).toHaveText('YES, DELETE APP');
+    await expect(confirmModal).toContainText('Deleted items cannot be recovered');
+    await page.locator('[data-testid="modal-cancel-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+
+    // Switch back to ID
     await langBtn.click();
   });
 });
