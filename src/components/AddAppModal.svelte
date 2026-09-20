@@ -1,6 +1,8 @@
 <script lang="ts">
   import { appStore } from '@/stores/appStore';
   import type { AppItem } from '@/data/apps';
+  import { i18nStore } from '@/stores/i18nStore';
+  import CustomSelect from './CustomSelect.svelte';
 
   let {
     isOpen = $bindable(false),
@@ -26,6 +28,17 @@
     { label: 'Pink', value: 'pink', cssVar: 'var(--color-nb-pink)', bgClass: 'bg-nb-pink' },
     { label: 'Purple', value: 'purple', cssVar: 'var(--color-nb-purple)', bgClass: 'bg-nb-purple' },
     { label: 'Orange', value: 'orange', cssVar: 'var(--color-nb-orange)', bgClass: 'bg-nb-orange' },
+  ];
+
+  const categoryOptions = [
+    'Productivity',
+    'DevTools',
+    'Utility',
+    'Finance',
+    'Writing',
+    'Portfolio',
+    'Internal',
+    'General',
   ];
 
   const quickIcons = ['🚀', '⚡', '📊', '💼', '🛠️', '🔒', '👥', '💡', '📝', '🌐'];
@@ -86,15 +99,15 @@
     errorMessage = '';
 
     if (!name.trim()) {
-      errorMessage = 'Nama aplikasi wajib diisi!';
+      errorMessage = $i18nStore.t('modal.errName');
       return;
     }
     if (!url.trim()) {
-      errorMessage = 'URL aplikasi wajib diisi!';
+      errorMessage = $i18nStore.t('modal.errUrl');
       return;
     }
     if (!description.trim()) {
-      errorMessage = 'Deskripsi aplikasi wajib diisi!';
+      errorMessage = $i18nStore.t('modal.errDesc');
       return;
     }
 
@@ -105,7 +118,7 @@
 
   async function copyTsSnippet() {
     if (!name.trim() || !url.trim()) {
-      errorMessage = 'Isi minimal nama dan URL sebelum menyalin kode apps.ts!';
+      errorMessage = $i18nStore.t('modal.errCopy');
       return;
     }
     const app = buildAppItem();
@@ -123,12 +136,12 @@
 
     try {
       await navigator.clipboard.writeText(snippet);
-      copyFeedback = '✓ Berhasil disalin ke clipboard!';
+      copyFeedback = $i18nStore.t('modal.copySuccess');
       setTimeout(() => {
         copyFeedback = '';
       }, 3000);
     } catch {
-      copyFeedback = 'Gagal menyalin. Silakan salin manual.';
+      copyFeedback = $i18nStore.t('modal.copyFail');
     }
   }
 </script>
@@ -154,12 +167,12 @@
         <div class="flex items-center gap-2">
           <span class="text-2xl">➕</span>
           <h2 id="add-app-title" class="text-xl font-black uppercase text-nb-black">
-            Tambah Aplikasi Baru
+            {$i18nStore.t('modal.addTitle')}
           </h2>
         </div>
         <button
           type="button"
-          class="nb-btn bg-white hover:bg-nb-pink text-xs font-black p-1.5 w-8 h-8 flex items-center justify-center"
+          class="nb-btn bg-white hover:bg-nb-pink text-xs font-black p-1.5 w-8 h-8 flex items-center justify-center text-black"
           onclick={handleClose}
           aria-label="Tutup modal"
           data-testid="add-app-close-btn"
@@ -172,8 +185,8 @@
       <div class="bg-nb-yellow/40 border-2 border-nb-black p-3 text-xs font-bold text-gray-800 flex items-center gap-2">
         <span class="text-base">🛠️</span>
         <div>
-          <strong class="uppercase">Fitur Debug Mode:</strong>
-          Aplikasi yang ditambahkan akan disimpan langsung ke Zustand store & localStorage, dan dapat diekspor ke <code class="bg-white px-1 border border-nb-black">src/data/apps.ts</code>.
+          <strong class="uppercase">{$i18nStore.t('modal.debugNoticeTitle')}</strong>
+          {$i18nStore.t('modal.debugNoticeDesc')}
         </div>
       </div>
 
@@ -194,12 +207,12 @@
         <!-- Nama Aplikasi & Icon -->
         <div class="grid grid-cols-4 gap-3">
           <div class="col-span-3 flex flex-col gap-1">
-            <label for="app-name" class="uppercase">Nama Aplikasi *</label>
+            <label for="app-name" class="uppercase">{$i18nStore.t('modal.nameLabel')}</label>
             <input
               id="app-name"
               type="text"
               class="nb-input p-2.5"
-              placeholder="Contoh: Task Master 2.0"
+              placeholder={$i18nStore.t('modal.namePlaceholder')}
               bind:value={name}
               required
               data-testid="input-app-name"
@@ -207,7 +220,7 @@
           </div>
 
           <div class="col-span-1 flex flex-col gap-1">
-            <label for="app-icon" class="uppercase">Icon</label>
+            <label for="app-icon" class="uppercase">{$i18nStore.t('modal.iconLabel')}</label>
             <input
               id="app-icon"
               type="text"
@@ -221,11 +234,11 @@
 
         <!-- Quick Icon Selector -->
         <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="text-[11px] text-gray-600 uppercase font-black">Pilih Cepat:</span>
+          <span class="text-[11px] text-gray-600 uppercase font-black">{$i18nStore.t('modal.quickPick')}</span>
           {#each quickIcons as qi}
             <button
               type="button"
-              class="w-7 h-7 border-2 border-nb-black bg-white hover:bg-nb-yellow flex items-center justify-center font-bold text-sm"
+              class="w-7 h-7 border-2 border-nb-black bg-white hover:bg-nb-yellow flex items-center justify-center font-bold text-sm text-black"
               onclick={() => (icon = qi)}
             >
               {qi}
@@ -236,12 +249,12 @@
         <!-- URL & Kategori -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="flex flex-col gap-1">
-            <label for="app-url" class="uppercase">URL / Link Website *</label>
+            <label for="app-url" class="uppercase">{$i18nStore.t('modal.urlLabel')}</label>
             <input
               id="app-url"
               type="text"
               class="nb-input p-2.5"
-              placeholder="https://..."
+              placeholder={$i18nStore.t('modal.urlPlaceholder')}
               bind:value={url}
               required
               data-testid="input-app-url"
@@ -249,31 +262,25 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            <label for="app-category" class="uppercase">Kategori</label>
-            <select
+            <label for="app-category" class="uppercase">{$i18nStore.t('modal.categoryLabel')}</label>
+            <CustomSelect
               id="app-category"
-              class="nb-input p-2.5 bg-white"
+              options={categoryOptions}
               bind:value={category}
-              data-testid="input-app-category"
-            >
-              <option value="Productivity">Productivity</option>
-              <option value="DevTools">DevTools</option>
-              <option value="Utility">Utility</option>
-              <option value="Finance">Finance</option>
-              <option value="Writing">Writing</option>
-              <option value="Portfolio">Portfolio</option>
-              <option value="Internal">Internal</option>
-            </select>
+              placeholder={$i18nStore.t('modal.categoryPlaceholder')}
+              searchPlaceholder={$i18nStore.t('modal.searchCategoryPlaceholder')}
+              dataTestId="input-app-category"
+            />
           </div>
         </div>
 
         <!-- Deskripsi -->
         <div class="flex flex-col gap-1">
-          <label for="app-desc" class="uppercase">Deskripsi Singkat *</label>
+          <label for="app-desc" class="uppercase">{$i18nStore.t('modal.descLabel')}</label>
           <textarea
             id="app-desc"
             class="nb-input p-2.5 h-18 resize-y"
-            placeholder="Jelaskan fungsionalitas utama aplikasi..."
+            placeholder={$i18nStore.t('modal.descPlaceholder')}
             bind:value={description}
             required
             data-testid="input-app-desc"
@@ -282,11 +289,11 @@
 
         <!-- Pilihan Warna Badge Neo Brutalism -->
         <div class="flex flex-col gap-1">
-          <span class="uppercase">Warna Kartu / Badge</span>
+          <span class="uppercase">{$i18nStore.t('modal.colorLabel')}</span>
           <div class="flex items-center gap-2 flex-wrap">
             {#each colorOptions as opt}
               <label
-                class="flex items-center gap-1.5 cursor-pointer px-2.5 py-1 border-2 border-nb-black {opt.bgClass} shadow-nb-sm text-[11px] font-black uppercase"
+                class="flex items-center gap-1.5 cursor-pointer px-2.5 py-1 border-2 border-nb-black {opt.bgClass} shadow-nb-sm text-[11px] font-black uppercase text-black"
               >
                 <input
                   type="radio"
@@ -305,24 +312,24 @@
         <!-- PIC & WhatsApp -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t-2 border-dashed border-nb-black pt-3">
           <div class="flex flex-col gap-1">
-            <label for="app-pic" class="uppercase">Nama PIC / Penanggung Jawab</label>
+            <label for="app-pic" class="uppercase">{$i18nStore.t('modal.picLabel')}</label>
             <input
               id="app-pic"
               type="text"
               class="nb-input p-2.5"
-              placeholder="Contoh: Rizal Fauzi"
+              placeholder={$i18nStore.t('modal.picPlaceholder')}
               bind:value={picName}
               data-testid="input-app-pic"
             />
           </div>
 
           <div class="flex flex-col gap-1">
-            <label for="app-wa" class="uppercase">WhatsApp PIC (Format: 628...)</label>
+            <label for="app-wa" class="uppercase">{$i18nStore.t('modal.waLabel')}</label>
             <input
               id="app-wa"
               type="text"
               class="nb-input p-2.5"
-              placeholder="6281234567890"
+              placeholder={$i18nStore.t('modal.waPlaceholder')}
               bind:value={picWhatsapp}
               data-testid="input-app-wa"
             />
@@ -333,31 +340,31 @@
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t-3 border-nb-black pt-4 mt-2">
           <button
             type="button"
-            class="nb-btn bg-white hover:bg-gray-100 text-xs px-3 py-2 flex items-center justify-center gap-1.5"
+            class="nb-btn bg-white hover:bg-gray-100 text-xs px-3 py-2 flex items-center justify-center gap-1.5 text-black"
             onclick={copyTsSnippet}
-            title="Salin kode TypeScript untuk ditempel ke apps.ts"
+            title={$i18nStore.t('modal.copyTooltip')}
             data-testid="btn-copy-snippet"
           >
             <span>📋</span>
-            <span>Salin ke apps.ts</span>
+            <span>{$i18nStore.t('modal.copySnippet')}</span>
           </button>
 
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class="nb-btn bg-white text-xs px-4 py-2"
+              class="nb-btn bg-white text-xs px-4 py-2 text-black"
               onclick={handleClose}
               data-testid="btn-cancel-add-app"
             >
-              Batal
+              {$i18nStore.t('action.cancel')}
             </button>
             <button
               type="submit"
-              class="nb-btn bg-nb-green text-xs font-black px-5 py-2 flex items-center justify-center gap-1.5"
+              class="nb-btn bg-nb-green text-xs font-black px-5 py-2 flex items-center justify-center gap-1.5 text-black"
               data-testid="btn-submit-add-app"
             >
               <span>💾</span>
-              <span>SIMPAN APLIKASI</span>
+              <span>{$i18nStore.t('modal.saveAdd')}</span>
             </button>
           </div>
         </div>

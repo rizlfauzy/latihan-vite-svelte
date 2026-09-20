@@ -1,6 +1,8 @@
 <script lang="ts">
   import { appStore } from '@/stores/appStore';
   import type { AppItem } from '@/data/apps';
+  import { i18nStore } from '@/stores/i18nStore';
+  import CustomSelect from './CustomSelect.svelte';
 
   let {
     isOpen = $bindable(false),
@@ -29,6 +31,16 @@
     { label: 'Pink', value: 'pink', cssVar: 'var(--color-nb-pink)', bgClass: 'bg-nb-pink' },
     { label: 'Purple', value: 'purple', cssVar: 'var(--color-nb-purple)', bgClass: 'bg-nb-purple' },
     { label: 'Orange', value: 'orange', cssVar: 'var(--color-nb-orange)', bgClass: 'bg-nb-orange' },
+  ];
+
+  const categoryOptions = [
+    'Productivity',
+    'Portfolio',
+    'Utility',
+    'Finance',
+    'Writing',
+    'DevTools',
+    'General',
   ];
 
   const quickIcons = ['🚀', '⚡', '📊', '💼', '🛠️', '🔒', '👥', '💡', '📝', '🌐'];
@@ -73,23 +85,23 @@
     errorMessage = '';
 
     if (!name.trim()) {
-      errorMessage = 'Nama aplikasi wajib diisi!';
+      errorMessage = $i18nStore.t('modal.errName');
       return;
     }
 
     if (!url.trim()) {
-      errorMessage = 'URL aplikasi wajib diisi!';
+      errorMessage = $i18nStore.t('modal.errUrl');
       return;
     }
 
     if (!picName.trim()) {
-      errorMessage = 'Nama PIC wajib diisi!';
+      errorMessage = $i18nStore.t('modal.errPic');
       return;
     }
 
     const cleanedWa = picWhatsapp.replace(/\D/g, '');
     if (!cleanedWa) {
-      errorMessage = 'Nomor WhatsApp PIC wajib diisi!';
+      errorMessage = $i18nStore.t('modal.errWa');
       return;
     }
 
@@ -133,14 +145,14 @@
     >
       <!-- Modal Header -->
       <div class="flex items-center justify-between gap-3 border-b-2 border-nb-black pb-3">
-        <div class="inline-flex items-center gap-2 bg-nb-blue px-3 py-1 border-2 border-nb-black rounded font-black text-sm uppercase">
+        <div class="inline-flex items-center gap-2 bg-nb-blue px-3 py-1 border-2 border-nb-black rounded font-black text-sm uppercase text-black">
           <span>✏️</span>
-          <span id="edit-app-title">EDIT APLIKASI (DEBUG MODE)</span>
+          <span id="edit-app-title">{$i18nStore.t('modal.editTitle')}</span>
         </div>
 
         <button
           type="button"
-          class="w-8 h-8 border-2 border-nb-black bg-gray-100 hover:bg-nb-yellow rounded flex items-center justify-center font-bold text-sm cursor-pointer shadow-nb-xs transition-all"
+          class="w-8 h-8 border-2 border-nb-black bg-gray-100 hover:bg-nb-yellow rounded flex items-center justify-center font-bold text-sm cursor-pointer shadow-nb-xs transition-all text-black"
           onclick={handleClose}
           aria-label="Tutup form edit"
           data-testid="btn-close-edit-app"
@@ -162,13 +174,13 @@
         <!-- App Name -->
         <div class="flex flex-col gap-1.5">
           <label for="edit-name" class="font-extrabold text-xs uppercase tracking-wide">
-            Nama Aplikasi <span class="text-red-500">*</span>
+            {$i18nStore.t('modal.nameLabel')}
           </label>
           <input
             id="edit-name"
             type="text"
             bind:value={name}
-            placeholder="Contoh: Super Analytics"
+            placeholder={$i18nStore.t('modal.namePlaceholder')}
             class="nb-input w-full p-2.5 text-sm"
             required
             data-testid="input-edit-app-name"
@@ -179,13 +191,13 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
             <label for="edit-url" class="font-extrabold text-xs uppercase tracking-wide">
-              URL Aplikasi <span class="text-red-500">*</span>
+              {$i18nStore.t('modal.urlLabel')}
             </label>
             <input
               id="edit-url"
               type="url"
               bind:value={url}
-              placeholder="https://app.domain.com"
+              placeholder={$i18nStore.t('modal.urlPlaceholder')}
               class="nb-input w-full p-2.5 text-sm"
               required
               data-testid="input-edit-app-url"
@@ -194,35 +206,29 @@
 
           <div class="flex flex-col gap-1.5">
             <label for="edit-category" class="font-extrabold text-xs uppercase tracking-wide">
-              Kategori
+              {$i18nStore.t('modal.categoryLabel')}
             </label>
-            <select
+            <CustomSelect
               id="edit-category"
+              options={categoryOptions}
               bind:value={category}
-              class="nb-input w-full p-2.5 text-sm bg-white"
-              data-testid="select-edit-app-category"
-            >
-              <option value="Productivity">Productivity</option>
-              <option value="Portfolio">Portfolio</option>
-              <option value="Utility">Utility</option>
-              <option value="Finance">Finance</option>
-              <option value="Writing">Writing</option>
-              <option value="DevTools">DevTools</option>
-              <option value="General">General</option>
-            </select>
+              placeholder={$i18nStore.t('modal.categoryPlaceholder')}
+              searchPlaceholder={$i18nStore.t('modal.searchCategoryPlaceholder')}
+              dataTestId="select-edit-app-category"
+            />
           </div>
         </div>
 
         <!-- Description -->
         <div class="flex flex-col gap-1.5">
           <label for="edit-desc" class="font-extrabold text-xs uppercase tracking-wide">
-            Deskripsi Singkat
+            {$i18nStore.t('modal.descLabel')}
           </label>
           <textarea
             id="edit-desc"
             bind:value={description}
             rows="2"
-            placeholder="Keterangan singkat fungsi aplikasi..."
+            placeholder={$i18nStore.t('modal.descPlaceholder')}
             class="nb-input w-full p-2.5 text-sm resize-none"
             data-testid="input-edit-app-desc"
           ></textarea>
@@ -233,7 +239,7 @@
           <!-- Icon -->
           <div class="flex flex-col gap-1.5">
             <label for="edit-icon" class="font-extrabold text-xs uppercase tracking-wide">
-              Icon Emoji
+              {$i18nStore.t('modal.iconLabel')}
             </label>
             <div class="flex items-center gap-2">
               <input
@@ -241,14 +247,14 @@
                 type="text"
                 bind:value={icon}
                 maxlength="2"
-                class="nb-input w-12 text-center p-2 text-lg"
+                class="nb-input w-12 text-center p-2 text-lg text-black"
                 data-testid="input-edit-app-icon"
               />
               <div class="flex gap-1 flex-wrap">
                 {#each quickIcons.slice(0, 5) as emoji}
                   <button
                     type="button"
-                    class="w-7 h-7 border-2 border-nb-black bg-white hover:bg-nb-yellow rounded text-xs flex items-center justify-center cursor-pointer transition-all"
+                    class="w-7 h-7 border-2 border-nb-black bg-white hover:bg-nb-yellow rounded text-xs flex items-center justify-center cursor-pointer transition-all text-black"
                     onclick={() => (icon = emoji)}
                   >
                     {emoji}
@@ -260,7 +266,7 @@
 
           <!-- Color -->
           <div class="flex flex-col gap-1.5">
-            <span class="font-extrabold text-xs uppercase tracking-wide">Warna Tema</span>
+            <span class="font-extrabold text-xs uppercase tracking-wide">{$i18nStore.t('modal.colorLabel')}</span>
             <div class="flex gap-2 items-center flex-wrap pt-1">
               {#each colorOptions as c}
                 <button
@@ -279,13 +285,13 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 border-2 border-nb-black p-3 bg-nb-yellow/20 rounded">
           <div class="flex flex-col gap-1.5">
             <label for="edit-pic" class="font-extrabold text-xs uppercase tracking-wide">
-              Nama PIC <span class="text-red-500">*</span>
+              {$i18nStore.t('modal.picLabel')}
             </label>
             <input
               id="edit-pic"
               type="text"
               bind:value={picName}
-              placeholder="Contoh: Rizal Fauzi"
+              placeholder={$i18nStore.t('modal.picPlaceholder')}
               class="nb-input w-full p-2.5 text-sm bg-white"
               required
               data-testid="input-edit-app-pic"
@@ -294,13 +300,13 @@
 
           <div class="flex flex-col gap-1.5">
             <label for="edit-wa" class="font-extrabold text-xs uppercase tracking-wide">
-              WhatsApp PIC <span class="text-red-500">*</span>
+              {$i18nStore.t('modal.waLabel')}
             </label>
             <input
               id="edit-wa"
               type="text"
               bind:value={picWhatsapp}
-              placeholder="Contoh: 6281234567890"
+              placeholder={$i18nStore.t('modal.waPlaceholder')}
               class="nb-input w-full p-2.5 text-sm bg-white font-mono"
               required
               data-testid="input-edit-app-wa"
@@ -312,19 +318,19 @@
         <div class="flex items-center justify-end gap-3 pt-3 border-t-2 border-dashed border-gray-300">
           <button
             type="button"
-            class="nb-btn bg-gray-200 hover:bg-gray-300 text-xs px-4 py-2"
+            class="nb-btn bg-gray-200 hover:bg-gray-300 text-xs px-4 py-2 text-black"
             onclick={handleClose}
             data-testid="btn-cancel-edit-app"
           >
-            BATAL
+            {$i18nStore.t('action.cancel')}
           </button>
 
           <button
             type="submit"
-            class="nb-btn bg-nb-blue text-xs px-5 py-2 font-black shadow-nb-sm"
+            class="nb-btn bg-nb-blue text-xs px-5 py-2 font-black shadow-nb-sm text-black"
             data-testid="btn-submit-edit-app"
           >
-            💾 SIMPAN PERUBAHAN
+            💾 {$i18nStore.t('modal.saveEdit')}
           </button>
         </div>
       </form>
