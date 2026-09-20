@@ -8,6 +8,7 @@
   type DeleteTarget =
     | { type: 'todo'; id: string; text: string }
     | { type: 'subtask'; todoId: string; subTaskId: string; text: string }
+    | { type: 'all'; text: string }
     | null;
 
   let newTodoText = $state('');
@@ -86,12 +87,21 @@
     };
   }
 
+  function promptDeleteAllCompleted(){
+    deleteTarget = {
+      type: 'all',
+      text: 'Semua Catatan yang Selesai'
+    }
+  }
+
   function handleConfirmDelete() {
     if (!deleteTarget) return;
     if (deleteTarget.type === 'todo') {
       deleteTodo(deleteTarget.id);
     } else if (deleteTarget.type === 'subtask') {
       deleteSubTask(deleteTarget.todoId, deleteTarget.subTaskId);
+    } else if (deleteTarget.type === 'all') {
+      clearCompleted();
     }
     deleteTarget = null;
   }
@@ -217,7 +227,7 @@
         <button
           type="button"
           class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5"
-          onclick={clearCompleted}
+          onclick={promptDeleteAllCompleted}
           data-testid="clear-completed-button"
         >
           {$i18nStore.t('todo.clearCompleted')}
@@ -384,10 +394,10 @@
   <!-- Deletion Confirmation Modal -->
   <ConfirmModal
     isOpen={deleteTarget !== null}
-    title={deleteTarget?.type === 'todo' ? $i18nStore.t('todo.confirmModalDeleteNoteTitle') : $i18nStore.t('todo.confirmModalDeleteSubtaskTitle')}
+    title={deleteTarget?.type === 'todo' ? $i18nStore.t('todo.confirmModalDeleteNoteTitle') : deleteTarget?.type === 'subtask' ? $i18nStore.t('todo.confirmModalDeleteSubtaskTitle') : $i18nStore.t('todo.confirmModalDeleteAllTitle')}
     message={deleteTarget?.type === 'todo'
       ? $i18nStore.t('todo.confirmModalDeleteNoteMsg')
-      : $i18nStore.t('todo.confirmModalDeleteSubtaskMsg')}
+      : deleteTarget?.type == 'subtask' ? $i18nStore.t('todo.confirmModalDeleteSubtaskMsg') : $i18nStore.t('todo.confirmModalDeleteAllMsg')}
     itemText={deleteTarget?.text || ''}
     confirmText={$i18nStore.t('action.delete')}
     cancelText={$i18nStore.t('action.cancel')}

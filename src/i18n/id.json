@@ -109,6 +109,8 @@
   "todo.confirmModalDeleteNoteMsg": "Apakah Anda yakin ingin menghapus catatan ini beserta seluruh sub-task di dalamnya?",
   "todo.confirmModalDeleteSubtaskTitle": "HAPUS SUB-TASK",
   "todo.confirmModalDeleteSubtaskMsg": "Apakah Anda yakin ingin menghapus sub-task ini?",
+  "todo.confirmModalDeleteAllTitle": "HAPUS SEMUA YANG SELESAI",
+  "todo.confirmModalDeleteAllMsg": "Apakah Anda yakin ingin menghapus semua catatan yang selesai?",
 
   "footer.title": "⚡ SVELTE HUB — Personal Dashboard",
   "footer.subtitle": "Dibangun dengan Svelte 5, Vite, Tailwind CSS, Zustand, & estetika Neo Brutalism",
