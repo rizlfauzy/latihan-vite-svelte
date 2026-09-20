@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { appStore } from '../stores/appStore';
-  import type { AppItem } from '../data/apps';
+  import { appStore } from '@/stores/appStore';
+  import type { AppItem } from '@/data/apps';
 
   let {
     isOpen = $bindable(false),

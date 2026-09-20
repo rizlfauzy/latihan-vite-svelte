@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { AppItem } from '../data/apps';
-  import { env } from '../lib/env';
-  import { i18nStore } from '../stores/i18nStore';
+  import type { AppItem } from '@/data/apps';
+  import { env } from '@/lib/env';
+  import { i18nStore } from '@/stores/i18nStore';
 
   let {
     app,

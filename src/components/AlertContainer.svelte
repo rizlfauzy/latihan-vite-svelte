@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { alertStore } from '../stores/alertStore';
+  import { alertStore } from '@/stores/alertStore';
   import { slide, fade } from 'svelte/transition';
 
   const icons = {
@@ -10,7 +10,7 @@
 
   const bgClasses = {
     success: 'bg-nb-green text-nb-black',
-    error: 'bg-[#ff4757] text-white',
+    error: 'bg-nb-red text-white',
     info: 'bg-nb-blue text-nb-black',
   };
 </script>

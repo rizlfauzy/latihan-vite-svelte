@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { i18nStore } from '../stores/i18nStore';
+  import { i18nStore } from '@/stores/i18nStore';
 
   const envTitle = import.meta.env.VITE_APP_TITLE || "SVELTE HUB";
   const envLogo = import.meta.env.VITE_APP_LOGO_URL || "/logo.svg";

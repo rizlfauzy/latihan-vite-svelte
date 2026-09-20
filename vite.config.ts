@@ -233,9 +233,15 @@ export const svelteApps: AppItem[] = [
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(import.meta.dirname, './src'),
+    },
+  },
   plugins: [svelte(), tailwindcss(), appsApiPlugin()],
   server: {
     port: 8888,
     strictPort: true,
   },
 });
+

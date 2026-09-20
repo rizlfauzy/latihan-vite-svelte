@@ -1,6 +1,6 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
-import idLocale from '../i18n/id.json';
-import enLocale from '../i18n/en.json';
+import idLocale from '@/i18n/id.json';
+import enLocale from '@/i18n/en.json';
 
 export type Locale = 'id' | 'en';
 
