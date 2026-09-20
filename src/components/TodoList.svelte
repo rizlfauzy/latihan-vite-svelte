@@ -2,83 +2,13 @@
   import ConfirmModal from './ConfirmModal.svelte';
   import { alertStore } from '@/stores/alertStore';
   import { i18nStore } from '@/stores/i18nStore';
-
-  interface SubTask {
-    id: string;
-    text: string;
-    done: boolean;
-    createdAt: number;
-  }
-
-  interface Todo {
-    id: string;
-    text: string;
-    done: boolean;
-    createdAt: number;
-    subTasks?: SubTask[];
-  }
+  import { todoStore, type Todo, type SubTask } from '@/stores/todoStore';
 
   type DeleteTarget =
     | { type: 'todo'; id: string; text: string }
     | { type: 'subtask'; todoId: string; subTaskId: string; text: string }
     | null;
 
-  const STORAGE_KEY = 'svelte_hub_todos';
-
-  const defaultTodos: Todo[] = [
-    {
-      id: '1',
-      text: 'Pelajari reaktivitas Runes di Svelte 5',
-      done: true,
-      createdAt: Date.now() - 3600000,
-      subTasks: [
-        { id: '1-1', text: 'Eksplorasi $state() untuk state lokal', done: true, createdAt: Date.now() - 3500000 },
-        { id: '1-2', text: 'Gunakan $derived() untuk computed values', done: true, createdAt: Date.now() - 3400000 },
-        { id: '1-3', text: 'Gunakan $effect() untuk sinkronisasi localStorage', done: true, createdAt: Date.now() - 3300000 }
-      ]
-    },
-    {
-      id: '2',
-      text: 'Setup deployment Docker multi-stage dengan Nginx',
-      done: false,
-      createdAt: Date.now() - 1800000,
-      subTasks: [
-        { id: '2-1', text: 'Buat Dockerfile multi-stage dengan builder Bun', done: true, createdAt: Date.now() - 1700000 },
-        { id: '2-2', text: 'Konfigurasi nginx.conf untuk SPA routing', done: true, createdAt: Date.now() - 1600000 },
-        { id: '2-3', text: 'Uji container di port 8080 via docker compose', done: false, createdAt: Date.now() - 1500000 }
-      ]
-    },
-    {
-      id: '3',
-      text: 'Tambahkan link proyek Svelte lama ke file apps.ts',
-      done: false,
-      createdAt: Date.now(),
-      subTasks: [
-        { id: '3-1', text: 'Kumpulkan URL repo dan live demo', done: false, createdAt: Date.now() },
-        { id: '3-2', text: 'Tambahkan kontak WhatsApp PIC masing-masing apps', done: true, createdAt: Date.now() }
-      ]
-    }
-  ];
-
-  function loadTodos(): Todo[] {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.map((item) => ({
-            ...item,
-            subTasks: Array.isArray(item.subTasks) ? item.subTasks : []
-          }));
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load todos from localStorage', e);
-    }
-    return defaultTodos;
-  }
-
-  let todos = $state<Todo[]>(loadTodos());
   let newTodoText = $state('');
   let filter = $state<'all' | 'active' | 'done'>('all');
 
@@ -95,13 +25,7 @@
   // Target item for deletion confirmation modal
   let deleteTarget = $state<DeleteTarget>(null);
 
-  $effect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-    } catch (e) {
-      console.error('Failed to save todos to localStorage', e);
-    }
-  });
+  const todos = $derived($todoStore.todos);
 
   const remainingCount = $derived(todos.filter((t) => !t.done).length);
   const completedCount = $derived(todos.filter((t) => t.done).length);
@@ -114,27 +38,16 @@
     })
   );
 
-  function addTodo(e?: Event) {
+  async function addTodo(e?: Event) {
     if (e) e.preventDefault();
     const trimmed = newTodoText.trim();
     try {
       if (!trimmed) throw new Error('Catatan tidak boleh kosong');
-      const newId = Date.now().toString();
-      todos = [
-        {
-          id: newId,
-          text: trimmed,
-          done: false,
-          createdAt: Date.now(),
-          subTasks: []
-        },
-        ...todos
-      ];
-
-      expandedTodoIds[newId] = true;
+      const newTodo = await todoStore.addTodo(trimmed);
+      expandedTodoIds[newTodo.id] = true;
       newTodoText = '';
     } catch (e) {
-      console.error('Failed to add todo to localStorage', e);
+      console.error('Failed to add todo', e);
       alertStore.showError(`Gagal menambahkan catatan "${(e as Error).message}"!`);
     }
   }
@@ -147,7 +60,7 @@
   }
 
   function toggleTodo(id: string) {
-    todos = todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+    todoStore.toggleTodo(id);
   }
 
   function promptDeleteTodo(todo: Todo) {
@@ -159,7 +72,7 @@
   }
 
   function deleteTodo(id: string) {
-    todos = todos.filter((t) => t.id !== id);
+    todoStore.deleteTodo(id);
   }
 
   function promptDeleteSubTask(todoId: string, sub: SubTask) {
@@ -186,7 +99,7 @@
   }
 
   function clearCompleted() {
-    todos = todos.filter((t) => !t.done);
+    todoStore.clearCompleted();
   }
 
   function toggleExpand(id: string) {
@@ -198,21 +111,7 @@
     const inputVal = (subTaskInputs[todoId] || '').trim();
     if (!inputVal) return;
 
-    todos = todos.map((todo) => {
-      if (todo.id !== todoId) return todo;
-      const subTasks = todo.subTasks || [];
-      const newSub: SubTask = {
-        id: `${todoId}-${Date.now()}`,
-        text: inputVal,
-        done: false,
-        createdAt: Date.now()
-      };
-      return {
-        ...todo,
-        subTasks: [...subTasks, newSub]
-      };
-    });
-
+    todoStore.addSubTask(todoId, inputVal);
     subTaskInputs[todoId] = '';
     expandedTodoIds[todoId] = true;
   }
@@ -225,23 +124,11 @@
   }
 
   function toggleSubTask(todoId: string, subTaskId: string) {
-    todos = todos.map((todo) => {
-      if (todo.id !== todoId) return todo;
-      const subTasks = (todo.subTasks || []).map((st) =>
-        st.id === subTaskId ? { ...st, done: !st.done } : st
-      );
-      return { ...todo, subTasks };
-    });
+    todoStore.toggleSubTask(todoId, subTaskId);
   }
 
   function deleteSubTask(todoId: string, subTaskId: string) {
-    todos = todos.map((todo) => {
-      if (todo.id !== todoId) return todo;
-      return {
-        ...todo,
-        subTasks: (todo.subTasks || []).filter((st) => st.id !== subTaskId)
-      };
-    });
+    todoStore.deleteSubTask(todoId, subTaskId);
   }
 </script>
 

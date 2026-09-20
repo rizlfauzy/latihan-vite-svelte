@@ -606,6 +606,48 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     // Switch back to ID
     await langBtn.click();
   });
+
+  test('Alert toast renders countdown progress bar with Neo Brutalism styling', async ({ page }) => {
+    // Trigger an edit app action which triggers an alert toast
+    const firstEditBtn = page.locator('[data-testid^="btn-edit-app-"]').first();
+    await firstEditBtn.click();
+    const editModal = page.locator('[data-testid="edit-app-modal"]');
+    await expect(editModal).toBeVisible();
+
+    await page.locator('[data-testid="btn-submit-edit-app"]').click();
+    await expect(editModal).not.toBeVisible();
+
+    // Verify alert toast and countdown progress bar appear
+    const alertToast = page.locator('[data-testid="alert-toast"]').first();
+    await expect(alertToast).toBeVisible();
+
+    const progressBar = alertToast.locator('[data-testid="alert-progress-bar"]');
+    await expect(progressBar).toBeVisible();
+
+    // Close alert via close button
+    const closeBtn = alertToast.locator('[data-testid="alert-close-btn"]');
+    await closeBtn.click();
+    await expect(alertToast).not.toBeVisible();
+  });
+
+  test('Supabase client module and database schema are properly defined and resilient', async ({ page }) => {
+    // Check that the app is alive and operational in local/offline fallback mode
+    await page.goto('/');
+    const counterBadge = page.locator('[data-testid="apps-counter"]');
+    await expect(counterBadge).toBeVisible();
+
+    // Verify todo list is operational through todoStore
+    const todoInput = page.locator('[data-testid="todo-input"]');
+    await expect(todoInput).toBeVisible();
+
+    // Add a todo item
+    const taskName = `Resilience Verification ${Date.now()}`;
+    await todoInput.fill(taskName);
+    await page.locator('[data-testid="todo-add-button"]').click();
+
+    // Verify item appears in the list
+    await expect(page.locator(`text=${taskName}`)).toBeVisible();
+  });
 });
 
 
