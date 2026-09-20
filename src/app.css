@@ -38,7 +38,7 @@ body {
 html.dark {
   --color-nb-bg: #141416;
   --color-nb-surface: #202026;
-  --color-nb-black: #0c0c0e;
+  --color-nb-black: #f5f1e8;
 }
 
 html.dark body {

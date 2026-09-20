@@ -1,6 +1,6 @@
 <script lang="ts">
   import ConfirmModal from './ConfirmModal.svelte';
-  import { i18nStore } from '../stores/i18nStore';
+  import { i18nStore } from '@/stores/i18nStore';
 
   interface SubTask {
     id: string;
@@ -242,7 +242,7 @@
 
 <section class="w-full">
   <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
-    <div class="inline-flex items-center gap-2.5 bg-nb-yellow px-4.5 py-2 border-3 border-nb-black shadow-nb rounded-md text-lg md:text-xl font-extrabold uppercase tracking-wide">
+    <div class="inline-flex items-center gap-2.5 bg-nb-yellow px-4.5 py-2 border-3 border-nb-black shadow-nb rounded-md text-lg md:text-xl font-extrabold uppercase tracking-wide text-black">
       <span>📝</span>
       <span>{$i18nStore.t('todo.title')}</span>
     </div>
@@ -268,7 +268,7 @@
           onkeydown={handleTodoKeydown}
           placeholder={$i18nStore.t('todo.placeholder')}
           rows="2"
-          class="nb-input grow resize-y min-h-[56px] leading-relaxed"
+          class="nb-input grow resize-y min-h-14 leading-relaxed"
           data-testid="todo-input"
         ></textarea>
         <button
@@ -285,7 +285,7 @@
       <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500 select-none">
         <span>💡</span>
         <span>
-          {$i18nStore.t('todo.shortcutPrefix')} <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-nb-yellow text-nb-black font-mono text-[11px] shadow-[1px_1px_0px_#121212]">Enter</kbd> {$i18nStore.t('todo.shortcutToSave')}, <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-gray-200 text-nb-black font-mono text-[11px] shadow-[1px_1px_0px_#121212]">Shift + Enter</kbd> {$i18nStore.t('todo.shortcutForNewLine')}
+          {$i18nStore.t('todo.shortcutPrefix')} <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-nb-yellow text-black font-mono text-[11px] shadow-nb-xs">Enter</kbd> {$i18nStore.t('todo.shortcutToSave')}, <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-gray-200 text-black font-mono text-[11px] shadow-nb-xs">Shift + Enter</kbd> {$i18nStore.t('todo.shortcutForNewLine')}
         </span>
       </div>
     </form>
@@ -322,7 +322,7 @@
       {#if completedCount > 0}
         <button
           type="button"
-          class="nb-btn bg-[#ff4757] text-white text-xs px-3.5 py-1.5"
+          class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5"
           onclick={clearCompleted}
           data-testid="clear-completed-button"
         >
@@ -354,7 +354,7 @@
               <!-- Expand / Collapse Button -->
               <button
                 type="button"
-                class="w-7 h-7 shrink-0 border-2 border-nb-black bg-white rounded flex items-center justify-center font-bold text-xs cursor-pointer shadow-[1px_1px_0px_#121212] hover:bg-nb-yellow transition-colors"
+                class="w-7 h-7 shrink-0 border-2 border-nb-black bg-white rounded flex items-center justify-center font-bold text-xs cursor-pointer shadow-nb-xs hover:bg-nb-yellow transition-colors"
                 onclick={() => toggleExpand(todo.id)}
                 title={isExpanded ? 'Tutup sub-tasks' : 'Buka sub-tasks'}
                 aria-label={isExpanded ? 'Tutup sub-tasks' : 'Buka sub-tasks'}
@@ -395,7 +395,7 @@
               <!-- Delete Parent Button -->
               <button
                 type="button"
-                class="w-8 h-8 shrink-0 border-2 border-nb-black bg-[#ff4757] text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#121212] hover:-translate-x-0.25 hover:-translate-y-0.25 hover:shadow-[3px_3px_0px_#121212] active:translate-x-0.25 active:translate-y-0.25 active:shadow-[1px_1px_0px_#121212] transition-all duration-100"
+                class="w-8 h-8 shrink-0 border-2 border-nb-black bg-nb-red text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#121212] hover:-translate-x-0.25 hover:-translate-y-0.25 hover:shadow-[3px_3px_0px_#121212] active:translate-x-0.25 active:translate-y-0.25 active:shadow-nb-xs transition-all duration-100"
                 onclick={() => promptDeleteTodo(todo)}
                 title={$i18nStore.t('todo.deleteNote')}
                 aria-label={$i18nStore.t('todo.deleteNote')}
@@ -413,7 +413,7 @@
                   <ul class="list-none flex flex-col gap-2 p-0 m-0 pl-4 sm:pl-6 border-l-3 border-nb-yellow">
                     {#each subList as sub (sub.id)}
                       <li
-                        class="flex items-center justify-between gap-3 p-2 px-3 bg-white border border-nb-black rounded shadow-[1px_1px_0px_#121212] {sub.done ? 'opacity-70 bg-gray-50' : ''}"
+                        class="flex items-center justify-between gap-3 p-2 px-3 bg-white border border-nb-black rounded shadow-nb-xs {sub.done ? 'opacity-70 bg-gray-50' : ''}"
                         data-testid={`subtask-item-${sub.id}`}
                       >
                         <label class="flex items-center gap-2.5 cursor-pointer grow select-none">
@@ -435,7 +435,7 @@
 
                         <button
                           type="button"
-                          class="w-6 h-6 shrink-0 border border-nb-black bg-gray-100 hover:bg-[#ff4757] hover:text-white text-gray-600 font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
+                          class="w-6 h-6 shrink-0 border border-nb-black bg-gray-100 hover:bg-nb-red hover:text-white text-gray-600 font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
                           onclick={() => promptDeleteSubTask(todo.id, sub)}
                           title={$i18nStore.t('todo.deleteSubtask')}
                           aria-label={$i18nStore.t('todo.deleteSubtask')}
@@ -462,12 +462,12 @@
                     onkeydown={(e) => handleSubTaskKeydown(todo.id, e)}
                     placeholder={$i18nStore.t('todo.subtaskPlaceholder')}
                     rows="1"
-                    class="w-full text-xs font-semibold px-3 py-1.5 border-2 border-nb-black rounded shadow-[1px_1px_0px_#121212] bg-white outline-none focus:shadow-[2px_2px_0px_#121212] resize-y min-h-[34px] leading-snug"
+                    class="w-full text-xs font-semibold px-3 py-1.5 border-2 border-nb-black rounded shadow-nb-xs bg-white outline-none focus:shadow-[2px_2px_0px_#121212] resize-y min-h-[34px] leading-snug"
                     data-testid={`input-subtask-${todo.id}`}
                   ></textarea>
                   <button
                     type="submit"
-                    class="nb-btn bg-nb-blue text-xs font-bold px-3 py-1.5 shadow-[1px_1px_0px_#121212] border-2 border-nb-black shrink-0 self-start h-auto"
+                    class="nb-btn bg-nb-blue text-xs font-bold px-3 py-1.5 shadow-nb-xs border-2 border-nb-black shrink-0 self-start h-auto"
                     data-testid={`button-add-subtask-${todo.id}`}
                   >
                     {$i18nStore.t('todo.subtaskAddButton')}

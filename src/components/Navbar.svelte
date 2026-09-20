@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { router } from '../router';
-  import { env } from '../lib/env';
-  import { i18nStore } from '../stores/i18nStore';
-  import { themeStore } from '../stores/themeStore';
+  import { router } from '@/router';
+  import { env } from '@/lib/env';
+  import { i18nStore } from '@/stores/i18nStore';
+  import { themeStore } from '@/stores/themeStore';
 
   let mobileMenuOpen = $state(false);
   let openDropdown = $state<'home' | 'company' | null>(null);
@@ -194,7 +194,6 @@
         title="Ganti Tema (Dark/Light Mode)"
       >
         <span>{$themeStore.theme === 'dark' ? '☀️' : '🌙'}</span>
-        <span>{$themeStore.theme === 'dark' ? $i18nStore.t('nav.themeLight') : $i18nStore.t('nav.themeDark')}</span>
       </button>
 
       <!-- Language Switcher -->
@@ -208,15 +207,6 @@
         <span>{$i18nStore.locale === 'id' ? '🇮🇩 ID' : '🇬🇧 EN'}</span>
       </button>
 
-      <a
-        href="https://github.com/rizlfauzy/latihan-vite-svelte"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="nb-btn bg-nb-blue text-xs font-black px-3.5 py-2"
-        data-testid="navbar-github-link"
-      >
-        {$i18nStore.t('nav.github')}
-      </a>
     </div>
 
     <!-- Mobile Menu Button & Mobile Switchers -->

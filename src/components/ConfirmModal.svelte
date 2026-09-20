@@ -54,7 +54,7 @@
     >
       <!-- Modal Header -->
       <div class="flex items-center justify-between gap-3 border-b-2 border-nb-black pb-3">
-        <div class="inline-flex items-center gap-2 bg-nb-yellow px-3 py-1 border-2 border-nb-black rounded font-black text-sm uppercase">
+        <div class="inline-flex items-center gap-2 bg-nb-yellow px-3 py-1 border-2 border-nb-black rounded font-black text-sm uppercase text-black">
           <span>⚠️</span>
           <span id="modal-title">{title}</span>
         </div>
@@ -77,8 +77,8 @@
         </p>
 
         {#if itemText}
-          <div class="bg-gray-100 p-3 border-2 border-dashed border-gray-400 rounded text-sm font-semibold text-gray-700 break-words max-h-28 overflow-y-auto italic">
-            "{itemText}"
+          <div class="bg-gray-100 p-3 border-2 border-dashed border-gray-400 rounded text-sm font-semibold text-gray-700 wrap-break-word whitespace-pre-wrap max-h-28 overflow-y-auto italic">
+            {itemText}
           </div>
         {/if}
 
@@ -91,7 +91,7 @@
       <div class="flex items-center justify-end gap-3 pt-2 border-t border-dashed border-gray-300">
         <button
           type="button"
-          class="nb-btn bg-gray-200 hover:bg-gray-300 text-xs px-4 py-2"
+          class="nb-btn bg-gray-200 hover:bg-gray-300 text-xs px-4 py-2 text-black"
           onclick={onCancel}
           data-testid="modal-cancel-button"
         >
@@ -100,7 +100,7 @@
 
         <button
           type="button"
-          class="nb-btn bg-[#ff4757] text-white text-xs px-4 py-2 hover:bg-red-600"
+          class="nb-btn bg-nb-red text-white text-xs px-4 py-2 hover:bg-red-600"
           onclick={onConfirm}
           data-testid="modal-confirm-button"
         >
