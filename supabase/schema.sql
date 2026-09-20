@@ -17,14 +17,19 @@ create table if not exists public.apps (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 2. TABEL: todos (To-Do List & Sub-Tasks)
+-- 2. TABEL: todos (To-Do List & Sub-Tasks with App Topic Reference)
 create table if not exists public.todos (
   id text primary key,
+  app_id text references public.apps(id) on delete cascade,
   text text not null,
   done boolean not null default false,
   created_at bigint not null,
   sub_tasks jsonb default '[]'::jsonb not null
 );
+
+-- Migration script for existing databases:
+alter table public.todos add column if not exists app_id text references public.apps(id) on delete cascade;
+
 
 -- 3. ROW LEVEL SECURITY (RLS)
 alter table public.apps enable row level security;

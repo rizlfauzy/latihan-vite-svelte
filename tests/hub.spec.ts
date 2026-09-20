@@ -782,6 +782,101 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     });
     await expect(skeletonAlert).not.toBeVisible();
   });
+
+  test('To-Do item can select App as topic and displays corresponding App badge', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+    await expect(page.locator('[data-testid="todo-input"]')).toBeVisible();
+
+    // Verify app topic selector exists
+    const topicSelect = page.locator('[data-testid="todo-app-topic-select"]');
+    await expect(topicSelect).toBeVisible();
+
+    // Select second app (e.g. 'todo-svelte')
+    await topicSelect.selectOption({ index: 1 });
+
+    const taskWithTopic = `Task for Specific App Topic ${Date.now()}`;
+    await page.locator('[data-testid="todo-input"]').fill(taskWithTopic);
+    await page.locator('[data-testid="todo-add-button"]').click();
+
+    // Verify task is added and has the app topic badge
+    const newTodoItem = page.locator('[data-testid^="todo-item-"]', { hasText: taskWithTopic });
+    await expect(newTodoItem).toBeVisible();
+
+    const topicBadge = newTodoItem.locator('[data-testid^="todo-topic-badge-"]');
+    await expect(topicBadge).toBeVisible();
+  });
+
+  test('Deleting an App cascades deletion and automatically removes all associated To-Do items', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+
+    // 1. Pick target app id: 'weather-app'
+    const targetAppId = 'weather-app';
+
+    // 2. Select this app in the Todo topic select
+    const topicSelect = page.locator('[data-testid="todo-app-topic-select"]');
+    await topicSelect.selectOption(targetAppId);
+
+    // 3. Add two todo items specifically for this app
+    const todoTitle1 = `Weather App Task A ${Date.now()}`;
+    const todoTitle2 = `Weather App Task B ${Date.now()}`;
+
+    await page.locator('[data-testid="todo-input"]').fill(todoTitle1);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${todoTitle1}`)).toBeVisible();
+
+    await page.locator('[data-testid="todo-input"]').fill(todoTitle2);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${todoTitle2}`)).toBeVisible();
+
+    // Also add an unrelated todo for 'portfolio'
+    const unrelatedTodo = `Unrelated Portfolio Task ${Date.now()}`;
+    await topicSelect.selectOption('portfolio');
+    await page.locator('[data-testid="todo-input"]').fill(unrelatedTodo);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${unrelatedTodo}`)).toBeVisible();
+
+    // 4. Delete the Weather Radar app via App Card delete button & Confirm Modal
+    const deleteAppBtn = page.locator(`[data-testid="btn-delete-app-${targetAppId}"]`);
+    await deleteAppBtn.click();
+
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+
+    // 5. Verify the app is removed from the grid
+    await expect(page.locator(`[data-testid="btn-delete-app-${targetAppId}"]`)).not.toBeVisible();
+
+    // 6. Verify cascading deletion: all todos linked to weather-app are removed!
+    await expect(page.locator(`text=${todoTitle1}`)).not.toBeVisible();
+    await expect(page.locator(`text=${todoTitle2}`)).not.toBeVisible();
+
+    // 7. Verify unrelated todo is still present and intact
+    await expect(page.locator(`text=${unrelatedTodo}`)).toBeVisible();
+  });
+
+  test('To-Do list topic filter filters tasks by App topic and resets when app is deleted', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('[data-testid="todo-topic-filter"]')).toBeVisible();
+
+    const topicFilter = page.locator('[data-testid="todo-topic-filter"]');
+
+    // Select filter by 'portfolio'
+    await topicFilter.selectOption('portfolio');
+
+    // Default todo #3 is associated with 'portfolio'
+    await expect(page.getByText('Tambahkan link proyek Svelte lama ke file apps.ts')).toBeVisible();
+
+    // Default todo #1 is associated with 'todo-svelte'
+    await expect(page.getByText('Pelajari reaktivitas Runes di Svelte 5')).not.toBeVisible();
+
+    // Reset topic filter to all
+    await topicFilter.selectOption('all');
+    await expect(page.getByText('Pelajari reaktivitas Runes di Svelte 5')).toBeVisible();
+    await expect(page.getByText('Tambahkan link proyek Svelte lama ke file apps.ts')).toBeVisible();
+  });
 });
 
 

@@ -111,6 +111,11 @@
   "todo.confirmModalDeleteSubtaskMsg": "Apakah Anda yakin ingin menghapus sub-task ini?",
   "todo.confirmModalDeleteAllTitle": "HAPUS SEMUA YANG SELESAI",
   "todo.confirmModalDeleteAllMsg": "Apakah Anda yakin ingin menghapus semua catatan yang selesai?",
+  "todo.appTopic": "Topik Aplikasi",
+  "todo.selectAppTopic": "Pilih Topik Aplikasi...",
+  "todo.allTopics": "Semua Topik",
+  "todo.noTopic": "Umum (Tanpa Topik)",
+  "todo.filterByTopic": "Filter Topik Aplikasi",
 
   "footer.title": "⚡ SVELTE HUB — Personal Dashboard",
   "footer.subtitle": "Dibangun dengan Svelte 5, Vite, Tailwind CSS, Zustand, & estetika Neo Brutalism",

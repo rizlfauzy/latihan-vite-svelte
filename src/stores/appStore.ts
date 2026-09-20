@@ -1,6 +1,7 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
 import { svelteApps, type AppItem } from '@/data/apps';
 import { alertStore } from '@/stores/alertStore';
+import { todoStore } from '@/stores/todoStore';
 import { supabase, isSupabaseEnabled } from '@/lib/supabase';
 
 export type { AppItem };
@@ -191,6 +192,13 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     // Optimistically update Zustand store & UI
     const updated = get().apps.filter((a) => a.id !== id);
     set({ apps: updated });
+
+    // Cascading deletion: automatically delete all associated todos
+    try {
+      await todoStore.deleteTodosByAppId(id);
+    } catch (err) {
+      console.error('[appStore] Failed cascading deletion of related todos', err);
+    }
 
     if (isSupabaseEnabled && supabase) {
       try {

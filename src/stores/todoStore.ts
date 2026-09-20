@@ -10,6 +10,7 @@ export interface SubTask {
 
 export interface Todo {
   id: string;
+  appId?: string | null;
   text: string;
   done: boolean;
   createdAt: number;
@@ -20,9 +21,10 @@ export interface TodoStoreState {
   todos: Todo[];
   isLoading: boolean;
   fetchTodos: () => Promise<void>;
-  addTodo: (text: string) => Promise<Todo>;
+  addTodo: (text: string, appId?: string | null) => Promise<Todo>;
   toggleTodo: (id: string) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
+  deleteTodosByAppId: (appId: string) => Promise<void>;
   clearCompleted: () => Promise<void>;
   addSubTask: (todoId: string, text: string) => Promise<void>;
   toggleSubTask: (todoId: string, subTaskId: string) => Promise<void>;
@@ -35,6 +37,7 @@ const STORAGE_KEY = 'svelte_hub_todos';
 const defaultTodos: Todo[] = [
   {
     id: '1',
+    appId: 'todo-svelte',
     text: 'Pelajari reaktivitas Runes di Svelte 5',
     done: true,
     createdAt: Date.now() - 3600000,
@@ -46,6 +49,7 @@ const defaultTodos: Todo[] = [
   },
   {
     id: '2',
+    appId: 'code-snippets',
     text: 'Setup deployment Docker multi-stage dengan Nginx',
     done: false,
     createdAt: Date.now() - 1800000,
@@ -57,6 +61,7 @@ const defaultTodos: Todo[] = [
   },
   {
     id: '3',
+    appId: 'portfolio',
     text: 'Tambahkan link proyek Svelte lama ke file apps.ts',
     done: false,
     createdAt: Date.now(),
@@ -76,6 +81,7 @@ function loadLocalTodos(): Todo[] {
       if (Array.isArray(parsed)) {
         return parsed.map((item) => ({
           ...item,
+          appId: item.appId || item.app_id || null,
           subTasks: Array.isArray(item.subTasks) ? item.subTasks : [],
         }));
       }
@@ -98,6 +104,7 @@ function saveLocalTodos(todos: Todo[]) {
 function mapRowToTodo(row: any): Todo {
   return {
     id: row.id,
+    appId: row.app_id || row.appId || null,
     text: row.text,
     done: Boolean(row.done),
     createdAt: Number(row.created_at) || Date.now(),
@@ -108,6 +115,7 @@ function mapRowToTodo(row: any): Todo {
 function mapTodoToRow(todo: Todo) {
   return {
     id: todo.id,
+    app_id: todo.appId || null,
     text: todo.text,
     done: todo.done,
     created_at: todo.createdAt,
@@ -146,9 +154,10 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     saveLocalTodos(defaultTodos);
   },
 
-  addTodo: async (text: string) => {
+  addTodo: async (text: string, appId?: string | null) => {
     const newTodo: Todo = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      appId: appId || null,
       text: text.trim(),
       done: false,
       createdAt: Date.now(),
@@ -201,11 +210,22 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     }
   },
 
-  clearCompleted: async () => {
-    const completedIds = get().todos.filter((t) => t.done).map((t) => t.id);
-    const updated = get().todos.filter((t) => !t.done);
+  deleteTodosByAppId: async (appId: string) => {
+    const updated = get().todos.filter((t) => t.appId !== appId);
     set({ todos: updated });
     saveLocalTodos(updated);
+
+    if (isSupabaseEnabled && supabase) {
+      try {
+        await supabase.from('todos').delete().eq('app_id', appId);
+      } catch (err) {
+        console.error('[todoStore] Failed to delete todos by app_id in Supabase', err);
+      }
+    }
+  },
+
+  clearCompleted: async () => {
+    const completedIds = get().todos.filter((t) => t.done).map((t) => t.id);
 
     if (isSupabaseEnabled && supabase && completedIds.length > 0) {
       try {
@@ -214,6 +234,9 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
         console.error('[todoStore] Failed to clear completed todos in Supabase', err);
       }
     }
+    const updated = get().todos.filter((t) => !t.done);
+    set({ todos: updated });
+    saveLocalTodos(updated);
   },
 
   addSubTask: async (todoId: string, text: string) => {
@@ -291,9 +314,10 @@ if (typeof window !== 'undefined' && isSupabaseEnabled) {
 export const todoStore = {
   ...rawStore,
   fetchTodos: () => rawStore.getState().fetchTodos(),
-  addTodo: (text: string) => rawStore.getState().addTodo(text),
+  addTodo: (text: string, appId?: string | null) => rawStore.getState().addTodo(text, appId),
   toggleTodo: (id: string) => rawStore.getState().toggleTodo(id),
   deleteTodo: (id: string) => rawStore.getState().deleteTodo(id),
+  deleteTodosByAppId: (appId: string) => rawStore.getState().deleteTodosByAppId(appId),
   clearCompleted: () => rawStore.getState().clearCompleted(),
   addSubTask: (todoId: string, text: string) => rawStore.getState().addSubTask(todoId, text),
   toggleSubTask: (todoId: string, subTaskId: string) => rawStore.getState().toggleSubTask(todoId, subTaskId),

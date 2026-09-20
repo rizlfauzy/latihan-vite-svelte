@@ -3,6 +3,7 @@
   import SkeletonTodo from './SkeletonTodo.svelte';
   import { alertStore } from '@/stores/alertStore';
   import { i18nStore } from '@/stores/i18nStore';
+  import { appStore } from '@/stores/appStore';
   import { todoStore, type Todo, type SubTask } from '@/stores/todoStore';
 
   type DeleteTarget =
@@ -13,6 +14,8 @@
 
   let newTodoText = $state('');
   let filter = $state<'all' | 'active' | 'done'>('all');
+  let topicFilter = $state<string>('all');
+  let selectedAppId = $state<string>('');
 
   // Track expanded state for each todo's sub-tasks
   let expandedTodoIds = $state<Record<string, boolean>>({
@@ -29,14 +32,31 @@
 
   const todos = $derived($todoStore.todos);
   const isLoading = $derived($todoStore.isLoading);
+  const apps = $derived($appStore.apps);
+
+  $effect(() => {
+    // Keep selectedAppId synced to a valid app if not set
+    if (!selectedAppId && apps.length > 0) {
+      selectedAppId = apps[0].id;
+    }
+    // If selectedAppId is no longer in apps, fallback to first app
+    if (selectedAppId && !apps.some((a) => a.id === selectedAppId)) {
+      selectedAppId = apps[0]?.id || '';
+    }
+    // If topicFilter is no longer in apps, reset to all
+    if (topicFilter !== 'all' && !apps.some((a) => a.id === topicFilter)) {
+      topicFilter = 'all';
+    }
+  });
 
   const remainingCount = $derived(todos.filter((t) => !t.done).length);
   const completedCount = $derived(todos.filter((t) => t.done).length);
 
   const filteredTodos = $derived(
     todos.filter((t) => {
-      if (filter === 'active') return !t.done;
-      if (filter === 'done') return t.done;
+      if (filter === 'active' && t.done) return false;
+      if (filter === 'done' && !t.done) return false;
+      if (topicFilter !== 'all' && t.appId !== topicFilter) return false;
       return true;
     })
   );
@@ -46,9 +66,10 @@
     const trimmed = newTodoText.trim();
     try {
       if (!trimmed) throw new Error('Catatan tidak boleh kosong');
-      const newTodo = await todoStore.addTodo(trimmed);
-      expandedTodoIds[newTodo.id] = true;
       newTodoText = '';
+      const chosenAppId = selectedAppId || (apps.length > 0 ? apps[0].id : null);
+      const newTodo = await todoStore.addTodo(trimmed, chosenAppId);
+      expandedTodoIds[newTodo.id] = true;
     } catch (e) {
       console.error('Failed to add todo', e);
       alertStore.showError(`Gagal menambahkan catatan "${(e as Error).message}"!`);
@@ -165,7 +186,31 @@
 
   <div class="nb-card flex flex-col gap-5 bg-nb-surface">
     <!-- Form Tambah Todo -->
-    <form onsubmit={addTodo} class="flex flex-col gap-2">
+    <form onsubmit={addTodo} class="flex flex-col gap-2.5">
+      <!-- Topic App Selector -->
+      {#if apps.length > 0}
+        <div class="flex items-center gap-2 flex-wrap text-xs">
+          <label for="todo-app-topic-select" class="font-extrabold text-nb-black flex items-center gap-1.5 select-none">
+            <span>🎯</span>
+            <span>{$i18nStore.t('todo.appTopic')}:</span>
+          </label>
+          <div class="grow max-w-xs">
+            <select
+              id="todo-app-topic-select"
+              bind:value={selectedAppId}
+              class="nb-input w-full py-1.5 px-2.5 text-xs font-bold bg-white text-nb-black cursor-pointer shadow-nb-xs"
+              data-testid="todo-app-topic-select"
+            >
+              {#each apps as app (app.id)}
+                <option value={app.id}>
+                  {app.icon} {app.name}
+                </option>
+              {/each}
+            </select>
+          </div>
+        </div>
+      {/if}
+
       <div class="flex flex-col sm:flex-row gap-3 items-stretch">
         <textarea
           bind:value={newTodoText}
@@ -196,7 +241,7 @@
 
     <!-- Filters & Action Toolbar -->
     <div class="flex justify-between items-center flex-wrap gap-3 pb-3 border-b-2 border-dashed border-gray-300">
-      <div class="flex gap-2 flex-wrap">
+      <div class="flex gap-2 flex-wrap items-center">
         <button
           type="button"
           class="nb-btn text-xs px-3.5 py-1.5 {filter === 'all' ? 'bg-nb-yellow' : 'bg-white'}"
@@ -221,6 +266,25 @@
         >
           {$i18nStore.t('todo.filterDone')} ({completedCount})
         </button>
+
+        {#if apps.length > 0}
+          <div class="flex items-center gap-1.5 ml-1">
+            <span class="text-xs font-extrabold text-nb-black select-none">🎯</span>
+            <select
+              bind:value={topicFilter}
+              class="nb-input py-1 px-2 text-xs font-bold bg-white text-nb-black cursor-pointer shadow-nb-xs"
+              data-testid="todo-topic-filter"
+              title={$i18nStore.t('todo.filterByTopic')}
+            >
+              <option value="all">{$i18nStore.t('todo.allTopics')}</option>
+              {#each apps as app (app.id)}
+                <option value={app.id}>
+                  {app.icon} {app.name}
+                </option>
+              {/each}
+            </select>
+          </div>
+        {/if}
       </div>
 
       {#if completedCount > 0}
@@ -281,13 +345,29 @@
                   class="nb-checkbox shrink-0"
                   data-testid={`checkbox-todo-${todo.id}`}
                 />
-                <span
-                  class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap {todo.done
-                    ? 'line-through decoration-2 decoration-nb-black text-gray-500'
-                    : 'text-nb-black'}"
-                >
-                  {todo.text}
-                </span>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 grow">
+                  {#if todo.appId}
+                    {@const linkedApp = apps.find((a) => a.id === todo.appId)}
+                    {#if linkedApp}
+                      <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 border-2 border-nb-black text-[11px] font-black uppercase rounded shadow-nb-xs shrink-0 self-start sm:self-auto"
+                        style="background-color: {linkedApp.color || 'var(--color-nb-yellow)'}; color: #121212;"
+                        data-testid={`todo-topic-badge-${todo.id}`}
+                        title={linkedApp.name}
+                      >
+                        <span>{linkedApp.icon}</span>
+                        <span>{linkedApp.name}</span>
+                      </span>
+                    {/if}
+                  {/if}
+                  <span
+                    class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap {todo.done
+                      ? 'line-through decoration-2 decoration-nb-black text-gray-500'
+                      : 'text-nb-black'}"
+                  >
+                    {todo.text}
+                  </span>
+                </div>
               </label>
 
               <!-- Sub-tasks Progress Badge -->
