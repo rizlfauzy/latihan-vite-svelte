@@ -20,7 +20,7 @@
   <!-- Highlights / Metrics Cards (4x) -->
   <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
     {#each [1, 2, 3, 4] as idx (idx)}
-      <div class="nb-card bg-white dark:bg-zinc-900 p-4 text-center border-3 border-nb-black shadow-nb flex flex-col items-center justify-center gap-2">
+      <div class="nb-card bg-nb-surface text-nb-black p-4 text-center border-3 border-nb-black shadow-nb flex flex-col items-center justify-center gap-2">
         <div class="h-9 w-20 nb-skeleton-box rounded-md"></div>
         <div class="h-4 w-28 nb-skeleton-box rounded-sm"></div>
       </div>
@@ -29,7 +29,7 @@
 
   <!-- Vision & Mission Skeleton (2 cards) -->
   <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="nb-card bg-white dark:bg-zinc-900 p-6 flex flex-col gap-3 border-3 border-nb-black shadow-nb">
+    <div class="nb-card bg-nb-surface text-nb-black p-6 flex flex-col gap-3 border-3 border-nb-black shadow-nb">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 nb-skeleton-box rounded-md"></div>
         <div class="h-6 w-36 nb-skeleton-box rounded-md"></div>
@@ -40,7 +40,7 @@
       </div>
     </div>
 
-    <div class="nb-card bg-white dark:bg-zinc-900 p-6 flex flex-col gap-3 border-3 border-nb-black shadow-nb">
+    <div class="nb-card bg-nb-surface text-nb-black p-6 flex flex-col gap-3 border-3 border-nb-black shadow-nb">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 nb-skeleton-box rounded-md"></div>
         <div class="h-6 w-36 nb-skeleton-box rounded-md"></div>
@@ -54,11 +54,11 @@
   </section>
 
   <!-- Services Section Skeleton -->
-  <section class="nb-card bg-white dark:bg-zinc-900 p-6 sm:p-8 border-3 border-nb-black shadow-nb">
+  <section class="nb-card bg-nb-surface text-nb-black p-6 sm:p-8 border-3 border-nb-black shadow-nb">
     <div class="h-6 w-36 nb-skeleton-box rounded-md mb-5"></div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {#each [1, 2, 3] as idx (idx)}
-        <div class="border-3 border-nb-black p-4 bg-nb-bg dark:bg-zinc-800 shadow-nb-sm flex flex-col gap-2">
+        <div class="border-3 border-nb-black p-4 bg-nb-bg shadow-nb-sm flex flex-col gap-2">
           <div class="w-8 h-8 nb-skeleton-box rounded-md mb-1"></div>
           <div class="h-5 w-3/4 nb-skeleton-box rounded-sm"></div>
           <div class="h-3.5 w-full nb-skeleton-box rounded-sm"></div>

@@ -56,7 +56,7 @@
   >
     <!-- Modal Card -->
     <div
-      class="nb-card max-w-md w-full bg-white p-6 relative flex flex-col gap-4 shadow-nb-lg border-3 border-nb-black animate-in fade-in zoom-in-95"
+      class="nb-card max-w-md w-full bg-nb-surface text-nb-black p-6 relative flex flex-col gap-4 shadow-nb-lg border-3 border-nb-black animate-in fade-in zoom-in-95"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"

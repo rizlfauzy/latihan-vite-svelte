@@ -23,7 +23,7 @@
   {#each $alertStore.alerts as alert (alert.id)}
     {#if alert.type === 'skeleton'}
       <div
-        class="pointer-events-auto nb-card p-3 sm:p-3.5 flex flex-col gap-2 shadow-nb-md border-3 border-nb-black overflow-hidden relative bg-white dark:bg-[#202026]"
+        class="pointer-events-auto nb-card p-3 sm:p-3.5 flex flex-col gap-2 shadow-nb-md border-3 border-nb-black overflow-hidden relative bg-nb-surface text-nb-black"
         transition:slide={{ duration: 200 }}
         role="status"
         aria-live="polite"

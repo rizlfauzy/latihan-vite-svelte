@@ -1,5 +1,5 @@
 <div
-  class="nb-card border-3 border-nb-black shadow-nb flex flex-col justify-between p-5 bg-white dark:bg-zinc-900"
+  class="nb-card border-3 border-nb-black shadow-nb flex flex-col justify-between p-5 bg-nb-surface text-nb-black"
   data-testid="skeleton-app-card"
 >
   <div>

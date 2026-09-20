@@ -140,7 +140,7 @@
   >
     <!-- Modal Card -->
     <div
-      class="nb-card max-w-xl w-full bg-white p-5 sm:p-6 my-8 relative flex flex-col gap-5 shadow-nb-lg border-3 border-nb-black animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+      class="nb-card max-w-xl w-full bg-nb-surface text-nb-black p-5 sm:p-6 my-8 relative flex flex-col gap-5 shadow-nb-lg border-3 border-nb-black animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-app-title"

@@ -1,5 +1,5 @@
 <div
-  class="nb-card p-3 sm:p-4 flex items-center justify-between gap-3 border-2 border-nb-black shadow-nb-sm bg-white dark:bg-zinc-900"
+  class="nb-card p-3 sm:p-4 flex items-center justify-between gap-3 border-2 border-nb-black shadow-nb-sm bg-nb-surface text-nb-black"
   data-testid="skeleton-todo-item"
 >
   <div class="flex items-center gap-3 flex-1">

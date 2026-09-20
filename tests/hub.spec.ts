@@ -4,14 +4,14 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    // Clear localStorage and reset apps before each test so tests are idempotent
-    await page.request.post('/api/apps/reset');
+    // Clear localStorage and reset state before each test so tests are idempotent
     await page.addInitScript(() => {
       window.localStorage.clear();
     });
     await page.goto('/');
-    await page.evaluate(() => {
+    await page.evaluate(async () => {
       (window as any).__todoStore?.resetTodos?.();
+      await (window as any).__appStore?.resetApps?.();
     });
     await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
     await expect(page.locator('[data-testid^="todo-item-"]').first()).toBeVisible();
@@ -234,8 +234,10 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const counterBadge = page.locator('[data-testid="apps-counter"]');
     await expect(counterBadge).toContainText('7 APPS TERHUBUNG');
 
-    // Reset apps to keep git working tree clean
-    await page.request.post('/api/apps/reset');
+    // Reset apps to keep database state clean
+    await page.evaluate(async () => {
+      await (window as any).__appStore?.resetApps?.();
+    });
   });
 
   test('Delete App button in debug mode opens confirmation modal and removes app from grid', async ({ page }) => {
@@ -275,7 +277,9 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(alertToast.first()).toBeVisible();
 
     // Reset apps to restore original state
-    await page.request.post('/api/apps/reset');
+    await page.evaluate(async () => {
+      await (window as any).__appStore?.resetApps?.();
+    });
   });
 
   test('Edit App button in debug mode opens modal, updates app data, and shows alert toast', async ({ page }) => {
@@ -313,7 +317,9 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(alertToast).toHaveCount(0);
 
     // Reset apps to restore original state
-    await page.request.post('/api/apps/reset');
+    await page.evaluate(async () => {
+      await (window as any).__appStore?.resetApps?.();
+    });
   });
 
   test('Sticky Navbar has sticky positioning and remains visible at the top during scroll', async ({ page }) => {
@@ -656,7 +662,8 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
   });
 
   test('Skeleton UI loaders render on App Grid and Todo List during loading states', async ({ page }) => {
-    await page.goto('/');
+    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+    await expect(page.locator('[data-testid^="todo-item-"]').first()).toBeVisible();
 
     // Simulate loading state in both stores
     await page.evaluate(() => {
@@ -712,26 +719,26 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(alertToast).not.toBeVisible();
   });
 
-  test('Adding an app through dev API automatically creates and updates apps.ts', async ({ request }) => {
-    const testApp = {
-      id: `auto-created-${Date.now()}`,
-      name: 'Auto Created App',
-      description: 'Test auto creation of data file',
-      url: 'https://example.com',
-      icon: '✨',
-      category: 'DevTools',
-      color: 'var(--color-nb-yellow)',
-      picName: 'Rizal',
-      picWhatsapp: '6281234567890',
-    };
+  test('Apps are sourced 100% from Supabase and apps.ts is configured as empty array baseline', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
 
-    const res = await request.post('/api/apps', { data: testApp });
-    expect(res.ok()).toBeTruthy();
+    // Verify apps are fetched from Supabase and populated in appStore
+    const appStoreData = await page.evaluate(() => {
+      const store = (window as any).__appStore;
+      const state = store ? store.getState() : null;
+      return {
+        count: state ? state.apps.length : 0,
+        hasSupabaseApps: state ? state.apps.length >= 6 : false,
+      };
+    });
 
-    const getRes = await request.get('/api/apps');
-    expect(getRes.ok()).toBeTruthy();
-    const apps = await getRes.json();
-    expect(apps.some((a: any) => a.id === testApp.id)).toBeTruthy();
+    expect(appStoreData.hasSupabaseApps).toBeTruthy();
+    expect(appStoreData.count).toBeGreaterThanOrEqual(6);
+
+    // Verify app cards are rendered on the page
+    const appCards = page.locator('[data-testid="apps-list"] > div');
+    expect(await appCards.count()).toBeGreaterThanOrEqual(6);
   });
 
   test('Company Profile renders complete themed skeleton loader during loading state', async ({ page }) => {

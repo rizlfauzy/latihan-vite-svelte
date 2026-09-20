@@ -1,8 +1,9 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
 import { svelteApps, type AppItem } from '@/data/apps';
-import { env } from '@/lib/env';
 import { alertStore } from '@/stores/alertStore';
 import { supabase, isSupabaseEnabled } from '@/lib/supabase';
+
+export type { AppItem };
 
 export interface AppStoreState {
   apps: AppItem[];
@@ -42,6 +43,76 @@ function mapAppToRow(app: AppItem) {
   };
 }
 
+// Default baseline applications for resetting Supabase state
+const defaultBaselineApps: AppItem[] = [
+  {
+    id: 'portfolio',
+    name: 'Personal Portfolio',
+    description: 'Portofolio interaktif dan showcase karya berbasis Svelte.',
+    url: 'https://github.com/rizlfauzy',
+    icon: '💼',
+    category: 'Portfolio',
+    color: 'var(--color-nb-yellow)',
+    picName: 'Rizal Fauzi',
+    picWhatsapp: '6281234567890',
+  },
+  {
+    id: 'todo-svelte',
+    name: 'Todo & Task Master',
+    description: 'Aplikasi manajemen tugas harian dengan reaktivitas Svelte 5.',
+    url: 'https://svelte.dev',
+    icon: '✅',
+    category: 'Productivity',
+    color: 'var(--color-nb-green)',
+    picName: 'Rizal (Core Dev)',
+    picWhatsapp: '6281234567890',
+  },
+  {
+    id: 'weather-app',
+    name: 'Weather Radar',
+    description: 'Dashboard prakiraan cuaca real-time dengan visualisasi grafis.',
+    url: 'https://vite.dev',
+    icon: '🌤️',
+    category: 'Utility',
+    color: 'var(--color-nb-blue)',
+    picName: 'Rizal (Maintainer)',
+    picWhatsapp: '6281234567890',
+  },
+  {
+    id: 'markdown-editor',
+    name: 'Neo Note Editor',
+    description: 'Markdown editor minimalis dengan live preview instan.',
+    url: 'https://github.com',
+    icon: '📝',
+    category: 'Writing',
+    color: 'var(--color-nb-pink)',
+    picName: 'Rizal Fauzi',
+    picWhatsapp: '6281234567890',
+  },
+  {
+    id: 'finance-tracker',
+    name: 'Pocket Budget',
+    description: 'Pencatat keuangan harian dengan kalkulasi otomatis.',
+    url: 'https://svelte.dev/docs/svelte/overview',
+    icon: '💰',
+    category: 'Finance',
+    color: 'var(--color-nb-purple)',
+    picName: 'Rizal (Finance Lead)',
+    picWhatsapp: '6281234567890',
+  },
+  {
+    id: 'code-snippets',
+    name: 'Snippet Vault',
+    description: 'Koleksi snippet kode favorit siap copy-paste.',
+    url: 'https://vitejs.dev',
+    icon: '⚡',
+    category: 'DevTools',
+    color: 'var(--color-nb-orange)',
+    picName: 'Rizal Fauzi',
+    picWhatsapp: '6281234567890',
+  },
+];
+
 const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set, get) => ({
   apps: [...svelteApps],
   isLoading: false,
@@ -53,17 +124,14 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       const { data, error } = await supabase
         .from('apps')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
-      if (data && data.length > 0) {
-        const mapped = data.map(mapRowToApp);
-        const currentApps = get().apps;
-        const newLocal = currentApps.filter((ca) => !mapped.some((m) => m.id === ca.id));
-        set({ apps: [...newLocal, ...mapped] });
+      if (data) {
+        set({ apps: data.map(mapRowToApp) });
       }
     } catch (err) {
-      console.warn('[appStore] Failed to fetch from Supabase, using local apps', err);
+      console.warn('[appStore] Failed to fetch apps from Supabase', err);
     } finally {
       set({ isLoading: false });
     }
@@ -74,33 +142,16 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     const updated = [newApp, ...get().apps.filter((a) => a.id !== newApp.id)];
     set({ apps: updated, isLoading: false });
 
-    let supabaseSuccess = true;
     if (isSupabaseEnabled && supabase) {
       try {
         const { error } = await supabase.from('apps').insert([mapAppToRow(newApp)]);
         if (error) throw error;
-      } catch (err) {
-        console.error('[appStore] Failed to insert app into Supabase', err);
-        supabaseSuccess = false;
-      }
-    }
-
-    if (typeof window !== 'undefined' && env.enableDebug) {
-      try {
-        const res = await fetch('/api/apps', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newApp),
-        });
-        if (!res.ok) throw new Error('Server returned error status');
         alertStore.showSuccess(`Aplikasi "${newApp.name}" berhasil ditambahkan!`);
         return true;
       } catch (err) {
-        console.error('[appStore] Failed to write new app to apps.ts via /api/apps', err);
-        if (!supabaseSuccess) {
-          alertStore.showError(`Gagal menambahkan aplikasi "${newApp.name}"!`);
-          return false;
-        }
+        console.error('[appStore] Failed to insert app into Supabase', err);
+        alertStore.showError(`Gagal menambahkan aplikasi "${newApp.name}"!`);
+        return false;
       }
     }
 
@@ -113,7 +164,6 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     const updated = get().apps.map((a) => (a.id === updatedApp.id ? { ...a, ...updatedApp } : a));
     set({ apps: updated });
 
-    let supabaseSuccess = true;
     if (isSupabaseEnabled && supabase) {
       try {
         const { error } = await supabase
@@ -121,28 +171,12 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
           .update(mapAppToRow(updatedApp))
           .eq('id', updatedApp.id);
         if (error) throw error;
-      } catch (err) {
-        console.error('[appStore] Failed to update app in Supabase', err);
-        supabaseSuccess = false;
-      }
-    }
-
-    if (typeof window !== 'undefined' && env.enableDebug) {
-      try {
-        const res = await fetch(`/api/apps/${encodeURIComponent(updatedApp.id)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedApp),
-        });
-        if (!res.ok) throw new Error('Server returned error status');
         alertStore.showSuccess(`Aplikasi "${updatedApp.name}" berhasil diperbarui!`);
         return true;
       } catch (err) {
-        console.error('[appStore] Failed to update app in apps.ts via /api/apps', err);
-        if (!supabaseSuccess) {
-          alertStore.showError(`Gagal memperbarui aplikasi "${updatedApp.name}"!`);
-          return false;
-        }
+        console.error('[appStore] Failed to update app in Supabase', err);
+        alertStore.showError(`Gagal memperbarui aplikasi "${updatedApp.name}"!`);
+        return false;
       }
     }
 
@@ -158,31 +192,16 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     const updated = get().apps.filter((a) => a.id !== id);
     set({ apps: updated });
 
-    let supabaseSuccess = true;
     if (isSupabaseEnabled && supabase) {
       try {
         const { error } = await supabase.from('apps').delete().eq('id', id);
         if (error) throw error;
-      } catch (err) {
-        console.error('[appStore] Failed to delete app in Supabase', err);
-        supabaseSuccess = false;
-      }
-    }
-
-    if (typeof window !== 'undefined' && env.enableDebug) {
-      try {
-        const res = await fetch(`/api/apps/${encodeURIComponent(id)}`, {
-          method: 'DELETE',
-        });
-        if (!res.ok) throw new Error('Server returned error status');
         alertStore.showSuccess(`${targetName} berhasil dihapus!`);
         return true;
       } catch (err) {
-        console.error('[appStore] Failed to delete app from apps.ts via /api/apps', err);
-        if (!supabaseSuccess) {
-          alertStore.showError(`Gagal menghapus ${targetName}!`);
-          return false;
-        }
+        console.error('[appStore] Failed to delete app from Supabase', err);
+        alertStore.showError(`Gagal menghapus ${targetName}!`);
+        return false;
       }
     }
 
@@ -191,15 +210,17 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
   },
 
   resetApps: async () => {
-    set({ apps: [...svelteApps] });
-
-    if (typeof window !== 'undefined') {
+    if (isSupabaseEnabled && supabase) {
       try {
-        await fetch('/api/apps/reset', { method: 'POST' });
+        // Clear apps and re-seed baseline apps in Supabase
+        await supabase.from('apps').delete().neq('id', '');
+        const rows = defaultBaselineApps.map(mapAppToRow);
+        await supabase.from('apps').insert(rows);
       } catch (err) {
-        console.error('[appStore] Failed to reset apps.ts', err);
+        console.error('[appStore] Failed to reset Supabase apps', err);
       }
     }
+    await get().fetchApps();
   },
 }));
 

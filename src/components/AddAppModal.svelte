@@ -159,7 +159,7 @@
     data-testid="add-app-modal-backdrop"
   >
     <div
-      class="nb-card bg-white w-full max-w-lg p-6 my-8 border-4 border-nb-black shadow-nb-lg relative flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+      class="nb-card bg-nb-surface text-nb-black w-full max-w-lg p-6 my-8 border-4 border-nb-black shadow-nb-lg relative flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-app-title"
