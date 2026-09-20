@@ -22,12 +22,15 @@
 >
   {#each $alertStore.alerts as alert (alert.id)}
     <div
-      class="pointer-events-auto nb-card p-3 sm:p-3.5 flex flex-col gap-2 shadow-nb-md border-3 border-nb-black overflow-hidden relative {bgClasses[alert.type] || 'bg-white text-nb-black'}"
+      class="pointer-events-auto nb-card p-3 sm:p-3.5 flex flex-col gap-2 shadow-nb-md border-3 border-nb-black overflow-hidden relative group {bgClasses[alert.type] || 'bg-white text-nb-black'}"
       transition:slide={{ duration: 200 }}
       role="status"
       aria-live="polite"
       data-testid="alert-toast"
       data-type={alert.type}
+      data-paused={alert.isPaused ? 'true' : 'false'}
+      onmouseenter={() => alertStore.pauseAlert(alert.id)}
+      onmouseleave={() => alertStore.resumeAlert(alert.id)}
     >
       <div class="flex items-start justify-between gap-3 w-full">
         <div class="flex items-start gap-2.5">
@@ -55,10 +58,11 @@
         </button>
       </div>
 
-      <!-- Neo Brutalism Countdown Progress Bar -->
+      <!-- Neo Brutalism Countdown Progress Bar with Pause on Hover -->
       <div class="w-full h-1.5 bg-black/20 border-t-2 border-nb-black overflow-hidden -mx-3 -mb-3 sm:-mx-3.5 sm:-mb-3.5 mt-1">
         <div
           class="h-full bg-nb-black alert-progress-bar"
+          class:paused={alert.isPaused}
           style="animation-duration: {alert.duration ?? 3500}ms;"
           data-testid="alert-progress-bar"
         ></div>
@@ -81,5 +85,10 @@
     animation-name: shrinkProgress;
     animation-timing-function: linear;
     animation-fill-mode: forwards;
+  }
+
+  .alert-progress-bar.paused,
+  :global(.group:hover .alert-progress-bar) {
+    animation-play-state: paused !important;
   }
 </style>
