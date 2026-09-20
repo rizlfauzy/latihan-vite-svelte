@@ -6,8 +6,24 @@ import path from 'node:path';
 
 function appsApiPlugin(): Plugin {
   const filePath = path.resolve(import.meta.dirname, 'src/data/apps.ts');
+  const examplePath = path.resolve(import.meta.dirname, 'src/data/apps.example.ts');
+
+  function ensureAppsFileExists() {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    if (!fs.existsSync(filePath)) {
+      if (fs.existsSync(examplePath)) {
+        fs.copyFileSync(examplePath, filePath);
+      } else {
+        fs.writeFileSync(filePath, defaultAppsContent, 'utf-8');
+      }
+    }
+  }
 
   function readApps() {
+    ensureAppsFileExists();
     if (!fs.existsSync(filePath)) return [];
     const content = fs.readFileSync(filePath, 'utf-8');
     const start = content.indexOf('[');
@@ -21,6 +37,10 @@ function appsApiPlugin(): Plugin {
   }
 
   function writeApps(apps: any[]) {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     const fileContent = `export interface AppItem {
   id: string;
   name: string;
@@ -210,6 +230,12 @@ export const svelteApps: AppItem[] = [
 
   return {
     name: 'dev-apps-api',
+    configResolved() {
+      ensureAppsFileExists();
+    },
+    buildStart() {
+      ensureAppsFileExists();
+    },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         if (req.url?.startsWith('/api/apps')) {

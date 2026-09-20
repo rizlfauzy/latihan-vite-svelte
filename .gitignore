@@ -17,6 +17,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Local Data files (untracked to prevent git conflicts)
+src/data/apps.ts
+!src/data/apps.example.ts
+
 # Test artifacts
 test-results/
 playwright-report/
