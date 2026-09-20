@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { i18nStore } from '@/stores/i18nStore';
+
   interface Props {
     isOpen: boolean;
     title?: string;
@@ -12,14 +14,19 @@
 
   let {
     isOpen = $bindable(false),
-    title = 'KONFIRMASI HAPUS',
-    message = 'Apakah Anda yakin ingin menghapus item ini?',
+    title,
+    message,
     itemText = '',
-    confirmText = 'YA, HAPUS',
-    cancelText = 'BATAL',
+    confirmText,
+    cancelText,
     onConfirm,
     onCancel
   }: Props = $props();
+
+  let resolvedTitle = $derived(title || $i18nStore.t('confirm.title'));
+  let resolvedMessage = $derived(message || $i18nStore.t('confirm.message'));
+  let resolvedConfirmText = $derived(confirmText || $i18nStore.t('confirm.confirm'));
+  let resolvedCancelText = $derived(cancelText || $i18nStore.t('confirm.cancel'));
 
   function handleKeydown(e: KeyboardEvent) {
     if (isOpen && e.key === 'Escape') {
@@ -56,14 +63,14 @@
       <div class="flex items-center justify-between gap-3 border-b-2 border-nb-black pb-3">
         <div class="inline-flex items-center gap-2 bg-nb-yellow px-3 py-1 border-2 border-nb-black rounded font-black text-sm uppercase text-black">
           <span>⚠️</span>
-          <span id="modal-title">{title}</span>
+          <span id="modal-title">{resolvedTitle}</span>
         </div>
 
         <button
           type="button"
           class="w-7 h-7 border-2 border-nb-black bg-gray-100 hover:bg-nb-yellow rounded flex items-center justify-center font-bold text-xs cursor-pointer shadow-nb-xs transition-all"
           onclick={onCancel}
-          aria-label="Tutup modal"
+          aria-label={$i18nStore.t('confirm.closeModal')}
           data-testid="modal-close-button"
         >
           ✕
@@ -73,7 +80,7 @@
       <!-- Modal Content -->
       <div class="flex flex-col gap-2.5 text-nb-black">
         <p class="font-bold text-base m-0 leading-snug">
-          {message}
+          {resolvedMessage}
         </p>
 
         {#if itemText}
@@ -83,7 +90,7 @@
         {/if}
 
         <p class="text-xs font-semibold text-gray-500 m-0">
-          * Item yang dihapus tidak dapat dipulihkan kembali.
+          * {$i18nStore.t('confirm.warning')}
         </p>
       </div>
 
@@ -95,7 +102,7 @@
           onclick={onCancel}
           data-testid="modal-cancel-button"
         >
-          {cancelText}
+          {resolvedCancelText}
         </button>
 
         <button
@@ -104,7 +111,7 @@
           onclick={onConfirm}
           data-testid="modal-confirm-button"
         >
-          {confirmText}
+          {resolvedConfirmText}
         </button>
       </div>
     </div>

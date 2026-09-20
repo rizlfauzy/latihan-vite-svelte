@@ -34,12 +34,21 @@
   "grid.emptySearch": "No apps match your search or selected filter. Try different keywords! ✨",
   "grid.resetFilter": "RESET SEARCH & FILTERS",
   "grid.showingCount": "FOUND",
+  "grid.confirmModalDeleteAppTitle": "DELETE APPLICATION",
+  "grid.confirmModalDeleteAppMsg": "Are you sure you want to delete this application directly from apps.ts?",
 
   "action.cancel": "CANCEL",
   "action.save": "💾 SAVE CHANGES",
   "action.add": "🚀 ADD APPLICATION",
   "action.delete": "YES, DELETE",
   "action.deleteApp": "YES, DELETE APP",
+
+  "confirm.title": "CONFIRM DELETION",
+  "confirm.message": "Are you sure you want to delete this item?",
+  "confirm.confirm": "YES, DELETE",
+  "confirm.cancel": "CANCEL",
+  "confirm.warning": "Deleted items cannot be recovered.",
+  "confirm.closeModal": "Close modal",
 
   "modal.addTitle": "ADD NEW APPLICATION",
   "modal.editTitle": "EDIT APPLICATION",

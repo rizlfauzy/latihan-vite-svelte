@@ -34,12 +34,21 @@
   "grid.emptySearch": "Tidak ada aplikasi yang cocok dengan pencarian atau filter ini. Yuk ubah kata kuncinya! ✨",
   "grid.resetFilter": "RESET PENCARIAN & FILTER",
   "grid.showingCount": "DITEMUKAN",
+  "grid.confirmModalDeleteAppTitle": "HAPUS APLIKASI",
+  "grid.confirmModalDeleteAppMsg": "Apakah Anda yakin ingin menghapus aplikasi ini langsung dari apps.ts?",
 
   "action.cancel": "BATAL",
   "action.save": "💾 SIMPAN PERUBAHAN",
   "action.add": "🚀 TAMBAHKAN APLIKASI",
   "action.delete": "YA, HAPUS",
   "action.deleteApp": "YA, HAPUS APLIKASI",
+
+  "confirm.title": "KONFIRMASI HAPUS",
+  "confirm.message": "Apakah Anda yakin ingin menghapus item ini?",
+  "confirm.confirm": "YA, HAPUS",
+  "confirm.cancel": "BATAL",
+  "confirm.warning": "Item yang dihapus tidak dapat dipulihkan kembali.",
+  "confirm.closeModal": "Tutup modal",
 
   "modal.addTitle": "TAMBAH APLIKASI BARU",
   "modal.editTitle": "EDIT APLIKASI",
