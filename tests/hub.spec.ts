@@ -416,6 +416,64 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const swText = await swRes.text();
     expect(swText).toContain('CACHE_NAME');
   });
+
+  test('Search bar filters applications by name and PIC in real-time and shows empty state', async ({ page }) => {
+    const searchInput = page.locator('[data-testid="search-apps-input"]');
+    await expect(searchInput).toBeVisible();
+
+    // Search by app name (e.g., "Weather")
+    await searchInput.fill('Weather');
+    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Weather Radar');
+    await expect(page.locator('[data-testid="apps-list"]')).not.toContainText('Pocket Budget');
+
+    // Clear search using clear button
+    const clearBtn = page.locator('[data-testid="btn-clear-search"]');
+    await clearBtn.click();
+    await expect(searchInput).toHaveValue('');
+    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Pocket Budget');
+
+    // Search by PIC name (e.g., "Maintainer")
+    await searchInput.fill('Maintainer');
+    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Weather Radar');
+    await expect(page.locator('[data-testid="apps-list"]')).not.toContainText('Todo & Task Master');
+
+    // Search non-existing keyword -> empty state
+    await searchInput.fill('NonExistentApp123456');
+    await expect(page.locator('[data-testid="apps-empty-state"]')).toBeVisible();
+    await expect(page.locator('[data-testid="apps-list"]')).not.toBeVisible();
+
+    // Reset from empty state
+    const emptyResetBtn = page.locator('[data-testid="btn-empty-reset"]');
+    await emptyResetBtn.click();
+    await expect(searchInput).toHaveValue('');
+    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+  });
+
+  test('Category filter filters apps, combines with search query, and resets properly', async ({ page }) => {
+    // Check categories list
+    const categoryBar = page.locator('[data-testid="category-filter-list"]');
+    await expect(categoryBar).toBeVisible();
+
+    // Click Productivity category
+    const prodBtn = page.locator('[data-testid="category-btn-productivity"]');
+    await expect(prodBtn).toBeVisible();
+    await prodBtn.click();
+
+    // Verify Productivity app is shown, but Utility app (Weather Radar) is not
+    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Todo & Task Master');
+    await expect(page.locator('[data-testid="apps-list"]')).not.toContainText('Weather Radar');
+
+    // Combine with search query that doesn't match in Productivity
+    const searchInput = page.locator('[data-testid="search-apps-input"]');
+    await searchInput.fill('Weather');
+    await expect(page.locator('[data-testid="apps-empty-state"]')).toBeVisible();
+
+    // Click reset filter button
+    const resetBtn = page.locator('[data-testid="btn-reset-filters"]');
+    await resetBtn.click();
+    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Weather Radar');
+    await expect(searchInput).toHaveValue('');
+  });
 });
 
 
