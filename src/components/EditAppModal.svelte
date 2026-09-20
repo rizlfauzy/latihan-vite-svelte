@@ -158,7 +158,7 @@
 
         <button
           type="button"
-          class="w-8 h-8 border-2 border-nb-black bg-gray-100 hover:bg-nb-yellow rounded flex items-center justify-center font-bold text-sm cursor-pointer shadow-nb-xs transition-all text-black"
+          class="w-8 h-8 border-2 border-nb-black hover:bg-nb-red rounded flex items-center justify-center font-bold text-sm cursor-pointer shadow-nb-xs transition-all text-nb-black bg-red-500"
           onclick={handleClose}
           aria-label="Tutup form edit"
           data-testid="btn-close-edit-app"

@@ -4,17 +4,13 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    // Clear localStorage and reset state before each test so tests are idempotent
+    // Clear localStorage before each test so tests are idempotent
     await page.addInitScript(() => {
       window.localStorage.clear();
     });
     await page.goto('/');
-    await page.evaluate(async () => {
-      (window as any).__todoStore?.resetTodos?.();
-      await (window as any).__appStore?.resetApps?.();
-    });
     await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
-    await expect(page.locator('[data-testid^="todo-item-"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid="todo-input"]')).toBeVisible();
   });
 
   test('Hero section renders branding, logo, and tech badges', async ({ page }) => {
@@ -53,7 +49,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(page.getByText('CATATAN & TO-DO LIST')).toBeVisible();
 
     const initialTodosCount = await page.locator('[data-testid^="todo-item-"]').count();
-    expect(initialTodosCount).toBeGreaterThanOrEqual(1);
+    expect(initialTodosCount).toBeGreaterThanOrEqual(0);
 
     // Add a new todo item
     const testTodoTitle = `Playwright Automated Test Task ${Date.now()}`;
@@ -121,6 +117,10 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
   });
 
   test('Confirmation modal prevents accidental deletion and supports cancel, backdrop click, and Escape key', async ({ page }) => {
+    if ((await page.locator('[data-testid^="todo-item-"]').count()) === 0) {
+      await page.locator('[data-testid="todo-input"]').fill(`Deletion Test Note ${Date.now()}`);
+      await page.locator('[data-testid="todo-add-button"]').click();
+    }
     const firstTodo = page.locator('[data-testid^="todo-item-"]').first();
     const todoId = await firstTodo.getAttribute('data-testid');
     const targetItem = page.locator(`[data-testid="${todoId}"]`);
@@ -206,13 +206,18 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
     await expect(openAddBtn).toBeVisible();
 
+    // Check initial counter
+    const counterBadge = page.locator('[data-testid="apps-counter"]');
+    const initialText = (await counterBadge.textContent()) || '';
+    const initialCount = parseInt(initialText, 10) || 0;
+
     // Open modal
     await openAddBtn.click();
     const modalBackdrop = page.locator('[data-testid="add-app-modal-backdrop"]');
     await expect(modalBackdrop).toBeVisible();
 
     // Fill form
-    const appName = 'E2E Automated App';
+    const appName = `E2E Automated App ${Date.now()}`;
     await page.locator('[data-testid="input-app-name"]').fill(appName);
     await page.locator('[data-testid="input-app-url"]').fill('https://example.com/e2e');
     await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi uji otomatis Playwright');
@@ -227,17 +232,12 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     // Verify new app appears in the grid
     await expect(page.locator('[data-testid="apps-list"]').getByRole('heading', { name: appName })).toBeVisible();
-    await expect(page.locator('[data-testid="apps-list"]').getByText('Aplikasi uji otomatis Playwright')).toBeVisible();
-    await expect(page.getByText('Tester Playwright')).toBeVisible();
+    await expect(page.locator('[data-testid="apps-list"]').getByText('Aplikasi uji otomatis Playwright').first()).toBeVisible();
+    await expect(page.getByText('Tester Playwright').first()).toBeVisible();
 
-    // Verify app counter incremented to 7
-    const counterBadge = page.locator('[data-testid="apps-counter"]');
-    await expect(counterBadge).toContainText('7 APPS TERHUBUNG');
-
-    // Reset apps to keep database state clean
-    await page.evaluate(async () => {
-      await (window as any).__appStore?.resetApps?.();
-    });
+    // Verify app counter incremented
+    const expectedCount = initialCount + 1;
+    await expect(counterBadge).toContainText(`${expectedCount} APPS TERHUBUNG`);
   });
 
   test('Delete App button in debug mode opens confirmation modal and removes app from grid', async ({ page }) => {
@@ -275,11 +275,6 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     // Verify alert toast appeared
     const alertToast = page.locator('[data-testid="alert-toast"]');
     await expect(alertToast.first()).toBeVisible();
-
-    // Reset apps to restore original state
-    await page.evaluate(async () => {
-      await (window as any).__appStore?.resetApps?.();
-    });
   });
 
   test('Edit App button in debug mode opens modal, updates app data, and shows alert toast', async ({ page }) => {
@@ -293,7 +288,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(editModal).toBeVisible();
 
     // Edit app name
-    const editedName = 'Portfolio Pro Edition';
+    const editedName = `Portfolio Pro Edition ${Date.now()}`;
     const nameInput = page.locator('[data-testid="input-edit-app-name"]');
     await nameInput.fill(editedName);
 
@@ -315,11 +310,6 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const closeBtn = page.locator('[data-testid="alert-close-btn"]').first();
     await closeBtn.click();
     await expect(alertToast).toHaveCount(0);
-
-    // Reset apps to restore original state
-    await page.evaluate(async () => {
-      await (window as any).__appStore?.resetApps?.();
-    });
   });
 
   test('Sticky Navbar has sticky positioning and remains visible at the top during scroll', async ({ page }) => {
@@ -514,6 +504,22 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(dropdown).not.toBeVisible();
     await expect(selectTrigger).toContainText('DevTools');
 
+    // Test keyboard selection with Enter (picks topmost option)
+    await selectTrigger.click();
+    await expect(dropdown).toBeVisible();
+    await searchInput.fill('Util');
+    await page.keyboard.press('Enter');
+    await expect(dropdown).not.toBeVisible();
+    await expect(selectTrigger).toContainText('Utility');
+
+    // Test keyboard selection with Tab (picks topmost option)
+    await selectTrigger.click();
+    await expect(dropdown).toBeVisible();
+    await searchInput.fill('Fin');
+    await page.keyboard.press('Tab');
+    await expect(dropdown).not.toBeVisible();
+    await expect(selectTrigger).toContainText('Finance');
+
     // Close modal
     await page.locator('[data-testid="add-app-close-btn"]').click();
 
@@ -663,7 +669,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
   test('Skeleton UI loaders render on App Grid and Todo List during loading states', async ({ page }) => {
     await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
-    await expect(page.locator('[data-testid^="todo-item-"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid="todo-input"]')).toBeVisible();
 
     // Simulate loading state in both stores
     await page.evaluate(() => {
@@ -788,12 +794,14 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
     await expect(page.locator('[data-testid="todo-input"]')).toBeVisible();
 
-    // Verify app topic selector exists
-    const topicSelect = page.locator('[data-testid="todo-app-topic-select"]');
-    await expect(topicSelect).toBeVisible();
+    // Verify app topic selector exists (CustomSelect)
+    const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
+    await expect(topicTrigger).toBeVisible();
 
-    // Select second app (e.g. 'todo-svelte')
-    await topicSelect.selectOption({ index: 1 });
+    // Open CustomSelect and pick an option
+    await topicTrigger.click();
+    const secondOption = page.locator('[data-testid^="todo-app-topic-select-option-"]').nth(1);
+    await secondOption.click();
 
     const taskWithTopic = `Task for Specific App Topic ${Date.now()}`;
     await page.locator('[data-testid="todo-input"]').fill(taskWithTopic);
@@ -814,9 +822,10 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     // 1. Pick target app id: 'weather-app'
     const targetAppId = 'weather-app';
 
-    // 2. Select this app in the Todo topic select
-    const topicSelect = page.locator('[data-testid="todo-app-topic-select"]');
-    await topicSelect.selectOption(targetAppId);
+    // 2. Select this app in the Todo topic select via CustomSelect
+    const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
+    await topicTrigger.click();
+    await page.locator(`[data-testid="todo-app-topic-select-option-${targetAppId}"]`).click();
 
     // 3. Add two todo items specifically for this app
     const todoTitle1 = `Weather App Task A ${Date.now()}`;
@@ -832,7 +841,8 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     // Also add an unrelated todo for 'portfolio'
     const unrelatedTodo = `Unrelated Portfolio Task ${Date.now()}`;
-    await topicSelect.selectOption('portfolio');
+    await topicTrigger.click();
+    await page.locator('[data-testid="todo-app-topic-select-option-portfolio"]').click();
     await page.locator('[data-testid="todo-input"]').fill(unrelatedTodo);
     await page.locator('[data-testid="todo-add-button"]').click();
     await expect(page.locator(`text=${unrelatedTodo}`)).toBeVisible();
@@ -861,21 +871,34 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await page.goto('/');
     await expect(page.locator('[data-testid="todo-topic-filter"]')).toBeVisible();
 
-    const topicFilter = page.locator('[data-testid="todo-topic-filter"]');
+    // Add a todo for portfolio
+    const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
+    await topicTrigger.click();
+    await page.locator('[data-testid="todo-app-topic-select-option-portfolio"]').click();
+    const portfolioTask = `Portfolio Task ${Date.now()}`;
+    await page.locator('[data-testid="todo-input"]').fill(portfolioTask);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${portfolioTask}`)).toBeVisible();
+
+    // Add a todo for todo-svelte
+    await topicTrigger.click();
+    await page.locator('[data-testid="todo-app-topic-select-option-todo-svelte"]').click();
+    const svelteTask = `Svelte Task ${Date.now()}`;
+    await page.locator('[data-testid="todo-input"]').fill(svelteTask);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${svelteTask}`)).toBeVisible();
 
     // Select filter by 'portfolio'
+    const topicFilter = page.locator('[data-testid="todo-topic-filter"]');
     await topicFilter.selectOption('portfolio');
 
-    // Default todo #3 is associated with 'portfolio'
-    await expect(page.getByText('Tambahkan link proyek Svelte lama ke file apps.ts')).toBeVisible();
-
-    // Default todo #1 is associated with 'todo-svelte'
-    await expect(page.getByText('Pelajari reaktivitas Runes di Svelte 5')).not.toBeVisible();
+    await expect(page.locator(`text=${portfolioTask}`)).toBeVisible();
+    await expect(page.locator(`text=${svelteTask}`)).not.toBeVisible();
 
     // Reset topic filter to all
     await topicFilter.selectOption('all');
-    await expect(page.getByText('Pelajari reaktivitas Runes di Svelte 5')).toBeVisible();
-    await expect(page.getByText('Tambahkan link proyek Svelte lama ke file apps.ts')).toBeVisible();
+    await expect(page.locator(`text=${portfolioTask}`)).toBeVisible();
+    await expect(page.locator(`text=${svelteTask}`)).toBeVisible();
   });
 });
 

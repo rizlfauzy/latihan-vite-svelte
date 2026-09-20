@@ -178,7 +178,7 @@
         </div>
         <button
           type="button"
-          class="nb-btn bg-white hover:bg-nb-pink text-xs font-black p-1.5 w-8 h-8 flex items-center justify-center text-black"
+          class="nb-btn bg-red-500 hover:bg-nb-pink text-xs font-black p-1.5 w-8 h-8 flex items-center justify-center text-nb-black"
           onclick={handleClose}
           aria-label="Tutup modal"
           data-testid="add-app-close-btn"

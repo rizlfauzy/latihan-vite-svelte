@@ -68,7 +68,7 @@ function saveLocalTodos(todos: Todo[]) {
 function mapRowToTodo(row: any): Todo {
   return {
     id: row.id,
-    appId: row.app_id || row.appId || null,
+    appId: row.appId || row.app_id || null,
     text: row.text,
     done: Boolean(row.done),
     createdAt: Number(row.created_at) || Date.now(),
@@ -79,7 +79,7 @@ function mapRowToTodo(row: any): Todo {
 function mapTodoToRow(todo: Todo) {
   return {
     id: todo.id,
-    app_id: todo.appId || null,
+    appId: todo.appId || null,
     text: todo.text,
     done: todo.done,
     created_at: todo.createdAt,
@@ -134,7 +134,12 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
 
     if (isSupabaseEnabled && supabase) {
       try {
-        await supabase.from('todos').insert([mapTodoToRow(newTodo)]);
+        const payload = mapTodoToRow(newTodo);
+        const { error } = await supabase.from('todos').insert([payload]);
+        if (error && error.code === 'PGRST204') {
+          const { appId: _, ...fallbackPayload } = payload;
+          await supabase.from('todos').insert([fallbackPayload]);
+        }
       } catch (err) {
         console.error('[todoStore] Failed to insert todo into Supabase', err);
       }
@@ -181,9 +186,12 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
 
     if (isSupabaseEnabled && supabase) {
       try {
-        await supabase.from('todos').delete().eq('app_id', appId);
+        const { error } = await supabase.from('todos').delete().eq('appId', appId);
+        if (error) {
+          await supabase.from('todos').delete().eq('app_id', appId);
+        }
       } catch (err) {
-        console.error('[todoStore] Failed to delete todos by app_id in Supabase', err);
+        console.error('[todoStore] Failed to delete todos by appId in Supabase', err);
       }
     }
   },

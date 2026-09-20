@@ -20,7 +20,7 @@ create table if not exists public.apps (
 -- 2. TABEL: todos (To-Do List & Sub-Tasks with App Topic Reference)
 create table if not exists public.todos (
   id text primary key,
-  app_id text references public.apps(id) on delete cascade,
+  "appId" text references public.apps(id) on delete cascade,
   text text not null,
   done boolean not null default false,
   created_at bigint not null,
@@ -28,7 +28,17 @@ create table if not exists public.todos (
 );
 
 -- Migration script for existing databases:
-alter table public.todos add column if not exists app_id text references public.apps(id) on delete cascade;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'todos' and column_name = 'app_id'
+  ) then
+    alter table public.todos rename column app_id to "appId";
+  else
+    alter table public.todos add column if not exists "appId" text references public.apps(id) on delete cascade;
+  end if;
+end $$;
 
 
 -- 3. ROW LEVEL SECURITY (RLS)
