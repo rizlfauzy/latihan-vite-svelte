@@ -34,43 +34,7 @@ export interface TodoStoreState {
 
 const STORAGE_KEY = 'svelte_hub_todos';
 
-const defaultTodos: Todo[] = [
-  {
-    id: '1',
-    appId: 'todo-svelte',
-    text: 'Pelajari reaktivitas Runes di Svelte 5',
-    done: true,
-    createdAt: Date.now() - 3600000,
-    subTasks: [
-      { id: '1-1', text: 'Eksplorasi $state() untuk state lokal', done: true, createdAt: Date.now() - 3500000 },
-      { id: '1-2', text: 'Gunakan $derived() untuk computed values', done: true, createdAt: Date.now() - 3400000 },
-      { id: '1-3', text: 'Gunakan $effect() untuk sinkronisasi localStorage', done: true, createdAt: Date.now() - 3300000 },
-    ],
-  },
-  {
-    id: '2',
-    appId: 'code-snippets',
-    text: 'Setup deployment Docker multi-stage dengan Nginx',
-    done: false,
-    createdAt: Date.now() - 1800000,
-    subTasks: [
-      { id: '2-1', text: 'Buat Dockerfile multi-stage dengan builder Bun', done: true, createdAt: Date.now() - 1700000 },
-      { id: '2-2', text: 'Konfigurasi nginx.conf untuk SPA routing', done: true, createdAt: Date.now() - 1600000 },
-      { id: '2-3', text: 'Uji container di port 8080 via docker compose', done: false, createdAt: Date.now() - 1500000 },
-    ],
-  },
-  {
-    id: '3',
-    appId: 'portfolio',
-    text: 'Tambahkan link proyek Svelte lama ke file apps.ts',
-    done: false,
-    createdAt: Date.now(),
-    subTasks: [
-      { id: '3-1', text: 'Kumpulkan URL repo dan live demo', done: false, createdAt: Date.now() },
-      { id: '3-2', text: 'Tambahkan kontak WhatsApp PIC masing-masing apps', done: true, createdAt: Date.now() },
-    ],
-  },
-];
+const defaultTodos: Todo[] = [];
 
 function loadLocalTodos(): Todo[] {
   if (typeof window === 'undefined') return defaultTodos;
