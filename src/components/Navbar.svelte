@@ -80,7 +80,7 @@
       <div class="relative inline-flex items-stretch" data-nav-dropdown data-testid="nav-group-home">
         <a
           href="/"
-          class="nb-btn text-xs sm:text-sm px-3.5 py-2 font-black transition-all rounded-r-none border-r-0 {router.isActive('/') ? 'bg-nb-yellow border-3' : 'bg-white hover:bg-gray-100'}"
+          class="nb-btn text-xs sm:text-sm px-3.5 py-2 font-black transition-all rounded-r-none border-r-0 {router.isActive('/') ? 'bg-nb-yellow border-3 text-black' : 'bg-white hover:bg-gray-100'}"
           data-testid="nav-link-home"
           onclick={closeDropdowns}
         >
@@ -88,7 +88,7 @@
         </a>
         <button
           type="button"
-          class="nb-btn text-xs sm:text-sm px-2 py-2 font-black transition-all rounded-l-none {router.isActive('/') ? 'bg-nb-yellow border-3' : 'bg-white hover:bg-gray-100'}"
+          class="nb-btn text-xs sm:text-sm px-2 py-2 font-black transition-all rounded-l-none {router.isActive('/') ? 'bg-nb-yellow border-3 text-black' : 'bg-white hover:bg-gray-100'}"
           onclick={(e) => { e.stopPropagation(); toggleDropdown('home'); }}
           aria-label="Toggle Apps Submenu"
           data-testid="nav-dropdown-toggle-home"
@@ -98,7 +98,7 @@
 
         {#if openDropdown === 'home'}
           <div
-            class="absolute top-full left-0 mt-1 min-w-[200px] nb-card bg-white p-1.5 shadow-nb-md border-3 flex flex-col gap-1 z-50 animate-in"
+            class="absolute top-full left-0 mt-1 min-w-50 nb-card bg-white p-1.5 shadow-nb-md border-3 flex flex-col gap-1 z-50 animate-in"
             data-testid="nav-submenu-home"
           >
             <button
@@ -125,7 +125,7 @@
       <div class="relative inline-flex items-stretch" data-nav-dropdown data-testid="nav-group-company">
         <a
           href="/company-profile"
-          class="nb-btn text-xs sm:text-sm px-3.5 py-2 font-black transition-all rounded-r-none border-r-0 {router.isActive('/company-profile') ? 'bg-nb-yellow border-3' : 'bg-white hover:bg-gray-100'}"
+          class="nb-btn text-xs sm:text-sm px-3.5 py-2 font-black transition-all rounded-r-none border-r-0 {router.isActive('/company-profile') ? 'bg-nb-yellow border-3 text-black' : 'bg-white hover:bg-gray-100'}"
           data-testid="nav-link-company-profile"
           onclick={closeDropdowns}
         >
@@ -133,7 +133,7 @@
         </a>
         <button
           type="button"
-          class="nb-btn text-xs sm:text-sm px-2 py-2 font-black transition-all rounded-l-none {router.isActive('/company-profile') ? 'bg-nb-yellow border-3' : 'bg-white hover:bg-gray-100'}"
+          class="nb-btn text-xs sm:text-sm px-2 py-2 font-black transition-all rounded-l-none {router.isActive('/company-profile') ? 'bg-nb-yellow border-3 text-black' : 'bg-white hover:bg-gray-100'}"
           onclick={(e) => { e.stopPropagation(); toggleDropdown('company'); }}
           aria-label="Toggle Company Profile Submenu"
           data-testid="nav-dropdown-toggle-company"
