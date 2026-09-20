@@ -2,7 +2,7 @@
   import { appStore } from '@/stores/appStore';
   import type { AppItem } from '@/data/apps';
   import { i18nStore } from '@/stores/i18nStore';
-  import CustomSelect from './CustomSelect.svelte';
+  import CustomSelect from '@/components/CustomSelect.svelte';
 
   let {
     isOpen = $bindable(false),
@@ -77,7 +77,7 @@
     const chosen = colorOptions.find((c) => c.value === selectedColor);
     const colorVar = chosen ? chosen.cssVar : 'var(--color-nb-yellow)';
     const cleanId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `app-${Date.now()}`;
-    
+
     // Clean WhatsApp number: remove +, space, dash
     const cleanWa = picWhatsapp.replace(/\D/g, '') || '6281234567890';
 
