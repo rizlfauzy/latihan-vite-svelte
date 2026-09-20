@@ -64,11 +64,11 @@
         <span class="inline-flex items-center justify-center w-9 h-9 bg-nb-yellow border-2 border-nb-black shadow-nb-sm rounded font-black text-lg text-nb-black">
           ⚡
         </span>
-        <span class="uppercase">{$i18nStore.t('nav.brand')}</span>
+        <span class="uppercase hidden sm:inline">{$i18nStore.t('nav.brand')}</span>
       </a>
 
       {#if env.enableDebug}
-        <span class="nb-badge bg-nb-pink text-[10px] sm:text-xs py-0.5 px-2 border-2 text-nb-black" title="Mode Debug Aktif">
+        <span class="nb-badge bg-nb-pink text-[10px] sm:text-xs py-0.5 px-2 border-2 text-nb-black hidden sm:inline" title="Mode Debug Aktif">
           {$i18nStore.t('nav.debug')}
         </span>
       {/if}
@@ -143,7 +143,7 @@
 
         {#if openDropdown === 'company'}
           <div
-            class="absolute top-full left-0 mt-1 min-w-[210px] nb-card bg-white p-1.5 shadow-nb-md border-3 flex flex-col gap-1 z-50 animate-in"
+            class="absolute top-full left-0 mt-1 min-w-52.5 nb-card bg-white p-1.5 shadow-nb-md border-3 flex flex-col gap-1 z-50 animate-in"
             data-testid="nav-submenu-company"
           >
             <button
