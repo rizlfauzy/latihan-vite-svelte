@@ -34,7 +34,7 @@
       {#if env.enableDebug}
         <button
           type="button"
-          class="nb-btn bg-nb-pink text-xs font-black px-3.5 py-2 flex items-center gap-1.5"
+          class="nb-btn bg-nb-pink text-xs font-black px-3.5 py-2 flex items-center gap-1.5 text-black"
           onclick={() => (isAddModalOpen = true)}
           data-testid="btn-open-add-app"
         >
@@ -43,7 +43,7 @@
         </button>
       {/if}
 
-      <span class="nb-badge bg-nb-green" data-testid="apps-counter">
+      <span class="nb-badge bg-nb-green text-black" data-testid="apps-counter">
         {displayedApps.length} {$i18nStore.t('grid.connected')}
       </span>
     </div>

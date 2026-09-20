@@ -248,7 +248,7 @@
     </div>
 
     <div class="flex gap-2">
-      <span class="nb-badge bg-nb-yellow">
+      <span class="nb-badge bg-nb-yellow text-black">
         {remainingCount} {$i18nStore.t('todo.pending')}
       </span>
       {#if completedCount > 0}

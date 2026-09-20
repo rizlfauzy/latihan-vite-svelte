@@ -29,7 +29,7 @@
     </div>
 
     <div class="flex items-center gap-1.5">
-      <span class="nb-badge" style="background: {app.color};">
+      <span class="nb-badge text-black" style="background: {app.color};">
         {app.category}
       </span>
 
@@ -83,7 +83,7 @@
       href={app.url}
       target="_blank"
       rel="noopener noreferrer"
-      class="nb-btn bg-nb-yellow text-xs px-4 py-2 w-full flex items-center justify-center gap-1.5 font-mono font-extrabold"
+      class="nb-btn bg-nb-yellow text-xs px-4 py-2 w-full flex items-center justify-center gap-1.5 font-mono font-extrabold text-black"
     >
       <span>{$i18nStore.t('grid.openApp')}</span>
       <span class="text-base transition-transform duration-150 group-hover:translate-x-1 group-hover:-translate-y-1">
