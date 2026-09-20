@@ -130,8 +130,11 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
       if (error) throw error;
       if (data && data.length > 0) {
         const fetched = data.map(mapRowToTodo);
-        set({ todos: fetched });
-        saveLocalTodos(fetched);
+        const currentTodos = get().todos;
+        const newLocal = currentTodos.filter((ct) => !fetched.some((f) => f.id === ct.id));
+        const merged = [...newLocal, ...fetched];
+        set({ todos: merged });
+        saveLocalTodos(merged);
       }
     } catch (err) {
       console.warn('[todoStore] Failed to fetch todos from Supabase, using local todos', err);
@@ -150,7 +153,7 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     };
 
     const updated = [newTodo, ...get().todos];
-    set({ todos: updated });
+    set({ todos: updated, isLoading: false });
     saveLocalTodos(updated);
 
     if (isSupabaseEnabled && supabase) {
@@ -297,3 +300,7 @@ export const todoStore = {
     return rawStore.subscribe((state) => run(state));
   },
 };
+
+if (typeof window !== 'undefined') {
+  (window as any).__todoStore = todoStore;
+}

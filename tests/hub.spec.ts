@@ -10,6 +10,8 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
       window.localStorage.clear();
     });
     await page.goto('/');
+    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+    await expect(page.locator('[data-testid^="todo-item-"]').first()).toBeVisible();
   });
 
   test('Hero section renders branding, logo, and tech badges', async ({ page }) => {
@@ -632,7 +634,6 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
   test('Supabase client module and database schema are properly defined and resilient', async ({ page }) => {
     // Check that the app is alive and operational in local/offline fallback mode
-    await page.goto('/');
     const counterBadge = page.locator('[data-testid="apps-counter"]');
     await expect(counterBadge).toBeVisible();
 
@@ -647,6 +648,85 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     // Verify item appears in the list
     await expect(page.locator(`text=${taskName}`)).toBeVisible();
+  });
+
+  test('Skeleton UI loaders render on App Grid and Todo List during loading states', async ({ page }) => {
+    await page.goto('/');
+
+    // Simulate loading state in both stores
+    await page.evaluate(() => {
+      (window as any).__appStore?.setState?.({ isLoading: true });
+      (window as any).__todoStore?.setState?.({ isLoading: true });
+    });
+
+    // Verify skeleton loaders are visible
+    await expect(page.locator('[data-testid="apps-skeleton-list"]')).toBeVisible();
+    await expect(page.locator('[data-testid="skeleton-app-card"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid="todos-skeleton-list"]')).toBeVisible();
+    await expect(page.locator('[data-testid="skeleton-todo-item"]').first()).toBeVisible();
+
+    // Reset loading state
+    await page.evaluate(() => {
+      (window as any).__appStore?.setState?.({ isLoading: false });
+      (window as any).__todoStore?.setState?.({ isLoading: false });
+    });
+
+    // Verify normal content is restored
+    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+  });
+
+  test('Alert toast countdown pauses on hover and resumes on mouse leave', async ({ page }) => {
+    await page.goto('/');
+
+    // Trigger an alert toast via edit app
+    const firstEditBtn = page.locator('[data-testid^="btn-edit-app-"]').first();
+    await firstEditBtn.click();
+    const editModal = page.locator('[data-testid="edit-app-modal"]');
+    await expect(editModal).toBeVisible();
+
+    await page.locator('[data-testid="btn-submit-edit-app"]').click();
+    await expect(editModal).not.toBeVisible();
+
+    const alertToast = page.locator('[data-testid="alert-toast"]').first();
+    await expect(alertToast).toBeVisible();
+
+    // Hover over the alert toast
+    await alertToast.hover();
+    await expect(alertToast).toHaveAttribute('data-paused', 'true');
+
+    // Wait 500ms while hovered - toast must NOT dismiss
+    await page.waitForTimeout(500);
+    await expect(alertToast).toBeVisible();
+
+    // Move mouse away to top-left corner
+    await page.mouse.move(0, 0);
+    await expect(alertToast).toHaveAttribute('data-paused', 'false');
+
+    // Close alert manually
+    await alertToast.locator('[data-testid="alert-close-btn"]').click();
+    await expect(alertToast).not.toBeVisible();
+  });
+
+  test('Adding an app through dev API automatically creates and updates apps.ts', async ({ request }) => {
+    const testApp = {
+      id: `auto-created-${Date.now()}`,
+      name: 'Auto Created App',
+      description: 'Test auto creation of data file',
+      url: 'https://example.com',
+      icon: '✨',
+      category: 'DevTools',
+      color: 'var(--color-nb-yellow)',
+      picName: 'Rizal',
+      picWhatsapp: '6281234567890',
+    };
+
+    const res = await request.post('/api/apps', { data: testApp });
+    expect(res.ok()).toBeTruthy();
+
+    const getRes = await request.get('/api/apps');
+    expect(getRes.ok()).toBeTruthy();
+    const apps = await getRes.json();
+    expect(apps.some((a: any) => a.id === testApp.id)).toBeTruthy();
   });
 });
 

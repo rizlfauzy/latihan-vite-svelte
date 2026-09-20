@@ -57,7 +57,10 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
 
       if (error) throw error;
       if (data && data.length > 0) {
-        set({ apps: data.map(mapRowToApp) });
+        const mapped = data.map(mapRowToApp);
+        const currentApps = get().apps;
+        const newLocal = currentApps.filter((ca) => !mapped.some((m) => m.id === ca.id));
+        set({ apps: [...newLocal, ...mapped] });
       }
     } catch (err) {
       console.warn('[appStore] Failed to fetch from Supabase, using local apps', err);
@@ -69,7 +72,7 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
   addApp: async (newApp: AppItem) => {
     // Optimistically update Zustand store & UI
     const updated = [newApp, ...get().apps.filter((a) => a.id !== newApp.id)];
-    set({ apps: updated });
+    set({ apps: updated, isLoading: false });
 
     let supabaseSuccess = true;
     if (isSupabaseEnabled && supabase) {
@@ -218,3 +221,7 @@ export const appStore = {
     return rawStore.subscribe((state) => run(state));
   },
 };
+
+if (typeof window !== 'undefined') {
+  (window as any).__appStore = appStore;
+}
