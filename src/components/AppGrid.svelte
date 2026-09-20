@@ -88,9 +88,10 @@
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
       <!-- Search Input Container -->
       <div class="relative grow">
-        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold select-none text-base">
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold select-none text-base pointer-events-none z-10">
           🔍
         </span>
+
         <input
           type="text"
           bind:value={searchQuery}
@@ -101,7 +102,7 @@
         {#if searchQuery.trim().length > 0}
           <button
             type="button"
-            class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-nb-pink text-xs font-black flex items-center justify-center cursor-pointer border border-nb-black shadow-[1px_1px_0px_#121212] text-black"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-nb-pink text-xs font-black flex items-center justify-center cursor-pointer border border-nb-black shadow-nb-xs text-black"
             onclick={() => (searchQuery = '')}
             title="Hapus pencarian"
             aria-label="Hapus pencarian"
