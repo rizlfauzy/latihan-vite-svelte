@@ -1,5 +1,6 @@
 <script lang="ts">
   import ConfirmModal from './ConfirmModal.svelte';
+  import { alertStore } from '@/stores/alertStore';
   import { i18nStore } from '@/stores/i18nStore';
 
   interface SubTask {
@@ -116,22 +117,26 @@
   function addTodo(e?: Event) {
     if (e) e.preventDefault();
     const trimmed = newTodoText.trim();
-    if (!trimmed) return;
+    try {
+      if (!trimmed) throw new Error('Catatan tidak boleh kosong');
+      const newId = Date.now().toString();
+      todos = [
+        {
+          id: newId,
+          text: trimmed,
+          done: false,
+          createdAt: Date.now(),
+          subTasks: []
+        },
+        ...todos
+      ];
 
-    const newId = Date.now().toString();
-    todos = [
-      {
-        id: newId,
-        text: trimmed,
-        done: false,
-        createdAt: Date.now(),
-        subTasks: []
-      },
-      ...todos
-    ];
-
-    expandedTodoIds[newId] = true;
-    newTodoText = '';
+      expandedTodoIds[newId] = true;
+      newTodoText = '';
+    } catch (e) {
+      console.error('Failed to add todo to localStorage', e);
+      alertStore.showError(`Gagal menambahkan catatan "${(e as Error).message}"!`);
+    }
   }
 
   function handleTodoKeydown(e: KeyboardEvent) {
@@ -344,7 +349,7 @@
           {@const isExpanded = expandedTodoIds[todo.id] ?? false}
 
           <li
-            class="flex flex-col border-2 border-nb-black rounded-md shadow-[2px_2px_0px_#121212] overflow-hidden transition-all duration-100 {todo.done
+            class="flex flex-col border-2 border-nb-black rounded-md shadow-nb-sm overflow-hidden transition-all duration-100 {todo.done
               ? 'bg-gray-100 opacity-80'
               : 'bg-white'}"
             data-testid={`todo-item-${todo.id}`}
@@ -372,7 +377,7 @@
                   data-testid={`checkbox-todo-${todo.id}`}
                 />
                 <span
-                  class="text-base font-bold leading-snug break-words whitespace-pre-wrap {todo.done
+                  class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap {todo.done
                     ? 'line-through decoration-2 decoration-nb-black text-gray-500'
                     : 'text-nb-black'}"
                 >
@@ -395,7 +400,7 @@
               <!-- Delete Parent Button -->
               <button
                 type="button"
-                class="w-8 h-8 shrink-0 border-2 border-nb-black bg-nb-red text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#121212] hover:-translate-x-0.25 hover:-translate-y-0.25 hover:shadow-[3px_3px_0px_#121212] active:translate-x-0.25 active:translate-y-0.25 active:shadow-nb-xs transition-all duration-100"
+                class="w-8 h-8 shrink-0 border-2 border-nb-black bg-nb-red text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
                 onclick={() => promptDeleteTodo(todo)}
                 title={$i18nStore.t('todo.deleteNote')}
                 aria-label={$i18nStore.t('todo.deleteNote')}
@@ -425,7 +430,7 @@
                             data-testid={`checkbox-subtask-${sub.id}`}
                           />
                           <span
-                            class="text-sm font-semibold leading-tight break-words whitespace-pre-wrap {sub.done
+                            class="text-sm font-semibold leading-tight wrap-break-word whitespace-pre-wrap {sub.done
                               ? 'line-through text-gray-500'
                               : 'text-nb-black'}"
                           >
@@ -462,7 +467,7 @@
                     onkeydown={(e) => handleSubTaskKeydown(todo.id, e)}
                     placeholder={$i18nStore.t('todo.subtaskPlaceholder')}
                     rows="1"
-                    class="w-full text-xs font-semibold px-3 py-1.5 border-2 border-nb-black rounded shadow-nb-xs bg-white outline-none focus:shadow-[2px_2px_0px_#121212] resize-y min-h-[34px] leading-snug"
+                    class="w-full text-xs font-semibold px-3 py-1.5 border-2 border-nb-black rounded shadow-nb-xs bg-white outline-none focus:shadow-nb-sm resize-y min-h-8.5 leading-snug"
                     data-testid={`input-subtask-${todo.id}`}
                   ></textarea>
                   <button
