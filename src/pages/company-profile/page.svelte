@@ -1,6 +1,17 @@
 <script lang="ts">
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
+  import CustomSelect from '@/components/CustomSelect.svelte';
+
+  const serviceOptions = [
+    { label: 'Frontend Development (Svelte 5)', value: 'frontend', icon: '⚡' },
+    { label: 'UI/UX Neo Brutalism Design', value: 'design', icon: '🎨' },
+    { label: 'PWA & Service Worker Integration', value: 'pwa', icon: '📱' },
+    { label: 'Docker & DevOps Deployment', value: 'devops', icon: '🐳' },
+    { label: 'State Management & Store Architecture', value: 'state', icon: '🧩' },
+  ];
+
+  let selectedServices = $state<string[]>(['frontend']);
 </script>
 
 <div class="flex flex-col gap-8 w-full" data-testid="company-profile-container">
@@ -110,6 +121,23 @@
         <h3 class="text-base font-black uppercase mb-1">{$i18nStore.t('cp.service3Title')}</h3>
         <p class="text-xs font-bold text-gray-700">{$i18nStore.t('cp.service3Desc')}</p>
       </div>
+    </div>
+
+    <!-- Multi-Select Custom Component Demo -->
+    <div class="mt-6 pt-5 border-t-3 border-dashed border-nb-black flex flex-col gap-2" data-testid="cp-service-select-box">
+      <label for="cp-service-select" class="font-black text-xs uppercase text-nb-black flex items-center gap-1.5">
+        <span>✨</span>
+        <span>{$i18nStore.t('cp.servicesSelectLabel')}</span>
+      </label>
+      <CustomSelect
+        id="cp-service-select"
+        options={serviceOptions}
+        bind:value={selectedServices}
+        multiple={true}
+        placeholder={$i18nStore.t('cp.servicesSelectPlaceholder')}
+        searchPlaceholder={$i18nStore.t('cp.servicesSelectSearch')}
+        dataTestId="select-services-multi"
+      />
     </div>
   </section>
 

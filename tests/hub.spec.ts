@@ -474,6 +474,107 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(page.locator('[data-testid="apps-list"]')).toContainText('Weather Radar');
     await expect(searchInput).toHaveValue('');
   });
+
+  test('CustomSelect component supports internal search, single selection, and multiple selection with tags', async ({ page }) => {
+    // 1. Test Single Select inside AddAppModal
+    const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
+    await openAddBtn.click();
+    const addModal = page.locator('[data-testid="add-app-modal-card"]');
+    await expect(addModal).toBeVisible();
+
+    // Trigger select dropdown
+    const selectTrigger = page.locator('[data-testid="input-app-category-trigger"]');
+    await expect(selectTrigger).toBeVisible();
+    await selectTrigger.click();
+
+    // Verify dropdown is open
+    const dropdown = page.locator('[data-testid="input-app-category-dropdown"]');
+    await expect(dropdown).toBeVisible();
+
+    // Filter using internal search input
+    const searchInput = page.locator('[data-testid="input-app-category-search-input"]');
+    await searchInput.fill('Dev');
+    await expect(page.locator('[data-testid="input-app-category-option-devtools"]')).toBeVisible();
+    await expect(page.locator('[data-testid="input-app-category-option-utility"]')).not.toBeVisible();
+
+    // Select option
+    await page.locator('[data-testid="input-app-category-option-devtools"]').click();
+    await expect(dropdown).not.toBeVisible();
+    await expect(selectTrigger).toContainText('DevTools');
+
+    // Close modal
+    await page.locator('[data-testid="add-app-close-btn"]').click();
+
+    // 2. Test Multi-Select on Company Profile page
+    await page.goto('/company-profile');
+    const multiSelectBox = page.locator('[data-testid="cp-service-select-box"]');
+    await expect(multiSelectBox).toBeVisible();
+
+    const multiTrigger = page.locator('[data-testid="select-services-multi-trigger"]');
+    await expect(multiTrigger).toBeVisible();
+    // Initially has 'Frontend Development (Svelte 5)'
+    await expect(multiTrigger).toContainText('Frontend Development');
+
+    // Open multi-select dropdown
+    await multiTrigger.click();
+    const multiDropdown = page.locator('[data-testid="select-services-multi-dropdown"]');
+    await expect(multiDropdown).toBeVisible();
+
+    // Search and add another option
+    const multiSearch = page.locator('[data-testid="select-services-multi-search-input"]');
+    await multiSearch.fill('Docker');
+    await expect(page.locator('[data-testid="select-services-multi-option-devops"]')).toBeVisible();
+    await page.locator('[data-testid="select-services-multi-option-devops"]').click();
+
+    // Verify tag appeared in trigger
+    await expect(page.locator('[data-testid="select-services-multi-tag-devops"]')).toBeVisible();
+
+    // Remove first tag using remove button (✕)
+    const removeTagBtn = page.locator('[data-testid="select-services-multi-tag-remove-frontend"]');
+    await removeTagBtn.click();
+    await expect(page.locator('[data-testid="select-services-multi-tag-frontend"]')).not.toBeVisible();
+    await expect(page.locator('[data-testid="select-services-multi-tag-devops"]')).toBeVisible();
+
+    // Close dropdown with Escape
+    await page.keyboard.press('Escape');
+    await expect(multiDropdown).not.toBeVisible();
+
+    // Return to home
+    await page.goto('/');
+  });
+
+  test('AddAppModal and EditAppModal support dynamic i18n translations in ID and EN', async ({ page }) => {
+    // Open AddAppModal in default language (ID)
+    const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
+    await openAddBtn.click();
+    const addTitle = page.locator('#add-app-title');
+    await expect(addTitle).toContainText('TAMBAH APLIKASI BARU');
+    await expect(page.locator('[data-testid="btn-submit-add-app"]')).toContainText('SIMPAN APLIKASI');
+    await page.locator('[data-testid="add-app-close-btn"]').click();
+
+    // Switch language to EN
+    const langBtn = page.locator('[data-testid="lang-switcher-btn"]');
+    await langBtn.click();
+    await expect(page.locator('[data-testid="apps-counter"]')).toContainText('CONNECTED');
+
+    // Reopen AddAppModal in EN
+    await openAddBtn.click();
+    await expect(addTitle).toContainText('ADD NEW APPLICATION');
+    await expect(page.locator('[data-testid="btn-submit-add-app"]')).toContainText('SAVE APPLICATION');
+    await page.locator('[data-testid="add-app-close-btn"]').click();
+
+    // Open EditAppModal in EN
+    const firstEditBtn = page.locator('[data-testid^="btn-edit-app-"]').first();
+    await firstEditBtn.click();
+    const editModal = page.locator('[data-testid="edit-app-modal"]');
+    await expect(editModal).toBeVisible();
+    await expect(page.locator('#edit-app-title')).toContainText('EDIT APPLICATION');
+    await expect(page.locator('[data-testid="btn-submit-edit-app"]')).toContainText('SAVE CHANGES');
+    await page.locator('[data-testid="btn-close-edit-app"]').click();
+
+    // Switch language back to ID
+    await langBtn.click();
+  });
 });
 
 
