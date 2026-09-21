@@ -280,7 +280,7 @@
           <div class="flex items-center gap-1.5 ml-1">
             <span class="text-xs font-extrabold text-nb-black select-none">🎯</span>
             <CustomSelect
-              width="w-[15dvw]"
+              width="min-w-[15dvw]"
               options={[{ label: $i18nStore.t('todo.allTopics'), value: 'all' }, ...apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))]}
               bind:value={topicFilter}
               dataTestId="todo-topic-filter"
