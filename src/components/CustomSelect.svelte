@@ -12,6 +12,7 @@
     placeholder = 'Pilih opsi...',
     searchPlaceholder = 'Cari opsi...',
     id,
+    width = "w-full",
     dataTestId = 'custom-select',
     disabled = false,
   }: {
@@ -21,6 +22,7 @@
     placeholder?: string;
     searchPlaceholder?: string;
     id?: string;
+    width?: string;
     dataTestId?: string;
     disabled?: boolean;
   } = $props();
@@ -160,7 +162,7 @@
 
 <div
   bind:this={containerEl}
-  class="relative w-full"
+  class="relative {width}"
   data-testid={dataTestId}
 >
   <!-- Trigger Button -->
