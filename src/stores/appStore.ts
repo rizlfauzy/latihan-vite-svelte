@@ -49,7 +49,7 @@ const defaultBaselineApps: AppItem[] = [];
 
 const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set, get) => ({
   apps: [...svelteApps],
-  isLoading: false,
+  isLoading: isSupabaseEnabled,
 
   fetchApps: async () => {
     if (!isSupabaseEnabled || !supabase) return;

@@ -23,7 +23,7 @@ export const env: AppEnv = {
   isProd: import.meta.env.PROD || import.meta.env.VITE_APP_ENV === 'production',
   enableDebug: import.meta.env.VITE_ENABLE_DEBUG === 'true',
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL || '',
-  appTitle: import.meta.env.VITE_APP_TITLE || '⚡ Svelte Hub',
+  appTitle: import.meta.env.VITE_APP_TITLE || '⚡ Apps Hub',
   logoUrl: import.meta.env.VITE_APP_LOGO_URL || '/logo.svg',
   faviconUrl: import.meta.env.VITE_APP_FAVICON_URL || '/favicon.svg',
   supabaseUrl,
@@ -32,7 +32,7 @@ export const env: AppEnv = {
 };
 
 if (env.enableDebug && typeof window !== 'undefined') {
-  console.log('[Svelte Hub] Env initialized:', {
+  console.log('[Apps Hub] Env initialized:', {
     appEnv: env.appEnv,
     mode: env.mode,
     debug: env.enableDebug,

@@ -14,12 +14,15 @@
   } = $props();
 
   const waMessage = $derived(
-    encodeURIComponent(`Halo ${app.picName}, saya ingin bertanya dan konsultasi mengenai aplikasi "${app.name}" di Svelte Hub.`)
+    encodeURIComponent(`Halo ${app.picName}, saya ingin bertanya dan konsultasi mengenai aplikasi "${app.name}" di Portal Aplikasi Perusahaan.`)
   );
   const waUrl = $derived(`https://wa.me/${app.picWhatsapp}?text=${waMessage}`);
 </script>
 
-<div class="nb-card nb-card-interactive group flex flex-col justify-between gap-4 bg-nb-surface text-nb-black relative">
+<div
+  class="nb-card nb-card-interactive group flex flex-col justify-between gap-4 bg-nb-surface text-nb-black relative"
+  data-testid="app-card-{app.id}"
+>
   <div class="flex items-center justify-between gap-2.5">
     <div
       class="w-12 h-12 border-2 border-nb-black rounded-md shadow-nb-sm flex items-center justify-center"

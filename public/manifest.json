@@ -1,7 +1,7 @@
 {
-  "name": "Svelte Hub — Neo Brutalism Personal Dashboard",
-  "short_name": "SvelteHub",
-  "description": "Central personal dashboard for all Svelte micro-apps with Neo Brutalism aesthetic",
+  "name": "Apps Hub — Portal Aplikasi Perusahaan",
+  "short_name": "AppsHub",
+  "description": "Central dashboard & internal portal for enterprise micro-apps with Neo Brutalism aesthetic",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
