@@ -20,7 +20,7 @@
   "hero.badgeVite": "🚀 VITE",
   "hero.badgeDocker": "🐳 DOCKER READY",
 
-  "grid.title": "HUB APLIKASI SVELTE",
+  "grid.title": "HUB APLIKASI",
   "grid.addApp": "TAMBAH APLIKASI",
   "grid.connected": "APPS TERHUBUNG",
   "grid.openApp": "BUKA APLIKASI",
@@ -117,8 +117,8 @@
   "todo.noTopic": "Umum (Tanpa Topik)",
   "todo.filterByTopic": "Filter Topik Aplikasi",
 
-  "footer.title": "⚡ SVELTE HUB — Personal Dashboard",
-  "footer.subtitle": "Dibangun dengan Svelte 5, Vite, Tailwind CSS, Zustand, & estetika Neo Brutalism",
+  "footer.title": "⚡ APLIKASI HUB PERUSAHAAN",
+  "footer.subtitle": "Aplikasi Hub penghubung antar aplikasi",
   "footer.github": "GITHUB REPO ↗",
 
   "cp.badge": "COMPANY PROFILE & ECOSYSTEM",

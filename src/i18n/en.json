@@ -20,7 +20,7 @@
   "hero.badgeVite": "🚀 VITE",
   "hero.badgeDocker": "🐳 DOCKER READY",
 
-  "grid.title": "SVELTE APPS HUB",
+  "grid.title": "APPS HUB",
   "grid.addApp": "ADD APPLICATION",
   "grid.connected": "CONNECTED APPS",
   "grid.openApp": "OPEN APPLICATION",
@@ -117,8 +117,8 @@
   "todo.noTopic": "General (No Topic)",
   "todo.filterByTopic": "Filter App Topic",
 
-  "footer.title": "⚡ SVELTE HUB — Personal Dashboard",
-  "footer.subtitle": "Built with Svelte 5, Vite, Tailwind CSS, Zustand, & Neo Brutalism aesthetic",
+  "footer.title": "⚡ COMPANY APPS HUB",
+  "footer.subtitle": "Hub application linking micro-apps within the company.",
   "footer.github": "GITHUB REPO ↗",
 
   "cp.badge": "COMPANY PROFILE & ECOSYSTEM",
