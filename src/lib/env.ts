@@ -8,7 +8,13 @@ export interface AppEnv {
   appTitle: string;
   logoUrl: string;
   faviconUrl: string;
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  isSupabaseConfigured: boolean;
 }
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const env: AppEnv = {
   mode: import.meta.env.MODE,
@@ -20,6 +26,9 @@ export const env: AppEnv = {
   appTitle: import.meta.env.VITE_APP_TITLE || '⚡ Svelte Hub',
   logoUrl: import.meta.env.VITE_APP_LOGO_URL || '/logo.svg',
   faviconUrl: import.meta.env.VITE_APP_FAVICON_URL || '/favicon.svg',
+  supabaseUrl,
+  supabaseAnonKey,
+  isSupabaseConfigured: Boolean(supabaseUrl && supabaseAnonKey),
 };
 
 if (env.enableDebug && typeof window !== 'undefined') {
@@ -27,5 +36,6 @@ if (env.enableDebug && typeof window !== 'undefined') {
     appEnv: env.appEnv,
     mode: env.mode,
     debug: env.enableDebug,
+    supabase: env.isSupabaseConfigured ? 'Enabled' : 'Disabled (Local Mode)',
   });
 }

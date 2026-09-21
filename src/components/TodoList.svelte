@@ -1,86 +1,22 @@
 <script lang="ts">
   import ConfirmModal from './ConfirmModal.svelte';
+  import SkeletonTodo from './SkeletonTodo.svelte';
   import { alertStore } from '@/stores/alertStore';
   import { i18nStore } from '@/stores/i18nStore';
-
-  interface SubTask {
-    id: string;
-    text: string;
-    done: boolean;
-    createdAt: number;
-  }
-
-  interface Todo {
-    id: string;
-    text: string;
-    done: boolean;
-    createdAt: number;
-    subTasks?: SubTask[];
-  }
+  import { appStore } from '@/stores/appStore';
+  import { todoStore, type Todo, type SubTask } from '@/stores/todoStore';
+  import CustomSelect from './CustomSelect.svelte';
 
   type DeleteTarget =
     | { type: 'todo'; id: string; text: string }
     | { type: 'subtask'; todoId: string; subTaskId: string; text: string }
+    | { type: 'all'; text: string }
     | null;
 
-  const STORAGE_KEY = 'svelte_hub_todos';
-
-  const defaultTodos: Todo[] = [
-    {
-      id: '1',
-      text: 'Pelajari reaktivitas Runes di Svelte 5',
-      done: true,
-      createdAt: Date.now() - 3600000,
-      subTasks: [
-        { id: '1-1', text: 'Eksplorasi $state() untuk state lokal', done: true, createdAt: Date.now() - 3500000 },
-        { id: '1-2', text: 'Gunakan $derived() untuk computed values', done: true, createdAt: Date.now() - 3400000 },
-        { id: '1-3', text: 'Gunakan $effect() untuk sinkronisasi localStorage', done: true, createdAt: Date.now() - 3300000 }
-      ]
-    },
-    {
-      id: '2',
-      text: 'Setup deployment Docker multi-stage dengan Nginx',
-      done: false,
-      createdAt: Date.now() - 1800000,
-      subTasks: [
-        { id: '2-1', text: 'Buat Dockerfile multi-stage dengan builder Bun', done: true, createdAt: Date.now() - 1700000 },
-        { id: '2-2', text: 'Konfigurasi nginx.conf untuk SPA routing', done: true, createdAt: Date.now() - 1600000 },
-        { id: '2-3', text: 'Uji container di port 8080 via docker compose', done: false, createdAt: Date.now() - 1500000 }
-      ]
-    },
-    {
-      id: '3',
-      text: 'Tambahkan link proyek Svelte lama ke file apps.ts',
-      done: false,
-      createdAt: Date.now(),
-      subTasks: [
-        { id: '3-1', text: 'Kumpulkan URL repo dan live demo', done: false, createdAt: Date.now() },
-        { id: '3-2', text: 'Tambahkan kontak WhatsApp PIC masing-masing apps', done: true, createdAt: Date.now() }
-      ]
-    }
-  ];
-
-  function loadTodos(): Todo[] {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.map((item) => ({
-            ...item,
-            subTasks: Array.isArray(item.subTasks) ? item.subTasks : []
-          }));
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load todos from localStorage', e);
-    }
-    return defaultTodos;
-  }
-
-  let todos = $state<Todo[]>(loadTodos());
   let newTodoText = $state('');
   let filter = $state<'all' | 'active' | 'done'>('all');
+  let topicFilter = $state<string>('all');
+  let selectedAppId = $state<string>('');
 
   // Track expanded state for each todo's sub-tasks
   let expandedTodoIds = $state<Record<string, boolean>>({
@@ -95,11 +31,22 @@
   // Target item for deletion confirmation modal
   let deleteTarget = $state<DeleteTarget>(null);
 
+  const todos = $derived($todoStore.todos);
+  const isLoading = $derived($todoStore.isLoading);
+  const apps = $derived($appStore.apps);
+
   $effect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-    } catch (e) {
-      console.error('Failed to save todos to localStorage', e);
+    // Keep selectedAppId synced to a valid app if not set
+    if (!selectedAppId && apps.length > 0) {
+      selectedAppId = apps[0].id;
+    }
+    // If selectedAppId is no longer in apps, fallback to first app
+    if (selectedAppId && !apps.some((a) => a.id === selectedAppId)) {
+      selectedAppId = apps[0]?.id || '';
+    }
+    // If topicFilter is no longer in apps, reset to all
+    if (topicFilter !== 'all' && !apps.some((a) => a.id === topicFilter)) {
+      topicFilter = 'all';
     }
   });
 
@@ -108,33 +55,24 @@
 
   const filteredTodos = $derived(
     todos.filter((t) => {
-      if (filter === 'active') return !t.done;
-      if (filter === 'done') return t.done;
+      if (filter === 'active' && t.done) return false;
+      if (filter === 'done' && !t.done) return false;
+      if (topicFilter !== 'all' && t.appId !== topicFilter) return false;
       return true;
     })
   );
 
-  function addTodo(e?: Event) {
+  async function addTodo(e?: Event) {
     if (e) e.preventDefault();
     const trimmed = newTodoText.trim();
     try {
       if (!trimmed) throw new Error('Catatan tidak boleh kosong');
-      const newId = Date.now().toString();
-      todos = [
-        {
-          id: newId,
-          text: trimmed,
-          done: false,
-          createdAt: Date.now(),
-          subTasks: []
-        },
-        ...todos
-      ];
-
-      expandedTodoIds[newId] = true;
       newTodoText = '';
+      const chosenAppId = selectedAppId || (apps.length > 0 ? apps[0].id : null);
+      const newTodo = await todoStore.addTodo(trimmed, chosenAppId);
+      expandedTodoIds[newTodo.id] = true;
     } catch (e) {
-      console.error('Failed to add todo to localStorage', e);
+      console.error('Failed to add todo', e);
       alertStore.showError(`Gagal menambahkan catatan "${(e as Error).message}"!`);
     }
   }
@@ -147,7 +85,7 @@
   }
 
   function toggleTodo(id: string) {
-    todos = todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+    todoStore.toggleTodo(id);
   }
 
   function promptDeleteTodo(todo: Todo) {
@@ -159,7 +97,7 @@
   }
 
   function deleteTodo(id: string) {
-    todos = todos.filter((t) => t.id !== id);
+    todoStore.deleteTodo(id);
   }
 
   function promptDeleteSubTask(todoId: string, sub: SubTask) {
@@ -171,12 +109,21 @@
     };
   }
 
+  function promptDeleteAllCompleted(){
+    deleteTarget = {
+      type: 'all',
+      text: 'Semua Catatan yang Selesai'
+    }
+  }
+
   function handleConfirmDelete() {
     if (!deleteTarget) return;
     if (deleteTarget.type === 'todo') {
       deleteTodo(deleteTarget.id);
     } else if (deleteTarget.type === 'subtask') {
       deleteSubTask(deleteTarget.todoId, deleteTarget.subTaskId);
+    } else if (deleteTarget.type === 'all') {
+      clearCompleted();
     }
     deleteTarget = null;
   }
@@ -186,7 +133,7 @@
   }
 
   function clearCompleted() {
-    todos = todos.filter((t) => !t.done);
+    todoStore.clearCompleted();
   }
 
   function toggleExpand(id: string) {
@@ -198,21 +145,7 @@
     const inputVal = (subTaskInputs[todoId] || '').trim();
     if (!inputVal) return;
 
-    todos = todos.map((todo) => {
-      if (todo.id !== todoId) return todo;
-      const subTasks = todo.subTasks || [];
-      const newSub: SubTask = {
-        id: `${todoId}-${Date.now()}`,
-        text: inputVal,
-        done: false,
-        createdAt: Date.now()
-      };
-      return {
-        ...todo,
-        subTasks: [...subTasks, newSub]
-      };
-    });
-
+    todoStore.addSubTask(todoId, inputVal);
     subTaskInputs[todoId] = '';
     expandedTodoIds[todoId] = true;
   }
@@ -225,23 +158,11 @@
   }
 
   function toggleSubTask(todoId: string, subTaskId: string) {
-    todos = todos.map((todo) => {
-      if (todo.id !== todoId) return todo;
-      const subTasks = (todo.subTasks || []).map((st) =>
-        st.id === subTaskId ? { ...st, done: !st.done } : st
-      );
-      return { ...todo, subTasks };
-    });
+    todoStore.toggleSubTask(todoId, subTaskId);
   }
 
   function deleteSubTask(todoId: string, subTaskId: string) {
-    todos = todos.map((todo) => {
-      if (todo.id !== todoId) return todo;
-      return {
-        ...todo,
-        subTasks: (todo.subTasks || []).filter((st) => st.id !== subTaskId)
-      };
-    });
+    todoStore.deleteSubTask(todoId, subTaskId);
   }
 </script>
 
@@ -266,7 +187,39 @@
 
   <div class="nb-card flex flex-col gap-5 bg-nb-surface">
     <!-- Form Tambah Todo -->
-    <form onsubmit={addTodo} class="flex flex-col gap-2">
+    <form onsubmit={addTodo} class="flex flex-col gap-2.5">
+      <!-- Topic App Selector -->
+      {#if apps.length > 0}
+        <div class="flex items-center gap-2 flex-wrap text-xs">
+          <label for="todo-app-topic-select" class="font-extrabold text-nb-black flex items-center gap-1.5 select-none">
+            <span>🎯</span>
+            <span>{$i18nStore.t('todo.appTopic')}:</span>
+          </label>
+          <div class="grow max-w-xs">
+            <!-- <select
+              id="todo-app-topic-select"
+              bind:value={selectedAppId}
+              class="nb-input w-full py-1.5 px-2.5 text-xs font-bold bg-white text-nb-black cursor-pointer shadow-nb-xs"
+              data-testid="todo-app-topic-select"
+            >
+              {#each apps as app (app.id)}
+                <option value={app.id}>
+                  {app.icon} {app.name}
+                </option>
+              {/each}
+            </select> -->
+            <CustomSelect
+              id="todo-app-topic-select"
+              options={apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))}
+              bind:value={selectedAppId}
+              dataTestId="todo-app-topic-select"
+              placeholder={$i18nStore.t('todo.selectAppTopic')}
+              searchPlaceholder={$i18nStore.t('todo.searchAppTopic')}
+            />
+          </div>
+        </div>
+      {/if}
+
       <div class="flex flex-col sm:flex-row gap-3 items-stretch">
         <textarea
           bind:value={newTodoText}
@@ -297,7 +250,7 @@
 
     <!-- Filters & Action Toolbar -->
     <div class="flex justify-between items-center flex-wrap gap-3 pb-3 border-b-2 border-dashed border-gray-300">
-      <div class="flex gap-2 flex-wrap">
+      <div class="flex gap-2 flex-wrap items-center">
         <button
           type="button"
           class="nb-btn text-xs px-3.5 py-1.5 {filter === 'all' ? 'bg-nb-yellow' : 'bg-white'}"
@@ -322,13 +275,27 @@
         >
           {$i18nStore.t('todo.filterDone')} ({completedCount})
         </button>
+
+        {#if apps.length > 0}
+          <div class="flex items-center gap-1.5 ml-1">
+            <span class="text-xs font-extrabold text-nb-black select-none">🎯</span>
+            <CustomSelect
+              width="w-[15dvw]"
+              options={[{ label: $i18nStore.t('todo.allTopics'), value: 'all' }, ...apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))]}
+              bind:value={topicFilter}
+              dataTestId="todo-topic-filter"
+              placeholder={$i18nStore.t('todo.allTopics')}
+              searchPlaceholder={$i18nStore.t('todo.searchTopics')}
+            />
+          </div>
+        {/if}
       </div>
 
       {#if completedCount > 0}
         <button
           type="button"
           class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5"
-          onclick={clearCompleted}
+          onclick={promptDeleteAllCompleted}
           data-testid="clear-completed-button"
         >
           {$i18nStore.t('todo.clearCompleted')}
@@ -338,7 +305,13 @@
 
     <!-- List Items -->
     <ul class="list-none flex flex-col gap-4 p-0 m-0">
-      {#if filteredTodos.length === 0}
+      {#if isLoading}
+        <div class="flex flex-col gap-3" data-testid="todos-skeleton-list">
+          <SkeletonTodo />
+          <SkeletonTodo />
+          <SkeletonTodo />
+        </div>
+      {:else if filteredTodos.length === 0}
         <li class="p-9 text-center border-2 border-dashed border-gray-300 rounded-md text-gray-500 font-semibold">
           <p class="m-0">{$i18nStore.t('todo.emptyState')}</p>
         </li>
@@ -376,13 +349,29 @@
                   class="nb-checkbox shrink-0"
                   data-testid={`checkbox-todo-${todo.id}`}
                 />
-                <span
-                  class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap {todo.done
-                    ? 'line-through decoration-2 decoration-nb-black text-gray-500'
-                    : 'text-nb-black'}"
-                >
-                  {todo.text}
-                </span>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 grow">
+                  {#if todo.appId}
+                    {@const linkedApp = apps.find((a) => a.id === todo.appId)}
+                    {#if linkedApp}
+                      <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 border-2 border-nb-black text-[11px] font-black uppercase rounded shadow-nb-xs shrink-0 self-start sm:self-auto"
+                        style="background-color: {linkedApp.color || 'var(--color-nb-yellow)'}; color: #121212;"
+                        data-testid={`todo-topic-badge-${todo.id}`}
+                        title={linkedApp.name}
+                      >
+                        <span>{linkedApp.icon}</span>
+                        <span>{linkedApp.name}</span>
+                      </span>
+                    {/if}
+                  {/if}
+                  <span
+                    class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap {todo.done
+                      ? 'line-through decoration-2 decoration-nb-black text-gray-500'
+                      : 'text-nb-black'}"
+                  >
+                    {todo.text}
+                  </span>
+                </div>
               </label>
 
               <!-- Sub-tasks Progress Badge -->
@@ -489,10 +478,10 @@
   <!-- Deletion Confirmation Modal -->
   <ConfirmModal
     isOpen={deleteTarget !== null}
-    title={deleteTarget?.type === 'todo' ? $i18nStore.t('todo.confirmModalDeleteNoteTitle') : $i18nStore.t('todo.confirmModalDeleteSubtaskTitle')}
+    title={deleteTarget?.type === 'todo' ? $i18nStore.t('todo.confirmModalDeleteNoteTitle') : deleteTarget?.type === 'subtask' ? $i18nStore.t('todo.confirmModalDeleteSubtaskTitle') : $i18nStore.t('todo.confirmModalDeleteAllTitle')}
     message={deleteTarget?.type === 'todo'
       ? $i18nStore.t('todo.confirmModalDeleteNoteMsg')
-      : $i18nStore.t('todo.confirmModalDeleteSubtaskMsg')}
+      : deleteTarget?.type == 'subtask' ? $i18nStore.t('todo.confirmModalDeleteSubtaskMsg') : $i18nStore.t('todo.confirmModalDeleteAllMsg')}
     itemText={deleteTarget?.text || ''}
     confirmText={$i18nStore.t('action.delete')}
     cancelText={$i18nStore.t('action.cancel')}

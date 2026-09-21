@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-nb-bg: #f5f1e8;
   --color-nb-surface: #ffffff;
@@ -87,7 +89,21 @@ html.dark .nb-card {
   box-shadow: 4px 4px 0px #000000;
 }
 
+html.dark .nb-skeleton-box,
+.dark .nb-skeleton-box {
+  background-color: #2c2c36 !important;
+  border-color: #3f3f46 !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
 /* Neo Brutalism Reusable Utility Classes */
+@utility nb-skeleton-box {
+  background-color: #e5e0d8;
+  border: 2px solid var(--color-nb-black);
+  box-shadow: var(--shadow-nb-xs);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @utility nb-card {
   background-color: var(--color-nb-surface);
   border: 3px solid var(--color-nb-black);

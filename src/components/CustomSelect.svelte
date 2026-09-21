@@ -12,6 +12,7 @@
     placeholder = 'Pilih opsi...',
     searchPlaceholder = 'Cari opsi...',
     id,
+    width = "w-full",
     dataTestId = 'custom-select',
     disabled = false,
   }: {
@@ -21,14 +22,22 @@
     placeholder?: string;
     searchPlaceholder?: string;
     id?: string;
+    width?: string;
     dataTestId?: string;
     disabled?: boolean;
   } = $props();
 
   let isOpen = $state(false);
   let searchQuery = $state('');
+  let highlightedIndex = $state(0);
   let containerEl = $state<HTMLElement | null>(null);
   let searchInputEl = $state<HTMLInputElement | null>(null);
+
+  $effect(() => {
+    // Reset index saat pencarian berubah
+    searchQuery;
+    highlightedIndex = 0;
+  });
 
   let normalizedOptions = $derived<SelectOption[]>(
     options.map((opt) =>
@@ -71,13 +80,14 @@
     isOpen = !isOpen;
     if (isOpen) {
       searchQuery = '';
+      highlightedIndex = 0;
       setTimeout(() => {
         searchInputEl?.focus();
       }, 50);
     }
   }
 
-  function handleSelect(val: string) {
+  function handleSelect(val: string, closeAfter = false) {
     if (multiple) {
       const current = Array.isArray(value) ? [...value] : [];
       const idx = current.indexOf(val);
@@ -87,10 +97,44 @@
         current.push(val);
       }
       value = current;
+      searchQuery = '';
+      if (closeAfter) {
+        isOpen = false;
+      }
     } else {
       value = val;
       isOpen = false;
       searchQuery = '';
+    }
+  }
+
+  function handleSearchKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      if (filteredOptions.length > 0) {
+        e.preventDefault();
+        const targetOption = filteredOptions[highlightedIndex] || filteredOptions[0];
+        const isTab = e.key === 'Tab';
+        handleSelect(targetOption.value, isTab);
+        if (!multiple || isTab) {
+          containerEl?.querySelector<HTMLButtonElement>('button[data-testid$="-trigger"]')?.focus();
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+      }
+    } else if (e.key === 'ArrowDown') {
+      if (filteredOptions.length > 0) {
+        e.preventDefault();
+        highlightedIndex = (highlightedIndex + 1) % filteredOptions.length;
+      }
+    } else if (e.key === 'ArrowUp') {
+      if (filteredOptions.length > 0) {
+        e.preventDefault();
+        highlightedIndex = (highlightedIndex - 1 + filteredOptions.length) % filteredOptions.length;
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      isOpen = false;
+      containerEl?.querySelector<HTMLButtonElement>('button[data-testid$="-trigger"]')?.focus();
     }
   }
 
@@ -118,14 +162,14 @@
 
 <div
   bind:this={containerEl}
-  class="relative w-full"
+  class="relative {width}"
   data-testid={dataTestId}
 >
   <!-- Trigger Button -->
   <button
     type="button"
     {id}
-    class="nb-input w-full p-2.5 bg-white text-nb-black min-h-[42px] flex items-center justify-between gap-2 text-left cursor-pointer transition-all {disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+    class="nb-input w-full p-2.5 bg-white text-nb-black min-h-10.5 flex items-center justify-between gap-2 text-left cursor-pointer transition-all {disabled ? 'opacity-50 cursor-not-allowed' : ''}"
     onclick={toggleDropdown}
     aria-haspopup="listbox"
     aria-expanded={isOpen}
@@ -138,7 +182,7 @@
         {#if selectedValues.length > 0}
           {#each selectedValues as v (v)}
             <span
-              class="inline-flex items-center gap-1 bg-nb-yellow px-2 py-0.5 border-2 border-nb-black text-xs font-black text-black shadow-[1px_1px_0px_#121212]"
+              class="inline-flex items-center gap-1 bg-nb-yellow px-2 py-0.5 border-2 border-nb-black text-xs font-black text-black shadow-nb-xs"
               data-testid="{dataTestId}-tag-{v.toLowerCase().replace(/\s+/g, '-')}"
             >
               <span>{getOptionLabel(v)}</span>
@@ -204,8 +248,9 @@
           bind:this={searchInputEl}
           type="text"
           bind:value={searchQuery}
+          onkeydown={handleSearchKeydown}
           placeholder={searchPlaceholder}
-          class="nb-input pl-8 pr-7 py-1.5 text-xs font-bold w-full bg-gray-50 text-black"
+          class="nb-input pl-8 pr-7 py-1.5 text-xs font-bold w-full bg-gray-50 text-nb-black"
           data-testid="{dataTestId}-search-input"
         />
         {#if searchQuery}
@@ -234,14 +279,16 @@
             Tidak ada opsi yang cocok
           </div>
         {:else}
-          {#each filteredOptions as opt (opt.value)}
+          {#each filteredOptions as opt, idx (opt.value)}
             {@const selected = isSelected(opt.value)}
+            {@const isHighlighted = idx === highlightedIndex}
             <div
               role="option"
               aria-selected={selected}
               tabindex="0"
-              class="p-2 text-xs font-bold flex items-center justify-between cursor-pointer border-2 transition-all {selected ? 'bg-nb-yellow border-nb-black shadow-[1px_1px_0px_#121212] font-black' : 'border-transparent hover:bg-gray-100 hover:border-gray-300'}"
+              class="p-2 text-xs font-bold flex items-center justify-between cursor-pointer border-2 transition-all {selected ? 'bg-nb-yellow border-nb-black shadow-nb-xs font-black' : isHighlighted ? 'bg-gray-100 border-nb-black text-nb-black' : 'border-transparent hover:bg-gray-100 hover:border-gray-300 text-nb-black'}"
               onclick={() => handleSelect(opt.value)}
+              onmouseenter={() => (highlightedIndex = idx)}
               onkeydown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();

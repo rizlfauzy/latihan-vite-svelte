@@ -3,11 +3,14 @@
   import type { AppItem } from '@/data/apps';
   import { i18nStore } from '@/stores/i18nStore';
   import CustomSelect from '@/components/CustomSelect.svelte';
+  import SkeletonModal from '@/components/SkeletonModal.svelte';
 
   let {
     isOpen = $bindable(false),
+    isLoading = false,
   }: {
     isOpen: boolean;
+    isLoading?: boolean;
   } = $props();
 
   let name = $state('');
@@ -156,12 +159,15 @@
     data-testid="add-app-modal-backdrop"
   >
     <div
-      class="nb-card bg-white w-full max-w-lg p-6 my-8 border-4 border-nb-black shadow-nb-lg relative flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+      class="nb-card bg-nb-surface text-nb-black w-full max-w-lg p-6 my-8 border-4 border-nb-black shadow-nb-lg relative flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-app-title"
       data-testid="add-app-modal-card"
     >
+      {#if isLoading}
+        <SkeletonModal />
+      {:else}
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b-3 border-nb-black pb-3">
         <div class="flex items-center gap-2">
@@ -172,7 +178,7 @@
         </div>
         <button
           type="button"
-          class="nb-btn bg-white hover:bg-nb-pink text-xs font-black p-1.5 w-8 h-8 flex items-center justify-center text-black"
+          class="nb-btn bg-red-500 hover:bg-nb-pink text-xs font-black p-1.5 w-8 h-8 flex items-center justify-center text-nb-black"
           onclick={handleClose}
           aria-label="Tutup modal"
           data-testid="add-app-close-btn"
@@ -369,6 +375,7 @@
           </div>
         </div>
       </form>
+      {/if}
     </div>
   </div>
 {/if}

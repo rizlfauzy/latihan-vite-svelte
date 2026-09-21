@@ -109,6 +109,13 @@
   "todo.confirmModalDeleteNoteMsg": "Are you sure you want to delete this note and all its sub-tasks?",
   "todo.confirmModalDeleteSubtaskTitle": "DELETE SUB-TASK",
   "todo.confirmModalDeleteSubtaskMsg": "Are you sure you want to delete this sub-task?",
+  "todo.confirmModalDeleteAllTitle": "DELETE ALL COMPLETED",
+  "todo.confirmModalDeleteAllMsg": "Are you sure you want to delete all completed notes?",
+  "todo.appTopic": "App Topic",
+  "todo.selectAppTopic": "Select App Topic...",
+  "todo.allTopics": "All Topics",
+  "todo.noTopic": "General (No Topic)",
+  "todo.filterByTopic": "Filter App Topic",
 
   "footer.title": "⚡ SVELTE HUB — Personal Dashboard",
   "footer.subtitle": "Built with Svelte 5, Vite, Tailwind CSS, Zustand, & Neo Brutalism aesthetic",

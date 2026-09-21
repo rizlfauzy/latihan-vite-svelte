@@ -3,14 +3,17 @@
   import type { AppItem } from '@/data/apps';
   import { i18nStore } from '@/stores/i18nStore';
   import CustomSelect from './CustomSelect.svelte';
+  import SkeletonModal from './SkeletonModal.svelte';
 
   let {
     isOpen = $bindable(false),
     app,
+    isLoading = false,
     onClose,
   }: {
     isOpen: boolean;
     app: AppItem;
+    isLoading?: boolean;
     onClose?: () => void;
   } = $props();
 
@@ -137,12 +140,15 @@
   >
     <!-- Modal Card -->
     <div
-      class="nb-card max-w-xl w-full bg-white p-5 sm:p-6 my-8 relative flex flex-col gap-5 shadow-nb-lg border-3 border-nb-black animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto"
+      class="nb-card max-w-xl w-full bg-nb-surface text-nb-black p-5 sm:p-6 my-8 relative flex flex-col gap-5 shadow-nb-lg border-3 border-nb-black animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-app-title"
       data-testid="edit-app-modal"
     >
+      {#if isLoading}
+        <SkeletonModal />
+      {:else}
       <!-- Modal Header -->
       <div class="flex items-center justify-between gap-3 border-b-2 border-nb-black pb-3">
         <div class="inline-flex items-center gap-2 bg-nb-blue px-3 py-1 border-2 border-nb-black rounded font-black text-sm uppercase text-black">
@@ -152,7 +158,7 @@
 
         <button
           type="button"
-          class="w-8 h-8 border-2 border-nb-black bg-gray-100 hover:bg-nb-yellow rounded flex items-center justify-center font-bold text-sm cursor-pointer shadow-nb-xs transition-all text-black"
+          class="w-8 h-8 border-2 border-nb-black hover:bg-nb-red rounded flex items-center justify-center font-bold text-sm cursor-pointer shadow-nb-xs transition-all text-nb-black bg-red-500"
           onclick={handleClose}
           aria-label="Tutup form edit"
           data-testid="btn-close-edit-app"
@@ -334,6 +340,7 @@
           </button>
         </div>
       </form>
+      {/if}
     </div>
   </div>
 {/if}
