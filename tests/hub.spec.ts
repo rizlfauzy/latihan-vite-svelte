@@ -9,7 +9,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
       window.localStorage.clear();
     });
     await page.goto('/');
-    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading);
+    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading);
     await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
     await expect(page.locator('[data-testid="apps-list"]').or(page.locator('[data-testid="apps-empty-state"]'))).toBeVisible();
     await expect(page.locator('[data-testid="todo-input"]')).toBeVisible();
@@ -18,24 +18,48 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
   test.afterAll(async ({ browser }) => {
     const page = await browser.newPage();
     await page.goto('/');
-    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading);
+    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading);
     await page.evaluate(async () => {
       const store = (window as any).__appStore;
-      if (!store) return;
-      const apps = store.getState?.()?.apps || [];
-      const testApps = apps.filter((a: any) =>
-        a.name?.startsWith('E2E Automated') ||
-        a.name?.startsWith('App Cascade') ||
-        a.name?.startsWith('App Filter') ||
-        a.name?.startsWith('Delete Target') ||
-        a.name?.startsWith('Edit Target') ||
-        a.name?.startsWith('Portfolio Pro Edition') ||
-        a.name?.startsWith('Search Test App') ||
-        a.name?.startsWith('Topic Test App') ||
-        a.name?.startsWith('Demo App')
-      );
-      for (const app of testApps) {
-        await store.deleteApp(app.id);
+      if (store) {
+        const apps = store.getState?.()?.apps || [];
+        const testApps = apps.filter((a: any) =>
+          a.name?.startsWith('E2E Automated') ||
+          a.name?.startsWith('App Cascade') ||
+          a.name?.startsWith('App Filter') ||
+          a.name?.startsWith('Delete Target') ||
+          a.name?.startsWith('Edit Target') ||
+          a.name?.startsWith('Portfolio Pro Edition') ||
+          a.name?.startsWith('Search Test App') ||
+          a.name?.startsWith('Topic Test App') ||
+          a.name?.startsWith('Demo App') ||
+          a.name?.startsWith('Bulk')
+        );
+        for (const app of testApps) {
+          await store.deleteApp(app.id);
+        }
+      }
+
+      const todoStore = (window as any).__todoStore;
+      if (todoStore) {
+        const todos = todoStore.getState?.()?.todos || [];
+        const testTodos = todos.filter((t: any) =>
+          t.text?.startsWith('Playwright Automated') ||
+          t.text?.startsWith('Proyek Besar') ||
+          t.text?.startsWith('Deletion Test Note') ||
+          t.text?.startsWith('Catatan Baris') ||
+          t.text?.startsWith('Resilience Verification') ||
+          t.text?.startsWith('Task for Specific App Topic') ||
+          t.text?.startsWith('Cascade Task') ||
+          t.text?.startsWith('Unrelated Keeper Task') ||
+          t.text?.startsWith('App 1 Task') ||
+          t.text?.startsWith('App 2 Task') ||
+          t.text?.startsWith('Cascading Task for App A') ||
+          t.text?.startsWith('Task Check All')
+        );
+        for (const todo of testTodos) {
+          await todoStore.deleteTodo(todo.id);
+        }
       }
     });
     await page.close();
@@ -117,6 +141,15 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     await page.locator('[data-testid="filter-all"]').click();
     await expect(page.getByText(testTodoTitle)).toBeVisible();
+
+    // Clean up: delete the task and verify it is removed
+    const deleteBtn = newItem.locator('[data-testid^="delete-todo-"]').first();
+    await deleteBtn.click();
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+    await expect(newItem).not.toBeVisible();
   });
 
   test('Sub-tasks feature can expand, add sub-task, toggle checkbox, and delete sub-task', async ({ page }) => {
@@ -158,6 +191,14 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     // Verify subtask is removed
     await expect(firstTodo.getByText('Langkah 1: Setup database')).not.toBeVisible();
+
+    // Clean up: delete parent task
+    const deleteParentBtn = firstTodo.locator('[data-testid^="delete-todo-"]').first();
+    await deleteParentBtn.click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(page.getByText(parentTaskTitle)).not.toBeVisible();
   });
 
   test('Confirmation modal prevents accidental deletion and supports cancel, backdrop click, and Escape key', async ({ page }) => {
@@ -217,6 +258,14 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     // Verify input is cleared
     await expect(todoInput).toHaveValue('');
+
+    // Clean up: delete the multiline task
+    const deleteBtn = firstTodo.locator('[data-testid^="delete-todo-"]').first();
+    await deleteBtn.click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(page.getByText('Catatan Baris 1')).not.toBeVisible();
   });
 
   test('Dev Mode indicator badge is visible in development environment', async ({ page }) => {
@@ -745,6 +794,14 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     // Verify item appears in the list
     await expect(page.locator(`text=${taskName}`)).toBeVisible();
+
+    // Clean up: delete the task
+    const targetItem = page.locator('[data-testid^="todo-item-"]', { hasText: taskName });
+    await targetItem.locator('[data-testid^="delete-todo-"]').first().click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(page.locator(`text=${taskName}`)).not.toBeVisible();
   });
 
   test('Skeleton UI loaders render on App Grid and Todo List during loading states', async ({ page }) => {
@@ -902,6 +959,13 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     const topicBadge = newTodoItem.locator('[data-testid^="todo-topic-badge-"]');
     await expect(topicBadge).toBeVisible();
+
+    // Clean up: delete the task
+    await newTodoItem.locator('[data-testid^="delete-todo-"]').first().click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(newTodoItem).not.toBeVisible();
   });
 
   test('Deleting an App cascades deletion and automatically removes all associated To-Do items', async ({ page }) => {
@@ -973,6 +1037,14 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     // 7. Verify unrelated todo for keeperAppId is still present and intact
     await expect(page.locator(`text=${unrelatedTodo}`)).toBeVisible();
+
+    // Clean up: delete unrelated keeper task
+    const keeperItem = page.locator('[data-testid^="todo-item-"]', { hasText: unrelatedTodo });
+    await keeperItem.locator('[data-testid^="delete-todo-"]').first().click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(keeperItem).not.toBeVisible();
   });
 
   test('To-Do list topic filter filters tasks by App topic and resets when app is deleted', async ({ page }) => {
@@ -1033,6 +1105,16 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="todo-topic-filter-option-all"]').click();
     await expect(page.locator(`text=${app1Task}`)).toBeVisible();
     await expect(page.locator(`text=${app2Task}`)).toBeVisible();
+
+    // Clean up: delete app1Task and app2Task
+    for (const taskText of [app1Task, app2Task]) {
+      const item = page.locator('[data-testid^="todo-item-"]', { hasText: taskText });
+      await item.locator('[data-testid^="delete-todo-"]').first().click();
+      await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+      await page.locator('[data-testid="modal-confirm-button"]').click();
+      await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+      await expect(item).not.toBeVisible();
+    }
   });
 
   test('Select All and Bulk Delete in debug mode removes multiple selected apps and cascades to To-Do items', async ({ page }) => {

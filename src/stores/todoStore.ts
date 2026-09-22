@@ -91,7 +91,7 @@ function mapTodoToRow(todo: Todo) {
 
 const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((set, get) => ({
   todos: loadLocalTodos(),
-  isLoading: false,
+  isLoading: isSupabaseEnabled,
 
   fetchTodos: async () => {
     if (!isSupabaseEnabled || !supabase) return;
