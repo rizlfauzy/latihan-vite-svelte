@@ -16,7 +16,7 @@
 </script>
 
 <aside
-  class="fixed top-4 right-4 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"
+  class="fixed top-4 right-4 z-51 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"
   aria-label="Notifikasi Alert"
   data-testid="alert-container"
 >
@@ -54,7 +54,7 @@
     >
       <div class="flex items-start justify-between gap-3 w-full">
         <div class="flex items-start gap-2.5">
-          <span class="text-lg leading-none mt-0.5" aria-hidden="true">
+          <span class="text-lg leading-none mt-0.5 p-2 bg-nb-bg rounded-md" aria-hidden="true">
             {icons[alert.type] || '🔔'}
           </span>
           <div class="flex flex-col gap-0.5">
