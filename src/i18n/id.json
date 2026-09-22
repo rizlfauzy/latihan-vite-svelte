@@ -125,6 +125,8 @@
   "todo.allTopics": "Semua Topik",
   "todo.noTopic": "Umum (Tanpa Topik)",
   "todo.filterByTopic": "Filter Topik Aplikasi",
+  "todo.searchAppTopic": "Cari Topik Aplikasi...",
+  "todo.searchTopics": "Cari Topik...",
 
   "footer.title": "⚡ APLIKASI HUB PERUSAHAAN",
   "footer.subtitle": "Aplikasi Hub penghubung antar aplikasi",

@@ -125,6 +125,8 @@
   "todo.allTopics": "All Topics",
   "todo.noTopic": "General (No Topic)",
   "todo.filterByTopic": "Filter App Topic",
+  "todo.searchAppTopic": "Search App Topic...",
+  "todo.searchTopics": "Search Topics...",
 
   "footer.title": "⚡ COMPANY APPS HUB",
   "footer.subtitle": "Hub application linking micro-apps within the company.",
