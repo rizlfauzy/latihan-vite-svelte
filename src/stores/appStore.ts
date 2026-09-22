@@ -3,9 +3,11 @@ import { svelteApps, type AppItem } from '@/data/apps';
 import { alertStore } from '@/stores/alertStore';
 import { todoStore } from '@/stores/todoStore';
 import { supabase, isSupabaseEnabled } from '@/lib/supabase';
+import { i18nStore } from '@/stores/i18nStore';
 
 export type { AppItem };
 
+const { t } = i18nStore;
 export interface AppStoreState {
   apps: AppItem[];
   isLoading: boolean;
@@ -81,16 +83,16 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       try {
         const { error } = await supabase.from('apps').insert([mapAppToRow(newApp)]);
         if (error) throw error;
-        alertStore.showSuccess(`Aplikasi "${newApp.name}" berhasil ditambahkan!`);
+        alertStore.showSuccess(`${t("todo.app")} "${newApp.name}" ${t("add.success")}!`);
         return true;
       } catch (err) {
         console.error('[appStore] Failed to insert app into Supabase', err);
-        alertStore.showError(`Gagal menambahkan aplikasi "${newApp.name}"!`);
+        alertStore.showError(`${t("todo.app")} "${newApp.name}" ${t("add.failed")}!`);
         return false;
       }
     }
 
-    alertStore.showSuccess(`Aplikasi "${newApp.name}" berhasil ditambahkan!`);
+    alertStore.showSuccess(`${t("todo.app")} "${newApp.name}" ${t("add.success")}!`);
     return true;
   },
 
@@ -106,22 +108,22 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
           .update(mapAppToRow(updatedApp))
           .eq('id', updatedApp.id);
         if (error) throw error;
-        alertStore.showSuccess(`Aplikasi "${updatedApp.name}" berhasil diperbarui!`);
+        alertStore.showSuccess(`${t("todo.app")} "${updatedApp.name}" ${t("edit.success")}!`);
         return true;
       } catch (err) {
         console.error('[appStore] Failed to update app in Supabase', err);
-        alertStore.showError(`Gagal memperbarui aplikasi "${updatedApp.name}"!`);
+        alertStore.showError(`${t("todo.app")} "${updatedApp.name}" ${t("edit.failed")}!`);
         return false;
       }
     }
 
-    alertStore.showSuccess(`Aplikasi "${updatedApp.name}" berhasil diperbarui!`);
+    alertStore.showSuccess(`${t("todo.app")} "${updatedApp.name}" ${t("edit.success")}!`);
     return true;
   },
 
   deleteApp: async (id: string) => {
     const targetApp = get().apps.find((a) => a.id === id);
-    const targetName = targetApp?.name || 'Aplikasi';
+    const targetName = targetApp?.name || t("todo.app");
 
     // Optimistically update Zustand store & UI
     const updated = get().apps.filter((a) => a.id !== id);
@@ -138,16 +140,16 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       try {
         const { error } = await supabase.from('apps').delete().eq('id', id);
         if (error) throw error;
-        alertStore.showSuccess(`${targetName} berhasil dihapus!`);
+        alertStore.showSuccess(`${t("todo.app")} "${targetName}" ${t("delete.success")}!`);
         return true;
       } catch (err) {
         console.error('[appStore] Failed to delete app from Supabase', err);
-        alertStore.showError(`Gagal menghapus ${targetName}!`);
+        alertStore.showError(`${t("todo.app")} "${targetName}" ${t("delete.failed")}!`);
         return false;
       }
     }
 
-    alertStore.showSuccess(`${targetName} berhasil dihapus!`);
+    alertStore.showSuccess(`${t("todo.app")} "${targetName}" ${t("delete.success")}!`);
     return true;
   },
 
@@ -171,16 +173,16 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       try {
         const { error } = await supabase.from('apps').delete().in('id', ids);
         if (error) throw error;
-        alertStore.showSuccess(`${count} aplikasi berhasil dihapus!`);
+        alertStore.showSuccess(`${count} ${t("todo.apps")} ${t("delete.success")}!`);
         return true;
       } catch (err) {
         console.error('[appStore] Failed to bulk delete apps from Supabase', err);
-        alertStore.showError(`Gagal menghapus ${count} aplikasi!`);
+        alertStore.showError(`${count} ${t("todo.apps")} ${t("delete.failed")}!`);
         return false;
       }
     }
 
-    alertStore.showSuccess(`${count} aplikasi berhasil dihapus!`);
+    alertStore.showSuccess(`${count} ${t("todo.apps")} ${t("delete.success")}!`);
     return true;
   },
 
