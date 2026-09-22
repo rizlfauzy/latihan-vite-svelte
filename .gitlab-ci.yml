@@ -24,17 +24,7 @@ test:
   image: mcr.microsoft.com/playwright:v1.63.0-jammy
   before_script:
     - npm install -g bun
-    - |
-      cat << 'EOF' > .env
-      VITE_APP_ENV="development"
-      VITE_ENABLE_DEBUG="true"
-      VITE_API_BASE_URL="http://localhost:8888/api"
-      VITE_APP_TITLE="⚡ Apps Hub [DEV]"
-      VITE_APP_LOGO_URL="/logo.svg"
-      VITE_APP_FAVICON_URL="/favicon.svg"
-      VITE_SUPABASE_URL="https://cvakhbaaornyxmdkcgyl.supabase.co"
-      VITE_SUPABASE_ANON_KEY="sb_publishable_YAxhno03AOGLAY2O0bkDag_nhMiv1Sg"
-      EOF
+    - echo "$ENV_TEST" > .env
     - bun install --frozen-lockfile
   script:
     - bun run check
