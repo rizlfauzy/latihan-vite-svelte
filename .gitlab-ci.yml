@@ -3,7 +3,7 @@ stages:
   - build
   - deploy
 
-default:
+workflow:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
 
