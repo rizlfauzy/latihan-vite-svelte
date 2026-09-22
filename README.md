@@ -1,6 +1,6 @@
 # ⚡ Apps Hub — CV Sukses Gemilang
 
-> **Portal Aplikasi & Dashboard Operasional Terpadu** untuk **CV Sukses Gemilang** (Pusat Hiburan Keluarga & Game Center Arcade). Dilengkapi manajemen aplikasi terhubung ke database cloud Supabase, relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), komponen dropdown interaktif kustom (*CustomSelect*), sistem navigasi SPA, sticky navbar, catatan tugas bertingkat (*sub-tasks*), sistem notifikasi toast, Progressive Web App (PWA) dengan Service Worker caching, dukungan Dark Mode, lokalisasi dwibahasa (ID & EN), integrasi kontak WhatsApp PIC teknis, dan rangkaian pengujian otomatis E2E Playwright (31 skenario).
+> **Portal Aplikasi & Dashboard Operasional Terpadu** untuk **CV Sukses Gemilang** (Pusat Hiburan Keluarga & Game Center Arcade). Dilengkapi manajemen aplikasi terhubung ke database cloud Supabase, fitur aksi massal (*Select All & Bulk Delete* di Mode Debug), relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), fitur *Check All* pada To-Do list, komponen dropdown interaktif kustom (*CustomSelect*), sistem navigasi SPA, sticky navbar, catatan tugas bertingkat (*sub-tasks*), sistem notifikasi toast, Progressive Web App (PWA) dengan Service Worker caching, dukungan Dark Mode, lokalisasi dwibahasa (ID & EN), integrasi kontak WhatsApp PIC teknis, dan rangkaian pengujian otomatis E2E Playwright (33 skenario).
 
 ![Svelte 5](https://img.shields.io/badge/Svelte-5.x_Runes-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)
@@ -9,7 +9,7 @@
 ![Zustand](https://img.shields.io/badge/State-Zustand-orange?style=for-the-badge)
 ![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
 ![i18n](https://img.shields.io/badge/i18n-EN_%26_ID-1d76db?style=for-the-badge)
-![Playwright](https://img.shields.io/badge/Playwright-31_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-33_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Design](https://img.shields.io/badge/Style-Neo_Brutalism-FFD000?style=for-the-badge)
 
@@ -19,7 +19,9 @@
 
 - 🚀 **Enterprise App Hub Grid**: Menampilkan modul aplikasi operasional game center dalam tata letak kartu responsif dengan hard-shadow dan border tegas khas Neo Brutalism.
 - ⚡ **Supabase Cloud Database Sync**: Persistensi data aplikasi dan daftar tugas langsung ke database cloud Supabase dengan fallback data lokal yang tangguh.
+- 🗑️ **Select All & Bulk Delete (Debug Mode)**: Memilih seluruh modul aplikasi atau aplikasi tertentu sekaligus via checkbox dan mengeksekusi penghapusan massal terhubung cloud dengan dialog konfirmasi khusus.
 - 🔗 **To-Do App Association & Cascading Deletion**: Setiap item to-do dapat dikaitkan dengan aplikasi spesifik (`appId`). Jika suatu aplikasi dihapus, seluruh tugas to-do yang terafiliasi akan ikut terhapus secara otomatis (*cascading delete*).
+- ☑️ **Check All pada To-Do List**: Tombol cepat untuk menandai semua tugas aktif menjadi selesai secara instan dan mempermudah pembersihan via tombol *Clear Completed*.
 - 🎛️ **Custom Neo Brutalism Select (`CustomSelect`)**: Komponen dropdown interaktif yang dapat diakses penuh via keyboard tanpa bergantung pada elemen native `<select>`.
 - ✏️ **Manajemen Aplikasi (CRUD)**: Tambah, edit, dan hapus modul aplikasi operasional dengan proteksi modal konfirmasi interaktif saat mode debug aktif (`VITE_ENABLE_DEBUG=true`).
 - 🌙 **Dark Mode & Theming**: Dukungan peralihan tema terang dan gelap dengan kontras tinggi yang tersimpan di `localStorage`.
@@ -29,7 +31,7 @@
 - 📝 **To-Do List & Sub-Tasks Bertingkat**: Manajemen tugas operasional dengan sub-tasks bertingkat, checklist real-time, filter status (*Semua*, *Belum*, *Selesai*), dan antrean sinkronisasi offline.
 - 🔔 **Global Toast Alert System**: Komponen notifikasi mengambang di sudut kanan atas dengan status *success*, *error*, dan *info*.
 - 🌐 **Sistem Multibahasa Modular (i18n)**: Dukungan penuh Bahasa Indonesia (`id`) dan Bahasa Inggris (`en`) yang tersimpan rapi dalam file JSON modular ([`src/i18n/id.json`](src/i18n/id.json) & [`src/i18n/en.json`](src/i18n/en.json)).
-- 🎭 **Automated E2E Testing**: Suite pengujian komprehensif Playwright dengan 31 skenario test end-to-end yang memvalidasi seluruh alur kerja sistem.
+- 🎭 **Automated E2E Testing**: Suite pengujian komprehensif Playwright dengan 33 skenario test end-to-end yang memvalidasi seluruh alur kerja sistem.
 
 ---
 
@@ -100,7 +102,7 @@ Aplikasi akan berjalan di `http://localhost:8888`.
 ### 2. Menjalankan Automated E2E Test (Playwright)
 
 ```bash
-# Jalankan seluruh 31 test cases secara headless
+# Jalankan seluruh 33 test cases secara headless
 bun run test
 
 # Jalankan test dengan mode visual UI

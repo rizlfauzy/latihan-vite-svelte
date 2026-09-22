@@ -1034,6 +1034,157 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(page.locator(`text=${app1Task}`)).toBeVisible();
     await expect(page.locator(`text=${app2Task}`)).toBeVisible();
   });
+
+  test('Select All and Bulk Delete in debug mode removes multiple selected apps and cascades to To-Do items', async ({ page }) => {
+    // Ensure we have at least two apps for testing
+    let appCards = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]');
+    while ((await appCards.count()) < 2) {
+      const idx = await appCards.count();
+      const appName = `Bulk Seed ${idx} ${Date.now()}`;
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+      await page.locator('[data-testid="btn-open-add-app"]').click({ force: true });
+      await page.locator('[data-testid="input-app-name"]').fill(appName);
+      await page.locator('[data-testid="input-app-url"]').fill(`https://example.com/seed${idx}`);
+      await page.locator('[data-testid="input-app-desc"]').fill(`Seed description ${idx}`);
+      await page.locator('[data-testid="input-app-pic"]').fill('Seed PIC');
+      await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+      await page.locator('[data-testid="btn-submit-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+      await expect(page.locator(`text=${appName}`)).toBeVisible();
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+    }
+
+    // Verify Select All button is visible in debug mode
+    const selectAllBtn = page.locator('[data-testid="btn-select-all-apps"]');
+    await expect(selectAllBtn).toBeVisible();
+
+    // Select the first app card via its individual checkbox
+    const firstCard = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]').first();
+    const firstCheckbox = firstCard.locator('[data-testid^="checkbox-select-app-"]');
+    await firstCheckbox.check();
+
+    // Verify bulk delete button appears
+    const bulkDeleteBtn = page.locator('[data-testid="btn-bulk-delete-apps"]');
+    await expect(bulkDeleteBtn).toBeVisible();
+    await expect(bulkDeleteBtn).toContainText('(1)');
+
+    // Now test Select All button
+    await selectAllBtn.click();
+    const totalCount = await page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]').count();
+    await expect(bulkDeleteBtn).toContainText(`(${totalCount})`);
+
+    // Click again to Deselect All
+    await selectAllBtn.click();
+    await expect(bulkDeleteBtn).not.toBeVisible();
+
+    // Now create two specific test apps to delete in bulk
+    const appA = `Bulk Target A ${Date.now()}`;
+    const appB = `Bulk Target B ${Date.now()}`;
+
+    for (const name of [appA, appB]) {
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+      await page.locator('[data-testid="btn-open-add-app"]').click({ force: true });
+      await page.locator('[data-testid="input-app-name"]').fill(name);
+      await page.locator('[data-testid="input-app-url"]').fill('https://example.com/target');
+      await page.locator('[data-testid="input-app-desc"]').fill('App to bulk delete');
+      await page.locator('[data-testid="input-app-pic"]').fill('Target PIC');
+      await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+      await page.locator('[data-testid="btn-submit-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+      await expect(page.locator(`text=${name}`)).toBeVisible();
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+    }
+
+    const cardA = page.locator('[data-testid="apps-list"]').locator('[data-testid^="app-card-"]', { hasText: appA });
+    const cardB = page.locator('[data-testid="apps-list"]').locator('[data-testid^="app-card-"]', { hasText: appB });
+
+    const deleteBtnA = cardA.locator('[data-testid^="btn-delete-app-"]');
+    const idA = (await deleteBtnA.getAttribute('data-testid'))?.replace('btn-delete-app-', '') || '';
+
+    // Add a To-Do associated with appA
+    const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
+    await topicTrigger.click();
+    await page.locator(`[data-testid="todo-app-topic-select-option-${idA}"]`).click();
+    const todoForA = `Cascading Task for App A ${Date.now()}`;
+    await page.locator('[data-testid="todo-input"]').fill(todoForA);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${todoForA}`)).toBeVisible();
+
+    // Select both appA and appB checkboxes
+    await cardA.locator('[data-testid^="checkbox-select-app-"]').check();
+    await cardB.locator('[data-testid^="checkbox-select-app-"]').check();
+    await expect(bulkDeleteBtn).toContainText('(2)');
+
+    // Click bulk delete and test Cancel first
+    await bulkDeleteBtn.click();
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-cancel-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+    await expect(cardA).toBeVisible();
+    await expect(cardB).toBeVisible();
+
+    // Click bulk delete and Confirm
+    await bulkDeleteBtn.click();
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+
+    // Both apps should be removed
+    await expect(cardA).not.toBeVisible();
+    await expect(cardB).not.toBeVisible();
+
+    // Cascading deletion: To-Do for appA should be removed!
+    await expect(page.locator(`text=${todoForA}`)).not.toBeVisible();
+  });
+
+  test('Check All button in To-Do List marks all tasks completed and allows Clear Completed to wipe them', async ({ page }) => {
+    // Add two active todos
+    const task1 = `Task Check All 1 ${Date.now()}`;
+    const task2 = `Task Check All 2 ${Date.now()}`;
+
+    await page.locator('[data-testid="todo-input"]').fill(task1);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${task1}`)).toBeVisible();
+
+    await page.locator('[data-testid="todo-input"]').fill(task2);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${task2}`)).toBeVisible();
+
+    // Check All button should be visible
+    const checkAllBtn = page.locator('[data-testid="btn-check-all-todos"]');
+    await expect(checkAllBtn).toBeVisible();
+
+    // Click Check All button to mark all tasks completed
+    await checkAllBtn.click();
+
+    // Filter by Active should show 0 or not contain our tasks
+    const filterActiveBtn = page.locator('[data-testid="filter-active"]');
+    await filterActiveBtn.click();
+    await expect(page.locator(`text=${task1}`)).not.toBeVisible();
+    await expect(page.locator(`text=${task2}`)).not.toBeVisible();
+
+    // Filter by Done should contain both tasks
+    const filterDoneBtn = page.locator('[data-testid="filter-done"]');
+    await filterDoneBtn.click();
+    await expect(page.locator(`text=${task1}`)).toBeVisible();
+    await expect(page.locator(`text=${task2}`)).toBeVisible();
+
+    // Clear Completed button should be visible
+    const clearCompletedBtn = page.locator('[data-testid="clear-completed-button"]');
+    await expect(clearCompletedBtn).toBeVisible();
+    await clearCompletedBtn.click();
+
+    // Confirm deletion modal
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+
+    // Both tasks should be wiped
+    await expect(page.locator(`text=${task1}`)).not.toBeVisible();
+    await expect(page.locator(`text=${task2}`)).not.toBeVisible();
+  });
 });
 
 

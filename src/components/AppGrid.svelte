@@ -40,6 +40,37 @@
   let isAddModalOpen = $state(false);
   let appToDelete = $state<AppItem | null>(null);
   let appToEdit = $state<AppItem | null>(null);
+  let selectedAppIds = $state<string[]>([]);
+  let isBulkDeleteConfirmOpen = $state(false);
+
+  let allVisibleSelected = $derived(
+    filteredApps.length > 0 && filteredApps.every((a) => selectedAppIds.includes(a.id))
+  );
+
+  $effect(() => {
+    const allIds = new Set(allApps.map((a) => a.id));
+    if (selectedAppIds.some((id) => !allIds.has(id))) {
+      selectedAppIds = selectedAppIds.filter((id) => allIds.has(id));
+    }
+  });
+
+  function toggleSelectApp(app: AppItem) {
+    if (selectedAppIds.includes(app.id)) {
+      selectedAppIds = selectedAppIds.filter((id) => id !== app.id);
+    } else {
+      selectedAppIds = [...selectedAppIds, app.id];
+    }
+  }
+
+  function handleSelectAll() {
+    const visibleIds = filteredApps.map((a) => a.id);
+    if (allVisibleSelected) {
+      selectedAppIds = selectedAppIds.filter((id) => !visibleIds.includes(id));
+    } else {
+      const merged = new Set([...selectedAppIds, ...visibleIds]);
+      selectedAppIds = Array.from(merged);
+    }
+  }
 
   function resetFilters() {
     searchQuery = '';
@@ -50,6 +81,14 @@
     if (appToDelete) {
       appStore.deleteApp(appToDelete.id);
       appToDelete = null;
+    }
+  }
+
+  async function handleBulkDeleteConfirm() {
+    if (selectedAppIds.length > 0) {
+      await appStore.deleteApps(selectedAppIds);
+      selectedAppIds = [];
+      isBulkDeleteConfirmOpen = false;
     }
   }
 </script>
@@ -64,9 +103,33 @@
 
     <div class="flex items-center gap-2.5 flex-wrap">
       {#if env.enableDebug}
+        {#if filteredApps.length > 0}
+          <button
+            type="button"
+            class="nb-btn bg-white hover:bg-gray-100 text-xs font-black px-3.5 py-2 flex items-center gap-1.5 text-black border-2 border-nb-black shadow-nb-sm cursor-pointer"
+            onclick={handleSelectAll}
+            data-testid="btn-select-all-apps"
+          >
+            <span class="text-sm">{allVisibleSelected ? '☑' : '☐'}</span>
+            <span>{allVisibleSelected ? $i18nStore.t('grid.deselectAll') : $i18nStore.t('grid.selectAll')}</span>
+          </button>
+        {/if}
+
+        {#if selectedAppIds.length > 0}
+          <button
+            type="button"
+            class="nb-btn bg-red-400 hover:bg-red-500 text-xs font-black px-3.5 py-2 flex items-center gap-1.5 text-black border-2 border-nb-black shadow-nb-sm cursor-pointer"
+            onclick={() => (isBulkDeleteConfirmOpen = true)}
+            data-testid="btn-bulk-delete-apps"
+          >
+            <span>🗑️</span>
+            <span>{$i18nStore.t('grid.deleteSelected')} ({selectedAppIds.length})</span>
+          </button>
+        {/if}
+
         <button
           type="button"
-          class="nb-btn bg-nb-pink text-xs font-black px-3.5 py-2 flex items-center gap-1.5 text-black"
+          class="nb-btn bg-nb-pink text-xs font-black px-3.5 py-2 flex items-center gap-1.5 text-black cursor-pointer"
           onclick={() => (isAddModalOpen = true)}
           data-testid="btn-open-add-app"
         >
@@ -174,6 +237,8 @@
       {#each filteredApps as app (app.id)}
         <AppCard
           {app}
+          isSelected={selectedAppIds.includes(app.id)}
+          onToggleSelect={toggleSelectApp}
           onEdit={(a) => (appToEdit = a)}
           onDelete={(a) => (appToDelete = a)}
         />
@@ -193,6 +258,17 @@
       cancelText={$i18nStore.t('action.cancel')}
       onConfirm={handleDeleteConfirm}
       onCancel={() => (appToDelete = null)}
+    />
+
+    <ConfirmModal
+      isOpen={isBulkDeleteConfirmOpen}
+      title={$i18nStore.t('grid.confirmModalBulkDeleteAppTitle')}
+      message={$i18nStore.t('grid.confirmModalBulkDeleteAppMsg').replace('{count}', selectedAppIds.length.toString())}
+      itemText={`${selectedAppIds.length} ${$i18nStore.t('grid.connected')}`}
+      confirmText={$i18nStore.t('action.deleteSelected')}
+      cancelText={$i18nStore.t('action.cancel')}
+      onConfirm={handleBulkDeleteConfirm}
+      onCancel={() => (isBulkDeleteConfirmOpen = false)}
     />
 
     {#if appToEdit}

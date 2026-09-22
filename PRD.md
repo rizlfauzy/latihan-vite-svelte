@@ -47,12 +47,14 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 - **Add Application**: Modal pendaftaran modul aplikasi baru dengan validasi data lengkap.
 - **Edit Application**: Modal pembaruan metadata aplikasi (nama, URL, kategori, PIC, WhatsApp).
 - **Delete Application**: Modal konfirmasi hapus bergaya Neo Brutalism yang juga mengeksekusi *cascading deletion* terhadap to-do list yang terafiliasi dengan aplikasi tersebut.
+- **Bulk Delete & Select All (Debug Mode)**: Fitur "Pilih Semua" dan checkbox pada tiap kartu aplikasi saat mode debug aktif, memungkinkan penghapusan massal aplikasi terpilih beserta *cascading deletion* otomatis ke daftar To-Do.
 - **Supabase Cloud Persistence**: Tersinkronisasi dua arah dengan tabel `apps` di Supabase, dengan graceful fallback saat jaringan offline.
 - **Debug Mode Gated**: Fitur mutasi aplikasi dikontrol oleh environment variable `VITE_ENABLE_DEBUG`.
 
 ### 3. To-Do List Harian dengan Asosiasi Aplikasi & Sub-Tasks
 - **App Association**: Setiap tugas to-do dapat diasosiasikan dengan modul aplikasi tertentu (`appId`) menggunakan komponen kustom `CustomSelect`.
 - **Cascading Deletion**: Menghapus modul aplikasi secara otomatis membersihkan semua tugas to-do yang terkait dengan modul tersebut, baik di store lokal maupun di Supabase.
+- **Check All (Tandai Selesai Semua)**: Tombol aksi cepat untuk menandai seluruh tugas aktif menjadi selesai sekaligus, bersinergi dengan tombol pembersihan tugas (*Hapus yang Selesai*).
 - **Sub-Tasks Bertingkat**: Setiap tugas utama mendukung sub-task tak terbatas dengan checkbox progres real-time (`X/Y SUB-TASKS`).
 - **Filter Status**: Filter cepat (*Semua*, *Belum*, *Selesai*) dan aksi massal *Hapus yang Selesai*.
 - **Offline Sync Queue**: Perubahan tugas tetap dicatat saat koneksi terputus dan disinkronkan kembali saat online.
@@ -95,7 +97,7 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 | **Routing** | `sv-router` | Client-side Single Page Application (SPA) routing |
 | **Styling** | Tailwind CSS v4 | Custom design tokens Neo Brutalism & Dark Mode |
 | **PWA** | Service Worker + Manifest | Instalasi aplikasi offline & asset caching |
-| **Testing** | Playwright | End-to-end automated testing suite (31 test scenarios) |
+| **Testing** | Playwright | End-to-end automated testing suite (33 test scenarios) |
 | **Container** | Docker + Nginx Alpine | Multi-stage production container build |
 
 ---
@@ -167,6 +169,7 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 - [x] Dark Mode toggle tersimpan di `localStorage` dan terintegrasi dengan skema warna Neo Brutalism.
 - [x] PWA terdaftar dengan Service Worker aktif dan caching aset.
 - [x] Sistem translasi dwibahasa (ID & EN) tersimpan dalam file JSON terpisah dan bekerja instan di seluruh elemen UI.
-- [x] Seluruh 31 skenario automated E2E test cases Playwright lulus pengujian (`bun run test`).
+- [x] Fitur Bulk Action (Select All & Bulk Delete) dan Check All To-Do List berfungsi penuh.
+- [x] Seluruh 33 skenario automated E2E test cases Playwright lulus pengujian (`bun run test`).
 - [x] Svelte check dan TypeScript compiler bersih dari error maupun warning (`bun run check`).
 - [x] Production build berhasil dibuat tanpa kendala (`bun run build`).
