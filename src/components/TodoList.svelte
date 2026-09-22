@@ -206,18 +206,6 @@
             <span>{$i18nStore.t('todo.appTopic')}:</span>
           </label>
           <div class="grow max-w-xs">
-            <!-- <select
-              id="todo-app-topic-select"
-              bind:value={selectedAppId}
-              class="nb-input w-full py-1.5 px-2.5 text-xs font-bold bg-white text-nb-black cursor-pointer shadow-nb-xs"
-              data-testid="todo-app-topic-select"
-            >
-              {#each apps as app (app.id)}
-                <option value={app.id}>
-                  {app.icon} {app.name}
-                </option>
-              {/each}
-            </select> -->
             <CustomSelect
               id="todo-app-topic-select"
               options={apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))}

@@ -4,6 +4,7 @@
   import { i18nStore } from '@/stores/i18nStore';
   import CustomSelect from '@/components/CustomSelect.svelte';
   import SkeletonModal from '@/components/SkeletonModal.svelte';
+  import { alertStore } from '@/stores/alertStore';
 
   let {
     isOpen = $bindable(false),
@@ -99,24 +100,17 @@
 
   function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    errorMessage = '';
+    try {
+      if (!name.trim()) throw new Error($i18nStore.t('modal.errName'));
+      if (!url.trim()) throw new Error($i18nStore.t('modal.errUrl'));
+      if (!description.trim()) throw new Error($i18nStore.t('modal.errDesc'));
 
-    if (!name.trim()) {
-      errorMessage = $i18nStore.t('modal.errName');
-      return;
+      const newApp = buildAppItem();
+      appStore.addApp(newApp);
+      handleClose();
+    } catch (e) {
+      alertStore.showError((e as Error).message);
     }
-    if (!url.trim()) {
-      errorMessage = $i18nStore.t('modal.errUrl');
-      return;
-    }
-    if (!description.trim()) {
-      errorMessage = $i18nStore.t('modal.errDesc');
-      return;
-    }
-
-    const newApp = buildAppItem();
-    appStore.addApp(newApp);
-    handleClose();
   }
 
   async function copyTsSnippet() {
@@ -220,7 +214,6 @@
               class="nb-input p-2.5"
               placeholder={$i18nStore.t('modal.namePlaceholder')}
               bind:value={name}
-              required
               data-testid="input-app-name"
             />
           </div>
@@ -262,7 +255,6 @@
               class="nb-input p-2.5"
               placeholder={$i18nStore.t('modal.urlPlaceholder')}
               bind:value={url}
-              required
               data-testid="input-app-url"
             />
           </div>
@@ -288,7 +280,6 @@
             class="nb-input p-2.5 h-18 resize-y"
             placeholder={$i18nStore.t('modal.descPlaceholder')}
             bind:value={description}
-            required
             data-testid="input-app-desc"
           ></textarea>
         </div>
