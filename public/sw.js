@@ -1,5 +1,5 @@
-// Svelte Hub — Progressive Web App Service Worker
-const CACHE_NAME = 'svelte-hub-v1';
+// Apps Hub — Progressive Web App Service Worker
+const CACHE_NAME = 'apps-hub-v1';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

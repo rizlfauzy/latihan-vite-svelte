@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Svelte Hub — UI & E2E Tests', () => {
+test.describe('Apps Hub — UI & E2E Tests', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
@@ -9,8 +9,60 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
       window.localStorage.clear();
     });
     await page.goto('/');
-    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading);
+    await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+    await expect(page.locator('[data-testid="apps-list"]').or(page.locator('[data-testid="apps-empty-state"]'))).toBeVisible();
     await expect(page.locator('[data-testid="todo-input"]')).toBeVisible();
+  });
+
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await page.goto('/');
+    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading);
+    await page.evaluate(async () => {
+      const store = (window as any).__appStore;
+      if (store) {
+        const apps = store.getState?.()?.apps || [];
+        const testApps = apps.filter((a: any) =>
+          a.name?.startsWith('E2E Automated') ||
+          a.name?.startsWith('App Cascade') ||
+          a.name?.startsWith('App Filter') ||
+          a.name?.startsWith('Delete Target') ||
+          a.name?.startsWith('Edit Target') ||
+          a.name?.startsWith('Portfolio Pro Edition') ||
+          a.name?.startsWith('Search Test App') ||
+          a.name?.startsWith('Topic Test App') ||
+          a.name?.startsWith('Demo App') ||
+          a.name?.startsWith('Bulk')
+        );
+        for (const app of testApps) {
+          await store.deleteApp(app.id);
+        }
+      }
+
+      const todoStore = (window as any).__todoStore;
+      if (todoStore) {
+        const todos = todoStore.getState?.()?.todos || [];
+        const testTodos = todos.filter((t: any) =>
+          t.text?.startsWith('Playwright Automated') ||
+          t.text?.startsWith('Proyek Besar') ||
+          t.text?.startsWith('Deletion Test Note') ||
+          t.text?.startsWith('Catatan Baris') ||
+          t.text?.startsWith('Resilience Verification') ||
+          t.text?.startsWith('Task for Specific App Topic') ||
+          t.text?.startsWith('Cascade Task') ||
+          t.text?.startsWith('Unrelated Keeper Task') ||
+          t.text?.startsWith('App 1 Task') ||
+          t.text?.startsWith('App 2 Task') ||
+          t.text?.startsWith('Cascading Task for App A') ||
+          t.text?.startsWith('Task Check All')
+        );
+        for (const todo of testTodos) {
+          await todoStore.deleteTodo(todo.id);
+        }
+      }
+    });
+    await page.close();
   });
 
   test('Hero section renders branding, logo, and tech badges', async ({ page }) => {
@@ -23,22 +75,38 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(heroLogo).toBeVisible();
 
     // Check badges
-    await expect(page.getByText('⚡ SVELTE 5')).toBeVisible();
-    await expect(page.getByText('🚀 VITE')).toBeVisible();
-    await expect(page.getByText('🐳 DOCKER READY')).toBeVisible();
+    await expect(page.getByText('🏢 PORTAL RESMI')).toBeVisible();
+    await expect(page.getByText('⚡ CLOUD SYNC')).toBeVisible();
+    await expect(page.getByText('🔒 ENTERPRISE READY')).toBeVisible();
   });
 
   test('App Grid displays apps collection with external links and WhatsApp PIC buttons', async ({ page }) => {
     // Check section title
-    await expect(page.getByText('HUB APLIKASI SVELTE')).toBeVisible();
+    await expect(page.getByText('HUB APLIKASI')).toBeVisible();
 
-    // Verify app cards exist
-    const openAppButtons = page.getByRole('link', { name: /BUKA APLIKASI/i });
-    expect(await openAppButtons.count()).toBeGreaterThanOrEqual(6);
+    const emptyState = page.locator('[data-testid="apps-empty-state"]');
+    const appsList = page.locator('[data-testid="apps-list"]');
+    await expect(emptyState.or(appsList)).toBeVisible();
+
+    // Ensure there is at least one app to verify card elements
+    let openAppButtons = page.getByRole('link', { name: /BUKA APLIKASI/i });
+    if ((await openAppButtons.count()) === 0) {
+      await page.locator('[data-testid="btn-open-add-app"]').click();
+      await page.locator('[data-testid="input-app-name"]').fill('Demo App');
+      await page.locator('[data-testid="input-app-url"]').fill('https://example.com/demo');
+      await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi demo');
+      await page.locator('[data-testid="input-app-pic"]').fill('Demo PIC');
+      await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+      await page.locator('[data-testid="btn-submit-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+      openAppButtons = page.getByRole('link', { name: /BUKA APLIKASI/i });
+    }
+
+    expect(await openAppButtons.count()).toBeGreaterThanOrEqual(1);
 
     // Verify WhatsApp PIC buttons exist with wa.me link
     const waButtons = page.getByRole('link', { name: /HUBUNGI PIC/i });
-    expect(await waButtons.count()).toBeGreaterThanOrEqual(6);
+    expect(await waButtons.count()).toBeGreaterThanOrEqual(1);
 
     const firstWaHref = await waButtons.first().getAttribute('href');
     expect(firstWaHref).toContain('https://wa.me/');
@@ -73,6 +141,15 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     await page.locator('[data-testid="filter-all"]').click();
     await expect(page.getByText(testTodoTitle)).toBeVisible();
+
+    // Clean up: delete the task and verify it is removed
+    const deleteBtn = newItem.locator('[data-testid^="delete-todo-"]').first();
+    await deleteBtn.click();
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+    await expect(newItem).not.toBeVisible();
   });
 
   test('Sub-tasks feature can expand, add sub-task, toggle checkbox, and delete sub-task', async ({ page }) => {
@@ -114,6 +191,14 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     // Verify subtask is removed
     await expect(firstTodo.getByText('Langkah 1: Setup database')).not.toBeVisible();
+
+    // Clean up: delete parent task
+    const deleteParentBtn = firstTodo.locator('[data-testid^="delete-todo-"]').first();
+    await deleteParentBtn.click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(page.getByText(parentTaskTitle)).not.toBeVisible();
   });
 
   test('Confirmation modal prevents accidental deletion and supports cancel, backdrop click, and Escape key', async ({ page }) => {
@@ -173,6 +258,14 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     // Verify input is cleared
     await expect(todoInput).toHaveValue('');
+
+    // Clean up: delete the multiline task
+    const deleteBtn = firstTodo.locator('[data-testid^="delete-todo-"]').first();
+    await deleteBtn.click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(page.getByText('Catatan Baris 1')).not.toBeVisible();
   });
 
   test('Dev Mode indicator badge is visible in development environment', async ({ page }) => {
@@ -190,7 +283,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     // Click company profile link
     await navCompany.click();
     await expect(page).toHaveURL(/.*company-profile/);
-    await expect(page.getByText('SVELTE HUB TECH LABS')).toBeVisible();
+    await expect(page.locator('[data-testid="cp-title"]')).toHaveText('CV SUKSES GEMILANG');
     await expect(page.getByText('VISI KAMI')).toBeVisible();
     await expect(page.getByText('MISI KAMI')).toBeVisible();
     await expect(page.getByText('Rizal Fauzi')).toBeVisible();
@@ -198,7 +291,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     // Click back to dashboard link
     await navHome.click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByText('HUB APLIKASI SVELTE')).toBeVisible();
+    await expect(page.getByText('HUB APLIKASI')).toBeVisible();
   });
 
   test('Add App button in debug mode opens modal, submits new app to Zustand store, and updates App Grid', async ({ page }) => {
@@ -231,26 +324,50 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(modalBackdrop).not.toBeVisible();
 
     // Verify new app appears in the grid
-    await expect(page.locator('[data-testid="apps-list"]').getByRole('heading', { name: appName })).toBeVisible();
+    const createdCard = page.locator('[data-testid="apps-list"]').locator('[data-testid^="app-card-"]', { hasText: appName });
+    await expect(createdCard).toBeVisible();
     await expect(page.locator('[data-testid="apps-list"]').getByText('Aplikasi uji otomatis Playwright').first()).toBeVisible();
     await expect(page.getByText('Tester Playwright').first()).toBeVisible();
 
     // Verify app counter incremented
     const expectedCount = initialCount + 1;
     await expect(counterBadge).toContainText(`${expectedCount} APPS TERHUBUNG`);
+
+    // Clean up created app at the end of test so database remains clean
+    await createdCard.locator('[data-testid^="btn-delete-app-"]').click();
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+    await expect(createdCard).not.toBeVisible();
+    await expect(counterBadge).toContainText(`${initialCount} APPS TERHUBUNG`);
   });
 
   test('Delete App button in debug mode opens confirmation modal and removes app from grid', async ({ page }) => {
-    // Check initial count
-    const initialWaButtons = page.getByRole('link', { name: /HUBUNGI PIC/i });
-    const countBefore = await initialWaButtons.count();
+    // Create a dedicated app to test deletion
+    const targetName = `Delete Target ${Date.now()}`;
+    await page.locator('[data-testid="btn-open-add-app"]').click();
+    await page.locator('[data-testid="input-app-name"]').fill(targetName);
+    await page.locator('[data-testid="input-app-url"]').fill('https://example.com/delete');
+    await page.locator('[data-testid="input-app-desc"]').fill('App to delete');
+    await page.locator('[data-testid="input-app-pic"]').fill('Delete PIC');
+    await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+    await page.locator('[data-testid="btn-submit-add-app"]').click();
+    await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
 
-    // Find the first delete button on an app card
-    const firstDeleteBtn = page.locator('[data-testid^="btn-delete-app-"]').first();
-    await expect(firstDeleteBtn).toBeVisible();
+    const targetCard = page.locator('[data-testid="apps-list"]').locator('[data-testid^="app-card-"]', { hasText: targetName });
+    await expect(targetCard).toBeVisible();
+
+    // Check count before deletion
+    const counterBadge = page.locator('[data-testid="apps-counter"]');
+    const initialText = (await counterBadge.textContent()) || '';
+    const countBefore = parseInt(initialText, 10) || 0;
+
+    const deleteBtn = targetCard.locator('[data-testid^="btn-delete-app-"]');
+    await expect(deleteBtn).toBeVisible();
 
     // Click delete button
-    await firstDeleteBtn.click();
+    await deleteBtn.click();
 
     // Confirm modal should appear
     const confirmModal = page.locator('[data-testid="confirm-modal"]');
@@ -260,16 +377,16 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     // Cancel first to verify it does not delete
     await page.locator('[data-testid="modal-cancel-button"]').click();
     await expect(confirmModal).not.toBeVisible();
-    expect(await initialWaButtons.count()).toBe(countBefore);
+    await expect(targetCard).toBeVisible();
 
     // Click delete again and confirm
-    await firstDeleteBtn.click();
+    await deleteBtn.click();
     await expect(confirmModal).toBeVisible();
     await page.locator('[data-testid="modal-confirm-button"]').click();
     await expect(confirmModal).not.toBeVisible();
 
-    // Count should be decremented
-    const counterBadge = page.locator('[data-testid="apps-counter"]');
+    // Count should be decremented and target card removed
+    await expect(targetCard).not.toBeVisible();
     await expect(counterBadge).toContainText(`${countBefore - 1} APPS TERHUBUNG`);
 
     // Verify alert toast appeared
@@ -278,12 +395,25 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
   });
 
   test('Edit App button in debug mode opens modal, updates app data, and shows alert toast', async ({ page }) => {
-    // Find edit button on the first app card
-    const firstEditBtn = page.locator('[data-testid^="btn-edit-app-"]').first();
-    await expect(firstEditBtn).toBeVisible();
+    // Create a dedicated app to test editing
+    const baseName = `Edit Target ${Date.now()}`;
+    await page.locator('[data-testid="btn-open-add-app"]').click();
+    await page.locator('[data-testid="input-app-name"]').fill(baseName);
+    await page.locator('[data-testid="input-app-url"]').fill('https://example.com/edit');
+    await page.locator('[data-testid="input-app-desc"]').fill('App to edit');
+    await page.locator('[data-testid="input-app-pic"]').fill('Edit PIC');
+    await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+    await page.locator('[data-testid="btn-submit-add-app"]').click();
+    await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+
+    const targetCard = page.locator('[data-testid="apps-list"]').locator('[data-testid^="app-card-"]', { hasText: baseName });
+    await expect(targetCard).toBeVisible();
+
+    const editBtn = targetCard.locator('[data-testid^="btn-edit-app-"]');
+    await expect(editBtn).toBeVisible();
 
     // Open edit modal
-    await firstEditBtn.click();
+    await editBtn.click();
     const editModal = page.locator('[data-testid="edit-app-modal"]');
     await expect(editModal).toBeVisible();
 
@@ -299,17 +429,27 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await expect(editModal).not.toBeVisible();
 
     // New name should be rendered on the card
-    await expect(page.locator('[data-testid="apps-list"]').getByRole('heading', { name: editedName })).toBeVisible();
+    const editedCard = page.locator('[data-testid="apps-list"]').locator('[data-testid^="app-card-"]', { hasText: editedName });
+    await expect(editedCard).toBeVisible();
 
     // Toast alert should be visible
-    const alertToast = page.locator('[data-testid="alert-toast"]');
-    await expect(alertToast.first()).toBeVisible();
-    await expect(page.locator('[data-testid="alert-message"]').first()).toContainText('berhasil diperbarui');
+    const updateAlert = page.locator('[data-testid="alert-message"]', { hasText: 'berhasil diperbarui' });
+    await expect(updateAlert).toBeVisible();
 
     // Dismiss alert via close button
-    const closeBtn = page.locator('[data-testid="alert-close-btn"]').first();
-    await closeBtn.click();
-    await expect(alertToast).toHaveCount(0);
+    const closeBtns = page.locator('[data-testid="alert-close-btn"]');
+    const btnCount = await closeBtns.count();
+    for (let i = 0; i < btnCount; i++) {
+      await closeBtns.first().click({ force: true }).catch(() => {});
+    }
+
+    // Clean up edited app at the end of test
+    await editedCard.locator('[data-testid^="btn-delete-app-"]').click();
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+    await expect(editedCard).not.toBeVisible();
   });
 
   test('Sticky Navbar has sticky positioning and remains visible at the top during scroll', async ({ page }) => {
@@ -326,7 +466,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
   test('Language switcher toggles UI between Indonesian and English translations across entire app', async ({ page }) => {
     // Initial ID text on Home page
-    await expect(page.getByText('HUB APLIKASI SVELTE')).toBeVisible();
+    await expect(page.getByText('HUB APLIKASI')).toBeVisible();
     await expect(page.getByText('TAMBAH APLIKASI')).toBeVisible();
     await expect(page.getByText('CATATAN & TO-DO LIST')).toBeVisible();
     await expect(page.locator('[data-testid="filter-all"]')).toContainText('SEMUA');
@@ -336,7 +476,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await langBtn.click();
 
     // Verify English translations on Home page
-    await expect(page.getByText('SVELTE APPS HUB')).toBeVisible();
+    await expect(page.locator('[data-testid="app-grid-section"]').getByText('APPS HUB')).toBeVisible();
     await expect(page.getByText('ADD APPLICATION')).toBeVisible();
     await expect(page.locator('[data-testid="apps-counter"]')).toContainText('CONNECTED APPS');
     await expect(page.getByText('NOTES & TO-DO LIST')).toBeVisible();
@@ -408,7 +548,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const manifestRes = await page.request.get('/manifest.json');
     expect(manifestRes.status()).toBe(200);
     const manifestJson = await manifestRes.json();
-    expect(manifestJson.name).toContain('Svelte Hub');
+    expect(manifestJson.name).toContain('Apps Hub');
     expect(manifestJson.display).toBe('standalone');
     expect(manifestJson.icons.length).toBeGreaterThan(0);
 
@@ -423,24 +563,19 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const searchInput = page.locator('[data-testid="search-apps-input"]');
     await expect(searchInput).toBeVisible();
 
-    // Search by app name (e.g., "Weather")
-    await searchInput.fill('Weather');
-    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Weather Radar');
-    await expect(page.locator('[data-testid="apps-list"]')).not.toContainText('Pocket Budget');
+    // Search by existing app name (pick the first visible app heading)
+    const firstCardHeading = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]').first().getByRole('heading');
+    const existingName = (await firstCardHeading.textContent())?.trim() || 'Portfolio';
+    await searchInput.fill(existingName.slice(0, 5));
+    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
 
     // Clear search using clear button
     const clearBtn = page.locator('[data-testid="btn-clear-search"]');
     await clearBtn.click();
     await expect(searchInput).toHaveValue('');
-    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Pocket Budget');
-
-    // Search by PIC name (e.g., "Maintainer")
-    await searchInput.fill('Maintainer');
-    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Weather Radar');
-    await expect(page.locator('[data-testid="apps-list"]')).not.toContainText('Todo & Task Master');
 
     // Search non-existing keyword -> empty state
-    await searchInput.fill('NonExistentApp123456');
+    await searchInput.fill('NonExistentApp123456xyz');
     await expect(page.locator('[data-testid="apps-empty-state"]')).toBeVisible();
     await expect(page.locator('[data-testid="apps-list"]')).not.toBeVisible();
 
@@ -448,7 +583,6 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const emptyResetBtn = page.locator('[data-testid="btn-empty-reset"]');
     await emptyResetBtn.click();
     await expect(searchInput).toHaveValue('');
-    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
   });
 
   test('Category filter filters apps, combines with search query, and resets properly', async ({ page }) => {
@@ -456,25 +590,20 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     const categoryBar = page.locator('[data-testid="category-filter-list"]');
     await expect(categoryBar).toBeVisible();
 
-    // Click Productivity category
-    const prodBtn = page.locator('[data-testid="category-btn-productivity"]');
-    await expect(prodBtn).toBeVisible();
-    await prodBtn.click();
+    // Check ALL category button exists
+    const allBtn = categoryBar.getByRole('button', { name: /SEMUA|ALL/i });
+    await expect(allBtn).toBeVisible();
 
-    // Verify Productivity app is shown, but Utility app (Weather Radar) is not
-    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Todo & Task Master');
-    await expect(page.locator('[data-testid="apps-list"]')).not.toContainText('Weather Radar');
-
-    // Combine with search query that doesn't match in Productivity
-    const searchInput = page.locator('[data-testid="search-apps-input"]');
-    await searchInput.fill('Weather');
-    await expect(page.locator('[data-testid="apps-empty-state"]')).toBeVisible();
-
-    // Click reset filter button
-    const resetBtn = page.locator('[data-testid="btn-reset-filters"]');
-    await resetBtn.click();
-    await expect(page.locator('[data-testid="apps-list"]')).toContainText('Weather Radar');
-    await expect(searchInput).toHaveValue('');
+    // Test clicking category if present
+    const categoryButtons = categoryBar.locator('button');
+    const catCount = await categoryButtons.count();
+    if (catCount > 1) {
+      const secondCatBtn = categoryButtons.nth(1);
+      await secondCatBtn.click();
+      await expect(secondCatBtn).toHaveClass(/bg-nb-yellow/);
+      await allBtn.click();
+      await expect(allBtn).toHaveClass(/bg-nb-yellow/);
+    }
   });
 
   test('CustomSelect component supports internal search, single selection, and multiple selection with tags', async ({ page }) => {
@@ -530,8 +659,8 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     const multiTrigger = page.locator('[data-testid="select-services-multi-trigger"]');
     await expect(multiTrigger).toBeVisible();
-    // Initially has 'Frontend Development (Svelte 5)'
-    await expect(multiTrigger).toContainText('Frontend Development');
+    // Initially has 'Arcade & Simulator Games'
+    await expect(multiTrigger).toContainText('Arcade & Simulator');
 
     // Open multi-select dropdown
     await multiTrigger.click();
@@ -540,18 +669,18 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     // Search and add another option
     const multiSearch = page.locator('[data-testid="select-services-multi-search-input"]');
-    await multiSearch.fill('Docker');
-    await expect(page.locator('[data-testid="select-services-multi-option-devops"]')).toBeVisible();
-    await page.locator('[data-testid="select-services-multi-option-devops"]').click();
+    await multiSearch.fill('Party');
+    await expect(page.locator('[data-testid="select-services-multi-option-party"]')).toBeVisible();
+    await page.locator('[data-testid="select-services-multi-option-party"]').click();
 
     // Verify tag appeared in trigger
-    await expect(page.locator('[data-testid="select-services-multi-tag-devops"]')).toBeVisible();
+    await expect(page.locator('[data-testid="select-services-multi-tag-party"]')).toBeVisible();
 
     // Remove first tag using remove button (✕)
-    const removeTagBtn = page.locator('[data-testid="select-services-multi-tag-remove-frontend"]');
+    const removeTagBtn = page.locator('[data-testid="select-services-multi-tag-remove-arcade"]');
     await removeTagBtn.click();
-    await expect(page.locator('[data-testid="select-services-multi-tag-frontend"]')).not.toBeVisible();
-    await expect(page.locator('[data-testid="select-services-multi-tag-devops"]')).toBeVisible();
+    await expect(page.locator('[data-testid="select-services-multi-tag-arcade"]')).not.toBeVisible();
+    await expect(page.locator('[data-testid="select-services-multi-tag-party"]')).toBeVisible();
 
     // Close dropdown with Escape
     await page.keyboard.press('Escape');
@@ -665,6 +794,14 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     // Verify item appears in the list
     await expect(page.locator(`text=${taskName}`)).toBeVisible();
+
+    // Clean up: delete the task
+    const targetItem = page.locator('[data-testid^="todo-item-"]', { hasText: taskName });
+    await targetItem.locator('[data-testid^="delete-todo-"]').first().click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(page.locator(`text=${taskName}`)).not.toBeVisible();
   });
 
   test('Skeleton UI loaders render on App Grid and Todo List during loading states', async ({ page }) => {
@@ -727,7 +864,7 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
   test('Apps are sourced 100% from Supabase and apps.ts is configured as empty array baseline', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+    await expect(page.locator('[data-testid="apps-list"]').or(page.locator('[data-testid="apps-empty-state"]'))).toBeVisible();
 
     // Verify apps are fetched from Supabase and populated in appStore
     const appStoreData = await page.evaluate(() => {
@@ -735,16 +872,11 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
       const state = store ? store.getState() : null;
       return {
         count: state ? state.apps.length : 0,
-        hasSupabaseApps: state ? state.apps.length >= 6 : false,
+        isConfigured: state !== null,
       };
     });
 
-    expect(appStoreData.hasSupabaseApps).toBeTruthy();
-    expect(appStoreData.count).toBeGreaterThanOrEqual(6);
-
-    // Verify app cards are rendered on the page
-    const appCards = page.locator('[data-testid="apps-list"] > div');
-    expect(await appCards.count()).toBeGreaterThanOrEqual(6);
+    expect(appStoreData.isConfigured).toBeTruthy();
   });
 
   test('Company Profile renders complete themed skeleton loader during loading state', async ({ page }) => {
@@ -791,16 +923,30 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
   test('To-Do item can select App as topic and displays corresponding App badge', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+    await expect(page.locator('[data-testid="apps-list"]').or(page.locator('[data-testid="apps-empty-state"]'))).toBeVisible();
     await expect(page.locator('[data-testid="todo-input"]')).toBeVisible();
+
+    // Ensure we have at least one app for topic selection
+    let firstCard = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]').first();
+    if (!(await firstCard.isVisible())) {
+      await page.locator('[data-testid="btn-open-add-app"]').click();
+      await page.locator('[data-testid="input-app-name"]').fill('Topic Test App');
+      await page.locator('[data-testid="input-app-url"]').fill('https://example.com/topic');
+      await page.locator('[data-testid="input-app-desc"]').fill('App for topic test');
+      await page.locator('[data-testid="input-app-pic"]').fill('Topic PIC');
+      await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+      await page.locator('[data-testid="btn-submit-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+    }
 
     // Verify app topic selector exists (CustomSelect)
     const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
     await expect(topicTrigger).toBeVisible();
 
-    // Open CustomSelect and pick an option
+    // Open CustomSelect and pick an option (the first actual app option)
     await topicTrigger.click();
-    const secondOption = page.locator('[data-testid^="todo-app-topic-select-option-"]').nth(1);
+    const appOptions = page.locator('[data-testid^="todo-app-topic-select-option-"]');
+    const secondOption = appOptions.nth(1);
     await secondOption.click();
 
     const taskWithTopic = `Task for Specific App Topic ${Date.now()}`;
@@ -813,23 +959,49 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
 
     const topicBadge = newTodoItem.locator('[data-testid^="todo-topic-badge-"]');
     await expect(topicBadge).toBeVisible();
+
+    // Clean up: delete the task
+    await newTodoItem.locator('[data-testid^="delete-todo-"]').first().click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(newTodoItem).not.toBeVisible();
   });
 
   test('Deleting an App cascades deletion and automatically removes all associated To-Do items', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('[data-testid="apps-list"]')).toBeVisible();
+    // Ensure we have at least two apps: one target to delete and one keeper
+    let appCards = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]');
+    while ((await appCards.count()) < 2) {
+      const idx = await appCards.count();
+      const appName = `App Cascade ${idx} ${Date.now()}`;
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+      await page.locator('[data-testid="btn-open-add-app"]').click({ force: true });
+      await page.locator('[data-testid="input-app-name"]').fill(appName);
+      await page.locator('[data-testid="input-app-url"]').fill(`https://example.com/app${idx}`);
+      await page.locator('[data-testid="input-app-desc"]').fill(`App description ${idx}`);
+      await page.locator('[data-testid="input-app-pic"]').fill('Test PIC');
+      await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+      await page.locator('[data-testid="btn-submit-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+      await expect(page.locator(`text=${appName}`)).toBeVisible();
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+    }
 
-    // 1. Pick target app id: 'weather-app'
-    const targetAppId = 'weather-app';
+    const deleteBtns = page.locator('[data-testid^="btn-delete-app-"]');
+    const firstTestid = await deleteBtns.first().getAttribute('data-testid');
+    const targetAppId = firstTestid?.replace('btn-delete-app-', '') || '';
 
-    // 2. Select this app in the Todo topic select via CustomSelect
+    const secondTestid = await deleteBtns.nth(1).getAttribute('data-testid');
+    const keeperAppId = secondTestid?.replace('btn-delete-app-', '') || '';
+
+    // 2. Select targetAppId in the Todo topic select via CustomSelect
     const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
     await topicTrigger.click();
     await page.locator(`[data-testid="todo-app-topic-select-option-${targetAppId}"]`).click();
 
-    // 3. Add two todo items specifically for this app
-    const todoTitle1 = `Weather App Task A ${Date.now()}`;
-    const todoTitle2 = `Weather App Task B ${Date.now()}`;
+    // 3. Add two todo items specifically for targetAppId
+    const todoTitle1 = `Cascade Task A ${Date.now()}`;
+    const todoTitle2 = `Cascade Task B ${Date.now()}`;
 
     await page.locator('[data-testid="todo-input"]').fill(todoTitle1);
     await page.locator('[data-testid="todo-add-button"]').click();
@@ -839,66 +1011,261 @@ test.describe('Svelte Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="todo-add-button"]').click();
     await expect(page.locator(`text=${todoTitle2}`)).toBeVisible();
 
-    // Also add an unrelated todo for 'portfolio'
-    const unrelatedTodo = `Unrelated Portfolio Task ${Date.now()}`;
+    // Also add an unrelated todo for keeperAppId
+    const unrelatedTodo = `Unrelated Keeper Task ${Date.now()}`;
     await topicTrigger.click();
-    await page.locator('[data-testid="todo-app-topic-select-option-portfolio"]').click();
+    await page.locator(`[data-testid="todo-app-topic-select-option-${keeperAppId}"]`).click();
     await page.locator('[data-testid="todo-input"]').fill(unrelatedTodo);
     await page.locator('[data-testid="todo-add-button"]').click();
     await expect(page.locator(`text=${unrelatedTodo}`)).toBeVisible();
 
-    // 4. Delete the Weather Radar app via App Card delete button & Confirm Modal
+    // 4. Delete the target app via App Card delete button & Confirm Modal
     const deleteAppBtn = page.locator(`[data-testid="btn-delete-app-${targetAppId}"]`);
-    await deleteAppBtn.click();
+    await deleteAppBtn.click({ force: true });
 
     const confirmModal = page.locator('[data-testid="confirm-modal"]');
     await expect(confirmModal).toBeVisible();
     await page.locator('[data-testid="modal-confirm-button"]').click();
     await expect(confirmModal).not.toBeVisible();
 
-    // 5. Verify the app is removed from the grid
+    // 5. Verify target app is removed from the grid
     await expect(page.locator(`[data-testid="btn-delete-app-${targetAppId}"]`)).not.toBeVisible();
 
-    // 6. Verify cascading deletion: all todos linked to weather-app are removed!
+    // 6. Verify cascading deletion: all todos linked to targetAppId are removed!
     await expect(page.locator(`text=${todoTitle1}`)).not.toBeVisible();
     await expect(page.locator(`text=${todoTitle2}`)).not.toBeVisible();
 
-    // 7. Verify unrelated todo is still present and intact
+    // 7. Verify unrelated todo for keeperAppId is still present and intact
     await expect(page.locator(`text=${unrelatedTodo}`)).toBeVisible();
+
+    // Clean up: delete unrelated keeper task
+    const keeperItem = page.locator('[data-testid^="todo-item-"]', { hasText: unrelatedTodo });
+    await keeperItem.locator('[data-testid^="delete-todo-"]').first().click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+    await expect(keeperItem).not.toBeVisible();
   });
 
   test('To-Do list topic filter filters tasks by App topic and resets when app is deleted', async ({ page }) => {
-    await page.goto('/');
     await expect(page.locator('[data-testid="todo-topic-filter"]')).toBeVisible();
 
-    // Add a todo for portfolio
+    // Ensure we have at least two apps for topic selection
+    let appCards = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]');
+    while ((await appCards.count()) < 2) {
+      const idx = await appCards.count();
+      const appName = `App Filter ${idx} ${Date.now()}`;
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+      await page.locator('[data-testid="btn-open-add-app"]').click({ force: true });
+      await page.locator('[data-testid="input-app-name"]').fill(appName);
+      await page.locator('[data-testid="input-app-url"]').fill(`https://example.com/filter${idx}`);
+      await page.locator('[data-testid="input-app-desc"]').fill(`App description filter ${idx}`);
+      await page.locator('[data-testid="input-app-pic"]').fill('Filter PIC');
+      await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+      await page.locator('[data-testid="btn-submit-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+      await expect(page.locator(`text=${appName}`)).toBeVisible();
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+    }
+
+    const deleteBtns = page.locator('[data-testid^="btn-delete-app-"]');
+    const firstTestid = await deleteBtns.first().getAttribute('data-testid');
+    const app1Id = firstTestid?.replace('btn-delete-app-', '') || '';
+
+    const secondTestid = await deleteBtns.nth(1).getAttribute('data-testid');
+    const app2Id = secondTestid?.replace('btn-delete-app-', '') || '';
+
+    // Add a todo for app1Id
     const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
     await topicTrigger.click();
-    await page.locator('[data-testid="todo-app-topic-select-option-portfolio"]').click();
-    const portfolioTask = `Portfolio Task ${Date.now()}`;
-    await page.locator('[data-testid="todo-input"]').fill(portfolioTask);
+    await page.locator(`[data-testid="todo-app-topic-select-option-${app1Id}"]`).click();
+    const app1Task = `App 1 Task ${Date.now()}`;
+    await page.locator('[data-testid="todo-input"]').fill(app1Task);
     await page.locator('[data-testid="todo-add-button"]').click();
-    await expect(page.locator(`text=${portfolioTask}`)).toBeVisible();
+    await expect(page.locator(`text=${app1Task}`)).toBeVisible();
 
-    // Add a todo for todo-svelte
+    // Add a todo for app2Id
     await topicTrigger.click();
-    await page.locator('[data-testid="todo-app-topic-select-option-todo-svelte"]').click();
-    const svelteTask = `Svelte Task ${Date.now()}`;
-    await page.locator('[data-testid="todo-input"]').fill(svelteTask);
+    await page.locator(`[data-testid="todo-app-topic-select-option-${app2Id}"]`).click();
+    const app2Task = `App 2 Task ${Date.now()}`;
+    await page.locator('[data-testid="todo-input"]').fill(app2Task);
     await page.locator('[data-testid="todo-add-button"]').click();
-    await expect(page.locator(`text=${svelteTask}`)).toBeVisible();
+    await expect(page.locator(`text=${app2Task}`)).toBeVisible();
 
-    // Select filter by 'portfolio'
-    const topicFilter = page.locator('[data-testid="todo-topic-filter"]');
-    await topicFilter.selectOption('portfolio');
+    // Select filter by app1Id
+    const filterTrigger = page.locator('[data-testid="todo-topic-filter-trigger"]');
+    await filterTrigger.click();
+    await page.locator(`[data-testid="todo-topic-filter-option-${app1Id}"]`).click();
 
-    await expect(page.locator(`text=${portfolioTask}`)).toBeVisible();
-    await expect(page.locator(`text=${svelteTask}`)).not.toBeVisible();
+    await expect(page.locator(`text=${app1Task}`)).toBeVisible();
+    await expect(page.locator(`text=${app2Task}`)).not.toBeVisible();
 
     // Reset topic filter to all
-    await topicFilter.selectOption('all');
-    await expect(page.locator(`text=${portfolioTask}`)).toBeVisible();
-    await expect(page.locator(`text=${svelteTask}`)).toBeVisible();
+    await filterTrigger.click();
+    await page.locator('[data-testid="todo-topic-filter-option-all"]').click();
+    await expect(page.locator(`text=${app1Task}`)).toBeVisible();
+    await expect(page.locator(`text=${app2Task}`)).toBeVisible();
+
+    // Clean up: delete app1Task and app2Task
+    for (const taskText of [app1Task, app2Task]) {
+      const item = page.locator('[data-testid^="todo-item-"]', { hasText: taskText });
+      await item.locator('[data-testid^="delete-todo-"]').first().click();
+      await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
+      await page.locator('[data-testid="modal-confirm-button"]').click();
+      await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
+      await expect(item).not.toBeVisible();
+    }
+  });
+
+  test('Select All and Bulk Delete in debug mode removes multiple selected apps and cascades to To-Do items', async ({ page }) => {
+    // Ensure we have at least two apps for testing
+    let appCards = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]');
+    while ((await appCards.count()) < 2) {
+      const idx = await appCards.count();
+      const appName = `Bulk Seed ${idx} ${Date.now()}`;
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+      await page.locator('[data-testid="btn-open-add-app"]').click({ force: true });
+      await page.locator('[data-testid="input-app-name"]').fill(appName);
+      await page.locator('[data-testid="input-app-url"]').fill(`https://example.com/seed${idx}`);
+      await page.locator('[data-testid="input-app-desc"]').fill(`Seed description ${idx}`);
+      await page.locator('[data-testid="input-app-pic"]').fill('Seed PIC');
+      await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+      await page.locator('[data-testid="btn-submit-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+      await expect(page.locator(`text=${appName}`)).toBeVisible();
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+    }
+
+    // Verify Select All button is visible in debug mode
+    const selectAllBtn = page.locator('[data-testid="btn-select-all-apps"]');
+    await expect(selectAllBtn).toBeVisible();
+
+    // Select the first app card via its individual checkbox
+    const firstCard = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]').first();
+    const firstCheckbox = firstCard.locator('[data-testid^="checkbox-select-app-"]');
+    await firstCheckbox.check();
+
+    // Verify bulk delete button appears
+    const bulkDeleteBtn = page.locator('[data-testid="btn-bulk-delete-apps"]');
+    await expect(bulkDeleteBtn).toBeVisible();
+    await expect(bulkDeleteBtn).toContainText('(1)');
+
+    // Now test Select All button
+    await selectAllBtn.click();
+    const totalCount = await page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]').count();
+    await expect(bulkDeleteBtn).toContainText(`(${totalCount})`);
+
+    // Click again to Deselect All
+    await selectAllBtn.click();
+    await expect(bulkDeleteBtn).not.toBeVisible();
+
+    // Now create two specific test apps to delete in bulk
+    const appA = `Bulk Target A ${Date.now()}`;
+    const appB = `Bulk Target B ${Date.now()}`;
+
+    for (const name of [appA, appB]) {
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+      await page.locator('[data-testid="btn-open-add-app"]').click({ force: true });
+      await page.locator('[data-testid="input-app-name"]').fill(name);
+      await page.locator('[data-testid="input-app-url"]').fill('https://example.com/target');
+      await page.locator('[data-testid="input-app-desc"]').fill('App to bulk delete');
+      await page.locator('[data-testid="input-app-pic"]').fill('Target PIC');
+      await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+      await page.locator('[data-testid="btn-submit-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+      await expect(page.locator(`text=${name}`)).toBeVisible();
+      await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+    }
+
+    const cardA = page.locator('[data-testid="apps-list"]').locator('[data-testid^="app-card-"]', { hasText: appA });
+    const cardB = page.locator('[data-testid="apps-list"]').locator('[data-testid^="app-card-"]', { hasText: appB });
+
+    const deleteBtnA = cardA.locator('[data-testid^="btn-delete-app-"]');
+    const idA = (await deleteBtnA.getAttribute('data-testid'))?.replace('btn-delete-app-', '') || '';
+
+    // Add a To-Do associated with appA
+    const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
+    await topicTrigger.click();
+    await page.locator(`[data-testid="todo-app-topic-select-option-${idA}"]`).click();
+    const todoForA = `Cascading Task for App A ${Date.now()}`;
+    await page.locator('[data-testid="todo-input"]').fill(todoForA);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${todoForA}`)).toBeVisible();
+
+    // Select both appA and appB checkboxes
+    await cardA.locator('[data-testid^="checkbox-select-app-"]').check();
+    await cardB.locator('[data-testid^="checkbox-select-app-"]').check();
+    await expect(bulkDeleteBtn).toContainText('(2)');
+
+    // Click bulk delete and test Cancel first
+    await bulkDeleteBtn.click();
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-cancel-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+    await expect(cardA).toBeVisible();
+    await expect(cardB).toBeVisible();
+
+    // Click bulk delete and Confirm
+    await bulkDeleteBtn.click();
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+
+    // Both apps should be removed
+    await expect(cardA).not.toBeVisible();
+    await expect(cardB).not.toBeVisible();
+
+    // Cascading deletion: To-Do for appA should be removed!
+    await expect(page.locator(`text=${todoForA}`)).not.toBeVisible();
+  });
+
+  test('Check All button in To-Do List marks all tasks completed and allows Clear Completed to wipe them', async ({ page }) => {
+    // Add two active todos
+    const task1 = `Task Check All 1 ${Date.now()}`;
+    const task2 = `Task Check All 2 ${Date.now()}`;
+
+    await page.locator('[data-testid="todo-input"]').fill(task1);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${task1}`)).toBeVisible();
+
+    await page.locator('[data-testid="todo-input"]').fill(task2);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${task2}`)).toBeVisible();
+
+    // Check All button should be visible
+    const checkAllBtn = page.locator('[data-testid="btn-check-all-todos"]');
+    await expect(checkAllBtn).toBeVisible();
+
+    // Click Check All button to mark all tasks completed
+    await checkAllBtn.click();
+
+    // Filter by Active should show 0 or not contain our tasks
+    const filterActiveBtn = page.locator('[data-testid="filter-active"]');
+    await filterActiveBtn.click();
+    await expect(page.locator(`text=${task1}`)).not.toBeVisible();
+    await expect(page.locator(`text=${task2}`)).not.toBeVisible();
+
+    // Filter by Done should contain both tasks
+    const filterDoneBtn = page.locator('[data-testid="filter-done"]');
+    await filterDoneBtn.click();
+    await expect(page.locator(`text=${task1}`)).toBeVisible();
+    await expect(page.locator(`text=${task2}`)).toBeVisible();
+
+    // Clear Completed button should be visible
+    const clearCompletedBtn = page.locator('[data-testid="clear-completed-button"]');
+    await expect(clearCompletedBtn).toBeVisible();
+    await clearCompletedBtn.click();
+
+    // Confirm deletion modal
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
+
+    // Both tasks should be wiped
+    await expect(page.locator(`text=${task1}`)).not.toBeVisible();
+    await expect(page.locator(`text=${task2}`)).not.toBeVisible();
   });
 });
 

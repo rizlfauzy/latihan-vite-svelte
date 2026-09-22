@@ -11,14 +11,14 @@
   } = $props();
 
   const serviceOptions = [
-    { label: 'Frontend Development (Svelte 5)', value: 'frontend', icon: '⚡' },
-    { label: 'UI/UX Neo Brutalism Design', value: 'design', icon: '🎨' },
-    { label: 'PWA & Service Worker Integration', value: 'pwa', icon: '📱' },
-    { label: 'Docker & DevOps Deployment', value: 'devops', icon: '🐳' },
-    { label: 'State Management & Store Architecture', value: 'state', icon: '🧩' },
+    { label: 'Arcade & Simulator Games', value: 'arcade', icon: '🎮' },
+    { label: 'Ticket Redemption & Prize Center', value: 'redemption', icon: '🎟️' },
+    { label: 'Family Entertainment & Play Zone', value: 'family', icon: '🎪' },
+    { label: 'Event & Birthday Party Package', value: 'party', icon: '🎂' },
+    { label: 'Corporate Tournament & Gathering', value: 'tournament', icon: '🏆' },
   ];
 
-  let selectedServices = $state<string[]>(['frontend']);
+  let selectedServices = $state<string[]>(['arcade']);
 
   if (typeof window !== 'undefined') {
     (window as any).__setCompanyProfileLoading = (loading: boolean) => {
@@ -51,7 +51,7 @@
         {$i18nStore.t('cp.backDashboard')}
       </a>
       <a
-        href="https://wa.me/6281234567890?text=Halo%20PIC%20Svelte%20Hub,%20saya%20tertarik%20dengan%20solusi%20perusahaan%20Anda."
+        href="https://wa.me/6281234567890?text=Halo%20Admin%20CV%20Sukses%20Gemilang,%20saya%20ingin%20bertanya%20seputar%20arena%20game%20center%20dan%20layanan%20Anda."
         target="_blank"
         rel="noopener noreferrer"
         class="nb-btn bg-nb-green text-sm px-5 py-2.5 flex items-center gap-2"
@@ -67,15 +67,15 @@
   <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
     <div class="nb-card bg-nb-pink p-4 text-center">
       <div class="text-3xl sm:text-4xl font-black text-nb-black">100%</div>
-      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">NEO BRUTALISM</div>
+      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">FAMILY FRIENDLY</div>
     </div>
     <div class="nb-card bg-nb-blue p-4 text-center">
-      <div class="text-3xl sm:text-4xl font-black text-nb-black">SVELTE 5</div>
-      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">RUNES ARCHITECTURE</div>
+      <div class="text-3xl sm:text-4xl font-black text-nb-black">50+</div>
+      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">ARCADE & SIMULATOR</div>
     </div>
     <div class="nb-card bg-nb-green p-4 text-center">
-      <div class="text-3xl sm:text-4xl font-black text-nb-black">&lt;100ms</div>
-      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">{$i18nStore.t('cp.metricSpeed')}</div>
+      <div class="text-3xl sm:text-4xl font-black text-nb-black">1000+</div>
+      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">PILIHAN HADIAH</div>
     </div>
     <div class="nb-card bg-nb-purple p-4 text-center">
       <div class="text-3xl sm:text-4xl font-black text-nb-black">24/7</div>
@@ -177,7 +177,7 @@
       </div>
 
       <a
-        href="https://wa.me/6281234567890?text=Halo%20Rizal%20Fauzi,%20saya%20ingin%20berdiskusi%20terkait%20Svelte%20Hub."
+        href="https://wa.me/6281234567890?text=Halo%20Rizal%20Fauzi,%20saya%20ingin%20berdiskusi%20terkait%20CV%20Sukses%20Gemilang."
         target="_blank"
         rel="noopener noreferrer"
         class="nb-btn bg-nb-green text-sm px-5 py-3 whitespace-nowrap flex items-center gap-2"

@@ -5,27 +5,49 @@
 
   let {
     app,
+    isSelected = false,
+    onToggleSelect,
     onEdit,
     onDelete,
   }: {
     app: AppItem;
+    isSelected?: boolean;
+    onToggleSelect?: (app: AppItem) => void;
     onEdit?: (app: AppItem) => void;
     onDelete?: (app: AppItem) => void;
   } = $props();
 
   const waMessage = $derived(
-    encodeURIComponent(`Halo ${app.picName}, saya ingin bertanya dan konsultasi mengenai aplikasi "${app.name}" di Svelte Hub.`)
+    encodeURIComponent(`Halo ${app.picName}, saya ingin bertanya dan konsultasi mengenai aplikasi "${app.name}" di Portal Aplikasi Perusahaan.`)
   );
   const waUrl = $derived(`https://wa.me/${app.picWhatsapp}?text=${waMessage}`);
 </script>
 
-<div class="nb-card nb-card-interactive group flex flex-col justify-between gap-4 bg-nb-surface text-nb-black relative">
+<div
+  class="nb-card nb-card-interactive group flex flex-col justify-between gap-4 bg-nb-surface text-nb-black relative {isSelected ? 'ring-3 ring-nb-black bg-yellow-50 dark:bg-yellow-950/20' : ''}"
+  data-testid="app-card-{app.id}"
+>
   <div class="flex items-center justify-between gap-2.5">
-    <div
-      class="w-12 h-12 border-2 border-nb-black rounded-md shadow-nb-sm flex items-center justify-center"
-      style="background: {app.color};"
-    >
-      <span class="text-2xl leading-none">{app.icon}</span>
+    <div class="flex items-center gap-2.5">
+      {#if env.enableDebug}
+        <label class="cursor-pointer flex items-center justify-center m-0" title="Pilih aplikasi">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onchange={() => onToggleSelect?.(app)}
+            class="w-5 h-5 border-2 border-nb-black rounded bg-white accent-nb-black cursor-pointer shadow-nb-xs focus:outline-none transition-transform hover:scale-105"
+            data-testid="checkbox-select-app-{app.id}"
+            aria-label={`Pilih aplikasi ${app.name}`}
+          />
+        </label>
+      {/if}
+
+      <div
+        class="w-12 h-12 border-2 border-nb-black rounded-md shadow-nb-sm flex items-center justify-center"
+        style="background: {app.color};"
+      >
+        <span class="text-2xl leading-none">{app.icon}</span>
+      </div>
     </div>
 
     <div class="flex items-center gap-1.5">

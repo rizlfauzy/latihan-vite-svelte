@@ -52,6 +52,16 @@
 
   const remainingCount = $derived(todos.filter((t) => !t.done).length);
   const completedCount = $derived(todos.filter((t) => t.done).length);
+  const allTodosDone = $derived(todos.length > 0 && todos.every((t) => t.done));
+
+  async function handleToggleAllTodos() {
+    if (todos.length === 0) return;
+    const targetDone = !allTodosDone;
+    await todoStore.checkAllTodos(targetDone);
+    if (targetDone) {
+      alertStore.showSuccess($i18nStore.t('todo.checkAllDoneMsg'));
+    }
+  }
 
   const filteredTodos = $derived(
     todos.filter((t) => {
@@ -291,16 +301,31 @@
         {/if}
       </div>
 
-      {#if completedCount > 0}
-        <button
-          type="button"
-          class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5"
-          onclick={promptDeleteAllCompleted}
-          data-testid="clear-completed-button"
-        >
-          {$i18nStore.t('todo.clearCompleted')}
-        </button>
-      {/if}
+      <div class="flex items-center gap-2 flex-wrap">
+        {#if todos.length > 0}
+          <button
+            type="button"
+            class="nb-btn text-xs px-3.5 py-1.5 {allTodosDone ? 'bg-nb-yellow text-black' : 'bg-white hover:bg-gray-100 text-black'} border-2 border-nb-black shadow-nb-xs cursor-pointer flex items-center gap-1.5"
+            onclick={handleToggleAllTodos}
+            data-testid="btn-check-all-todos"
+            title={allTodosDone ? $i18nStore.t('todo.uncheckAll') : $i18nStore.t('todo.checkAll')}
+          >
+            <span class="text-sm">{allTodosDone ? '☑' : '☐'}</span>
+            <span>{allTodosDone ? $i18nStore.t('todo.uncheckAll') : $i18nStore.t('todo.checkAll')}</span>
+          </button>
+        {/if}
+
+        {#if completedCount > 0}
+          <button
+            type="button"
+            class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5 cursor-pointer"
+            onclick={promptDeleteAllCompleted}
+            data-testid="clear-completed-button"
+          >
+            {$i18nStore.t('todo.clearCompleted')}
+          </button>
+        {/if}
+      </div>
     </div>
 
     <!-- List Items -->

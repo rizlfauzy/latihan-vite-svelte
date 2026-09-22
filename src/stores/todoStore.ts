@@ -25,6 +25,8 @@ export interface TodoStoreState {
   toggleTodo: (id: string) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   deleteTodosByAppId: (appId: string) => Promise<void>;
+  deleteTodosByAppIds: (appIds: string[]) => Promise<void>;
+  checkAllTodos: (done?: boolean) => Promise<void>;
   clearCompleted: () => Promise<void>;
   addSubTask: (todoId: string, text: string) => Promise<void>;
   toggleSubTask: (todoId: string, subTaskId: string) => Promise<void>;
@@ -89,7 +91,7 @@ function mapTodoToRow(todo: Todo) {
 
 const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((set, get) => ({
   todos: loadLocalTodos(),
-  isLoading: false,
+  isLoading: isSupabaseEnabled,
 
   fetchTodos: async () => {
     if (!isSupabaseEnabled || !supabase) return;
@@ -196,6 +198,44 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     }
   },
 
+  deleteTodosByAppIds: async (appIds: string[]) => {
+    if (appIds.length === 0) return;
+    const appIdSet = new Set(appIds);
+    const updated = get().todos.filter((t) => !t.appId || !appIdSet.has(t.appId));
+    set({ todos: updated });
+    saveLocalTodos(updated);
+
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const { error } = await supabase.from('todos').delete().in('appId', appIds);
+        if (error) {
+          await supabase.from('todos').delete().in('app_id', appIds);
+        }
+      } catch (err) {
+        console.error('[todoStore] Failed to bulk delete todos by appIds in Supabase', err);
+      }
+    }
+  },
+
+  checkAllTodos: async (done: boolean = true) => {
+    const allTodos = get().todos;
+    if (allTodos.length === 0) return;
+
+    const updated = allTodos.map((t) => ({ ...t, done }));
+    set({ todos: updated });
+    saveLocalTodos(updated);
+
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const allIds = allTodos.map((t) => t.id);
+        const { error } = await supabase.from('todos').update({ done }).in('id', allIds);
+        if (error) throw error;
+      } catch (err) {
+        console.error('[todoStore] Failed to update all todos in Supabase', err);
+      }
+    }
+  },
+
   clearCompleted: async () => {
     const completedIds = get().todos.filter((t) => t.done).map((t) => t.id);
 
@@ -290,6 +330,8 @@ export const todoStore = {
   toggleTodo: (id: string) => rawStore.getState().toggleTodo(id),
   deleteTodo: (id: string) => rawStore.getState().deleteTodo(id),
   deleteTodosByAppId: (appId: string) => rawStore.getState().deleteTodosByAppId(appId),
+  deleteTodosByAppIds: (appIds: string[]) => rawStore.getState().deleteTodosByAppIds(appIds),
+  checkAllTodos: (done?: boolean) => rawStore.getState().checkAllTodos(done),
   clearCompleted: () => rawStore.getState().clearCompleted(),
   addSubTask: (todoId: string, text: string) => rawStore.getState().addSubTask(todoId, text),
   toggleSubTask: (todoId: string, subTaskId: string) => rawStore.getState().toggleSubTask(todoId, subTaskId),

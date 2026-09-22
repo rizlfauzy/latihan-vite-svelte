@@ -12,6 +12,7 @@ export interface AppStoreState {
   addApp: (newApp: AppItem) => Promise<boolean>;
   editApp: (updatedApp: AppItem) => Promise<boolean>;
   deleteApp: (id: string) => Promise<boolean>;
+  deleteApps: (ids: string[]) => Promise<boolean>;
   resetApps: () => Promise<void>;
   fetchApps: () => Promise<void>;
 }
@@ -49,7 +50,7 @@ const defaultBaselineApps: AppItem[] = [];
 
 const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set, get) => ({
   apps: [...svelteApps],
-  isLoading: false,
+  isLoading: isSupabaseEnabled,
 
   fetchApps: async () => {
     if (!isSupabaseEnabled || !supabase) return;
@@ -150,6 +151,39 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     return true;
   },
 
+  deleteApps: async (ids: string[]) => {
+    if (ids.length === 0) return true;
+    const idSet = new Set(ids);
+    const count = ids.length;
+
+    // Optimistically update Zustand store & UI
+    const updated = get().apps.filter((a) => !idSet.has(a.id));
+    set({ apps: updated });
+
+    // Cascading deletion: automatically delete all associated todos
+    try {
+      await todoStore.deleteTodosByAppIds(ids);
+    } catch (err) {
+      console.error('[appStore] Failed cascading deletion of related todos in deleteApps', err);
+    }
+
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const { error } = await supabase.from('apps').delete().in('id', ids);
+        if (error) throw error;
+        alertStore.showSuccess(`${count} aplikasi berhasil dihapus!`);
+        return true;
+      } catch (err) {
+        console.error('[appStore] Failed to bulk delete apps from Supabase', err);
+        alertStore.showError(`Gagal menghapus ${count} aplikasi!`);
+        return false;
+      }
+    }
+
+    alertStore.showSuccess(`${count} aplikasi berhasil dihapus!`);
+    return true;
+  },
+
   resetApps: async () => {
     if (isSupabaseEnabled && supabase) {
       try {
@@ -176,6 +210,7 @@ export const appStore = {
   addApp: (newApp: AppItem) => rawStore.getState().addApp(newApp),
   editApp: (updatedApp: AppItem) => rawStore.getState().editApp(updatedApp),
   deleteApp: (id: string) => rawStore.getState().deleteApp(id),
+  deleteApps: (ids: string[]) => rawStore.getState().deleteApps(ids),
   resetApps: () => rawStore.getState().resetApps(),
   fetchApps: () => rawStore.getState().fetchApps(),
   subscribe(run: (state: AppStoreState) => void) {
