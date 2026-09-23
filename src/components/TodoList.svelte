@@ -14,6 +14,7 @@
     | null;
 
   let newTodoText = $state('');
+  let searchQuery = $state('');
   let filter = $state<'all' | 'active' | 'done'>('all');
   let topicFilter = $state<string>('all');
   let selectedAppId = $state<string>('');
@@ -68,6 +69,21 @@
       if (filter === 'active' && t.done) return false;
       if (filter === 'done' && !t.done) return false;
       if (topicFilter !== 'all' && t.appId !== topicFilter) return false;
+
+      if (searchQuery.trim().length > 0) {
+        const query = searchQuery.trim().toLowerCase();
+        const matchesText = t.text.toLowerCase().includes(query);
+        const matchesSubtasks = (t.subTasks || []).some((s) => s.text.toLowerCase().includes(query));
+
+        const linkedApp = apps.find((a) => a.id === t.appId);
+        const matchesAppName = linkedApp ? linkedApp.name.toLowerCase().includes(query) : false;
+        const matchesCategory = linkedApp ? (linkedApp.category || '').toLowerCase().includes(query) : false;
+
+        if (!matchesText && !matchesSubtasks && !matchesAppName && !matchesCategory) {
+          return false;
+        }
+      }
+
       return true;
     })
   );
@@ -247,72 +263,100 @@
     </form>
 
     <!-- Filters & Action Toolbar -->
-    <div class="flex justify-between items-center flex-wrap gap-3 pb-3 border-b-2 border-dashed border-gray-300">
-      <div class="flex gap-2 flex-wrap items-center">
-        <button
-          type="button"
-          class="nb-btn text-xs px-3.5 py-1.5 {filter === 'all' ? 'bg-nb-yellow' : 'bg-white'}"
-          onclick={() => (filter = 'all')}
-          data-testid="filter-all"
-        >
-          {$i18nStore.t('todo.filterAll')} ({todos.length})
-        </button>
-        <button
-          type="button"
-          class="nb-btn text-xs px-3.5 py-1.5 {filter === 'active' ? 'bg-nb-yellow' : 'bg-white'}"
-          onclick={() => (filter = 'active')}
-          data-testid="filter-active"
-        >
-          {$i18nStore.t('todo.filterActive')} ({remainingCount})
-        </button>
-        <button
-          type="button"
-          class="nb-btn text-xs px-3.5 py-1.5 {filter === 'done' ? 'bg-nb-yellow' : 'bg-white'}"
-          onclick={() => (filter = 'done')}
-          data-testid="filter-done"
-        >
-          {$i18nStore.t('todo.filterDone')} ({completedCount})
-        </button>
-
-        {#if apps.length > 0}
-          <div class="flex items-center gap-1.5 ml-1">
-            <span class="text-xs font-extrabold text-nb-black select-none">🎯</span>
-            <CustomSelect
-              width="min-w-[15dvw]"
-              options={[{ label: $i18nStore.t('todo.allTopics'), value: 'all' }, ...apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))]}
-              bind:value={topicFilter}
-              dataTestId="todo-topic-filter"
-              placeholder={$i18nStore.t('todo.allTopics')}
-              searchPlaceholder={$i18nStore.t('todo.searchTopics')}
-            />
-          </div>
+    <div class="flex flex-col gap-3 pb-3 border-b-2 border-dashed border-gray-300">
+      <!-- Search Input Container -->
+      <div class="relative w-full">
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold select-none text-base pointer-events-none z-10">
+          🔍
+        </span>
+        <input
+          type="text"
+          bind:value={searchQuery}
+          placeholder={$i18nStore.t('todo.searchPlaceholder')}
+          class="nb-input pl-10 pr-10 py-2 text-sm font-bold w-full"
+          data-testid="search-todo-input"
+        />
+        {#if searchQuery.trim().length > 0}
+          <button
+            type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-nb-pink text-xs font-black flex items-center justify-center cursor-pointer border border-nb-black shadow-nb-xs text-black"
+            onclick={() => (searchQuery = '')}
+            title={$i18nStore.t('todo.clearSearch')}
+            aria-label={$i18nStore.t('todo.clearSearch')}
+            data-testid="btn-clear-todo-search"
+          >
+            ✕
+          </button>
         {/if}
       </div>
 
-      <div class="flex items-center gap-2 flex-wrap">
-        {#if todos.length > 0}
+      <div class="flex justify-between items-center flex-wrap gap-3">
+        <div class="flex gap-2 flex-wrap items-center">
           <button
             type="button"
-            class="nb-btn text-xs px-3.5 py-1.5 {allTodosDone ? 'bg-nb-yellow text-black' : 'bg-white hover:bg-gray-100 text-black'} border-2 border-nb-black shadow-nb-xs cursor-pointer flex items-center gap-1.5"
-            onclick={handleToggleAllTodos}
-            data-testid="btn-check-all-todos"
-            title={allTodosDone ? $i18nStore.t('todo.uncheckAll') : $i18nStore.t('todo.checkAll')}
+            class="nb-btn text-xs px-3.5 py-1.5 {filter === 'all' ? 'bg-nb-yellow' : 'bg-white'}"
+            onclick={() => (filter = 'all')}
+            data-testid="filter-all"
           >
-            <span class="text-sm">{allTodosDone ? '☑' : '☐'}</span>
-            <span>{allTodosDone ? $i18nStore.t('todo.uncheckAll') : $i18nStore.t('todo.checkAll')}</span>
+            {$i18nStore.t('todo.filterAll')} ({todos.length})
           </button>
-        {/if}
+          <button
+            type="button"
+            class="nb-btn text-xs px-3.5 py-1.5 {filter === 'active' ? 'bg-nb-yellow' : 'bg-white'}"
+            onclick={() => (filter = 'active')}
+            data-testid="filter-active"
+          >
+            {$i18nStore.t('todo.filterActive')} ({remainingCount})
+          </button>
+          <button
+            type="button"
+            class="nb-btn text-xs px-3.5 py-1.5 {filter === 'done' ? 'bg-nb-yellow' : 'bg-white'}"
+            onclick={() => (filter = 'done')}
+            data-testid="filter-done"
+          >
+            {$i18nStore.t('todo.filterDone')} ({completedCount})
+          </button>
 
-        {#if completedCount > 0}
-          <button
-            type="button"
-            class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5 cursor-pointer"
-            onclick={promptDeleteAllCompleted}
-            data-testid="clear-completed-button"
-          >
-            {$i18nStore.t('todo.clearCompleted')}
-          </button>
-        {/if}
+          {#if apps.length > 0}
+            <div class="flex items-center gap-1.5 ml-1">
+              <span class="text-xs font-extrabold text-nb-black select-none">🎯</span>
+              <CustomSelect
+                width="min-w-[15dvw]"
+                options={[{ label: $i18nStore.t('todo.allTopics'), value: 'all' }, ...apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))]}
+                bind:value={topicFilter}
+                dataTestId="todo-topic-filter"
+                placeholder={$i18nStore.t('todo.allTopics')}
+                searchPlaceholder={$i18nStore.t('todo.searchTopics')}
+              />
+            </div>
+          {/if}
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          {#if todos.length > 0}
+            <button
+              type="button"
+              class="nb-btn text-xs px-3.5 py-1.5 {allTodosDone ? 'bg-nb-yellow text-black' : 'bg-white hover:bg-gray-100 text-black'} border-2 border-nb-black shadow-nb-xs cursor-pointer flex items-center gap-1.5"
+              onclick={handleToggleAllTodos}
+              data-testid="btn-check-all-todos"
+              title={allTodosDone ? $i18nStore.t('todo.uncheckAll') : $i18nStore.t('todo.checkAll')}
+            >
+              <span class="text-sm">{allTodosDone ? '☑' : '☐'}</span>
+              <span>{allTodosDone ? $i18nStore.t('todo.uncheckAll') : $i18nStore.t('todo.checkAll')}</span>
+            </button>
+          {/if}
+
+          {#if completedCount > 0}
+            <button
+              type="button"
+              class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5 cursor-pointer"
+              onclick={promptDeleteAllCompleted}
+              data-testid="clear-completed-button"
+            >
+              {$i18nStore.t('todo.clearCompleted')}
+            </button>
+          {/if}
+        </div>
       </div>
     </div>
 
@@ -325,8 +369,12 @@
           <SkeletonTodo />
         </div>
       {:else if filteredTodos.length === 0}
-        <li class="p-9 text-center border-2 border-dashed border-gray-300 rounded-md text-gray-500 font-semibold">
-          <p class="m-0">{$i18nStore.t('todo.emptyState')}</p>
+        <li class="p-9 text-center border-2 border-dashed border-gray-300 rounded-md text-gray-500 font-semibold" data-testid="todo-empty-state">
+          <p class="m-0">
+            {searchQuery.trim().length > 0
+              ? $i18nStore.t('todo.emptySearch')
+              : $i18nStore.t('todo.emptyState')}
+          </p>
         </li>
       {:else}
         {#each filteredTodos as todo (todo.id)}
