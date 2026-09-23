@@ -286,7 +286,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(page.locator('[data-testid="cp-title"]')).toHaveText('CV SUKSES GEMILANG');
     await expect(page.getByText('VISI KAMI')).toBeVisible();
     await expect(page.getByText('MISI KAMI')).toBeVisible();
-    await expect(page.getByText('Rizal Fauzi')).toBeVisible();
+    await expect(page.getByText('Tim Manajemen CV Sukses Gemilang')).toBeVisible();
+    await expect(page.getByText('Rizal Fauzi')).not.toBeVisible();
 
     // Click back to dashboard link
     await navHome.click();
@@ -1266,6 +1267,78 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     // Both tasks should be wiped
     await expect(page.locator(`text=${task1}`)).not.toBeVisible();
     await expect(page.locator(`text=${task2}`)).not.toBeVisible();
+  });
+
+  test('Search in To-Do List filters tasks dynamically by task name and category/topic', async ({ page }) => {
+    // Create an app with distinct category/topic
+    const appName = `Searchable App ${Date.now()}`;
+    const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
+    await openAddBtn.click();
+    await page.locator('[data-testid="input-app-name"]').fill(appName);
+    await page.locator('[data-testid="input-app-url"]').fill('https://example.com/searchable');
+    await page.locator('[data-testid="input-app-desc"]').fill('App for testing todo search');
+    await page.locator('[data-testid="input-app-pic"]').fill('Tester Search');
+    await page.locator('[data-testid="input-app-wa"]').fill('628111222333');
+    await page.locator('[data-testid="btn-submit-add-app"]').click();
+    await expect(page.locator(`text=${appName}`)).toBeVisible();
+
+    const createdCard = page.locator('[data-testid="apps-list"]').locator('[data-testid^="app-card-"]', { hasText: appName });
+    const deleteBtn = createdCard.locator('[data-testid^="btn-delete-app-"]');
+    const createdId = (await deleteBtn.getAttribute('data-testid'))?.replace('btn-delete-app-', '') || '';
+
+    // Select the newly created app from topic dropdown
+    const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
+    await topicTrigger.click();
+    await page.locator(`[data-testid="todo-app-topic-select-option-${createdId}"]`).click();
+
+    const uniqueTaskAlpha = `Alpha Unique Task ${Date.now()}`;
+    const uniqueTaskBeta = `Beta Different Task ${Date.now()}`;
+
+    // Add Alpha task under our created app
+    await page.locator('[data-testid="todo-input"]').fill(uniqueTaskAlpha);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${uniqueTaskAlpha}`)).toBeVisible();
+
+    // Add Beta task
+    await page.locator('[data-testid="todo-input"]').fill(uniqueTaskBeta);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${uniqueTaskBeta}`)).toBeVisible();
+
+    const searchInput = page.locator('[data-testid="search-todo-input"]');
+    await expect(searchInput).toBeVisible();
+
+    // 1. Search by task name "Alpha"
+    await searchInput.fill('Alpha Unique');
+    await expect(page.locator(`text=${uniqueTaskAlpha}`)).toBeVisible();
+    await expect(page.locator(`text=${uniqueTaskBeta}`)).not.toBeVisible();
+
+    // 2. Clear search using clear button
+    const clearBtn = page.locator('[data-testid="btn-clear-todo-search"]');
+    await expect(clearBtn).toBeVisible();
+    await clearBtn.click();
+    await expect(page.locator(`text=${uniqueTaskAlpha}`)).toBeVisible();
+    await expect(page.locator(`text=${uniqueTaskBeta}`)).toBeVisible();
+
+    // 3. Search by category/app name
+    await searchInput.fill(appName);
+    await expect(page.locator(`text=${uniqueTaskAlpha}`)).toBeVisible();
+
+    // 4. Search for non-existent keyword
+    await searchInput.fill('xyzNonExistentKeyword999');
+    await expect(page.locator('[data-testid="todo-empty-state"]')).toBeVisible();
+    await expect(page.locator(`text=${uniqueTaskAlpha}`)).not.toBeVisible();
+    await expect(page.locator(`text=${uniqueTaskBeta}`)).not.toBeVisible();
+
+    // Reset search
+    await searchInput.fill('');
+    await expect(page.locator(`text=${uniqueTaskAlpha}`)).toBeVisible();
+
+    // Clean up created app and cascade delete todos
+    await createdCard.locator('[data-testid^="btn-delete-app-"]').click();
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(confirmModal).not.toBeVisible();
   });
 });
 
