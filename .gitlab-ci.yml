@@ -57,7 +57,7 @@ build:
 # ==========================================
 migrate:
   stage: migrate
-  image: oven/bun:1-alpine
+  image: oven/bun:1
   script:
     - bunx supabase db push --db-url "$SUPABASE_DB_URL" --include-all
 
