@@ -4,7 +4,11 @@
   import { i18nStore } from '@/stores/i18nStore';
   import { themeStore } from '@/stores/themeStore';
   import { authStore } from '@/stores/authStore';
+  import ConfirmModal from '@/components/ConfirmModal.svelte';
 
+  const t = $derived((key: string, defaultValue: string = ''): string => $i18nStore.t(key, defaultValue));
+
+  let isModalLogoutOpen = $state(false);
   let mobileMenuOpen = $state(false);
   let openDropdown = $state<'home' | 'company' | null>(null);
 
@@ -43,6 +47,11 @@
       }, 120);
     }
   }
+
+  function handleLogout() {
+    isModalLogoutOpen = false;
+    authStore.logout();
+  }
 </script>
 
 <svelte:window onclick={(e) => {
@@ -65,12 +74,12 @@
         <span class="inline-flex items-center justify-center w-9 h-9 bg-nb-yellow border-2 border-nb-black shadow-nb-sm rounded font-black text-lg text-nb-black">
           ⚡
         </span>
-        <span class="uppercase hidden sm:inline">{$i18nStore.t('nav.brand')}</span>
+        <span class="uppercase hidden sm:inline">{t('nav.brand')}</span>
       </a>
 
       {#if env.enableDebug}
         <span class="nb-badge bg-nb-pink text-[10px] sm:text-xs py-0.5 px-2 border-2 text-nb-black hidden sm:inline" title="Mode Debug Aktif">
-          {$i18nStore.t('nav.debug')}
+          {t('nav.debug')}
         </span>
       {/if}
     </div>
@@ -85,7 +94,7 @@
           data-testid="nav-link-home"
           onclick={closeDropdowns}
         >
-          {$i18nStore.t('nav.home')}
+          {t('nav.home')}
         </a>
         <button
           type="button"
@@ -108,7 +117,7 @@
               onclick={() => scrollToSection('/', 'apps-hub')}
               data-testid="nav-sublink-apps-hub"
             >
-              🚀 {$i18nStore.t('nav.submenuApps')}
+              🚀 {t('nav.submenuApps')}
             </button>
             <button
               type="button"
@@ -116,7 +125,7 @@
               onclick={() => scrollToSection('/', 'todo-list')}
               data-testid="nav-sublink-todo-list"
             >
-              📝 {$i18nStore.t('nav.submenuTodo')}
+              📝 {t('nav.submenuTodo')}
             </button>
           </div>
         {/if}
@@ -130,7 +139,7 @@
           data-testid="nav-link-company-profile"
           onclick={closeDropdowns}
         >
-          {$i18nStore.t('nav.company')}
+          {t('nav.company')}
         </a>
         <button
           type="button"
@@ -153,7 +162,7 @@
               onclick={() => scrollToSection('/company-profile', 'profile')}
               data-testid="nav-sublink-profile"
             >
-              🏢 {$i18nStore.t('nav.submenuProfile')}
+              🏢 {t('nav.submenuProfile')}
             </button>
             <button
               type="button"
@@ -161,7 +170,7 @@
               onclick={() => scrollToSection('/company-profile', 'vision-mission')}
               data-testid="nav-sublink-vision-mission"
             >
-              🎯 {$i18nStore.t('nav.submenuVision')}
+              🎯 {t('nav.submenuVision')}
             </button>
             <button
               type="button"
@@ -169,7 +178,7 @@
               onclick={() => scrollToSection('/company-profile', 'services')}
               data-testid="nav-sublink-services"
             >
-              🛠️ {$i18nStore.t('nav.submenuServices')}
+              🛠️ {t('nav.submenuServices')}
             </button>
             <button
               type="button"
@@ -177,7 +186,7 @@
               onclick={() => scrollToSection('/company-profile', 'contact')}
               data-testid="nav-sublink-contact"
             >
-              👑 {$i18nStore.t('nav.submenuContact')}
+              👑 {t('nav.submenuContact')}
             </button>
           </div>
         {/if}
@@ -223,7 +232,7 @@
           <button
             type="button"
             class="nb-btn bg-nb-red text-white hover:bg-red-500 text-xs font-black px-2 py-2 flex items-center justify-center cursor-pointer"
-            onclick={() => authStore.logout()}
+            onclick={() => isModalLogoutOpen = true}
             data-testid="nav-logout-btn"
             title="Keluar / Logout"
             aria-label="Keluar / Logout"
@@ -238,7 +247,7 @@
           data-testid="nav-login-btn"
         >
           <span>🔐</span>
-          <span>{$i18nStore.t('nav.login')}</span>
+          <span>{t('nav.login')}</span>
         </a>
       {/if}
     </div>
@@ -271,7 +280,7 @@
         aria-label="Toggle Navigation Menu"
         data-testid="navbar-mobile-toggle"
       >
-        {mobileMenuOpen ? $i18nStore.t('nav.close') : $i18nStore.t('nav.menu')}
+        {mobileMenuOpen ? t('nav.close') : t('nav.menu')}
       </button>
     </div>
   </nav>
@@ -285,7 +294,7 @@
         class="nb-btn text-xs px-4 py-2 font-black text-left {router.isActive('/') ? 'bg-nb-yellow' : 'bg-white'}"
         onclick={closeMobileMenu}
       >
-        {$i18nStore.t('nav.home')}
+        {t('nav.home')}
       </a>
       <div class="flex flex-col gap-1 pl-3 border-l-3 border-nb-yellow mb-1">
         <button
@@ -295,7 +304,7 @@
           data-testid="mobile-sublink-apps-hub"
         >
           <span>↳ 🚀</span>
-          <span>{$i18nStore.t('nav.submenuApps')}</span>
+          <span>{t('nav.submenuApps')}</span>
         </button>
         <button
           type="button"
@@ -304,7 +313,7 @@
           data-testid="mobile-sublink-todo-list"
         >
           <span>↳ 📝</span>
-          <span>{$i18nStore.t('nav.submenuTodo')}</span>
+          <span>{t('nav.submenuTodo')}</span>
         </button>
       </div>
 
@@ -314,7 +323,7 @@
         class="nb-btn text-xs px-4 py-2 font-black text-left {router.isActive('/company-profile') ? 'bg-nb-yellow' : 'bg-white'}"
         onclick={closeMobileMenu}
       >
-        {$i18nStore.t('nav.company')}
+        {t('nav.company')}
       </a>
       <div class="flex flex-col gap-1 pl-3 border-l-3 border-nb-yellow mb-1">
         <button
@@ -324,7 +333,7 @@
           data-testid="mobile-sublink-profile"
         >
           <span>↳ 🏢</span>
-          <span>{$i18nStore.t('nav.submenuProfile')}</span>
+          <span>{t('nav.submenuProfile')}</span>
         </button>
         <button
           type="button"
@@ -333,7 +342,7 @@
           data-testid="mobile-sublink-vision-mission"
         >
           <span>↳ 🎯</span>
-          <span>{$i18nStore.t('nav.submenuVision')}</span>
+          <span>{t('nav.submenuVision')}</span>
         </button>
         <button
           type="button"
@@ -342,7 +351,7 @@
           data-testid="mobile-sublink-services"
         >
           <span>↳ 🛠️</span>
-          <span>{$i18nStore.t('nav.submenuServices')}</span>
+          <span>{t('nav.submenuServices')}</span>
         </button>
         <button
           type="button"
@@ -351,7 +360,7 @@
           data-testid="mobile-sublink-contact"
         >
           <span>↳ 👑</span>
-          <span>{$i18nStore.t('nav.submenuContact')}</span>
+          <span>{t('nav.submenuContact')}</span>
         </button>
       </div>
 
@@ -382,19 +391,19 @@
           onclick={closeMobileMenu}
           data-testid="mobile-login-btn"
         >
-          🔐 {$i18nStore.t('nav.login')}
+          🔐 {t('nav.login')}
         </a>
       {/if}
-
-      <a
-        href="https://github.com/rizlfauzy/latihan-vite-svelte"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="nb-btn bg-nb-blue text-xs font-black px-4 py-2.5 text-center mt-1 text-nb-black"
-        onclick={closeMobileMenu}
-      >
-        {$i18nStore.t('nav.github')}
-      </a>
     </div>
   {/if}
+
 </header>
+  <ConfirmModal
+    bind:isOpen={isModalLogoutOpen}
+    title={t('nav.logout')}
+    message={t('nav.logoutConfirm')}
+    confirmText={t('common.yes')}
+    cancelText={t('common.no')}
+    onConfirm={handleLogout}
+    onCancel={() => (isModalLogoutOpen = false)}
+  />

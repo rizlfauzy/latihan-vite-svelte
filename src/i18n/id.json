@@ -14,6 +14,11 @@
   "nav.submenuContact": "Kontak & Manajemen",
   "nav.themeDark": "MODE GELAP",
   "nav.themeLight": "MODE TERANG",
+  "nav.logoutConfirm": "Apakah Anda yakin ingin keluar?",
+  "nav.logout": "Keluar",
+
+  "common.yes": "Iya",
+  "common.no": "Tidak",
 
   "hero.subtitle": "Central Dashboard & Portal Aplikasi Terintegrasi Perusahaan",
   "hero.badgeSvelte": "🏢 PORTAL RESMI",

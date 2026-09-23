@@ -71,7 +71,7 @@
     </div>
 
     <!-- Notice Box: Pengunjung tidak wajib login & Registrasi via DB -->
-    <div class="p-3 bg-yellow-50 border-2 border-nb-black rounded-md shadow-nb-xs mb-6 text-xs font-bold text-yellow-900 flex flex-col gap-1.5" data-testid="login-notice-box">
+    <!-- <div class="p-3 bg-yellow-50 border-2 border-nb-black rounded-md shadow-nb-xs mb-6 text-xs font-bold text-yellow-900 flex flex-col gap-1.5" data-testid="login-notice-box">
       <div class="flex items-center gap-1.5 text-black font-extrabold uppercase text-[11px]">
         <span>ℹ️</span>
         <span>{$i18nStore.t('login.noticeTitle')}</span>
@@ -79,7 +79,7 @@
       <p class="m-0 leading-relaxed font-semibold text-gray-800">
         {$i18nStore.t('login.noticeBody')}
       </p>
-    </div>
+    </div> -->
 
     {#if isAuthenticated && currentUser}
       <!-- Already logged in view -->

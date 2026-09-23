@@ -14,6 +14,11 @@
   "nav.submenuContact": "Contact & Leadership",
   "nav.themeDark": "DARK MODE",
   "nav.themeLight": "LIGHT MODE",
+  "nav.logoutConfirm": "Are you sure you want to logout?",
+  "nav.logout": "Logout",
+
+  "common.yes": "Yes",
+  "common.no": "No",
 
   "hero.subtitle": "Centralized Dashboard & Integrated Enterprise Application Portal",
   "hero.badgeSvelte": "🏢 OFFICIAL PORTAL",

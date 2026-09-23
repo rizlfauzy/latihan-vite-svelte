@@ -128,24 +128,24 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
     }
 
     // 2. Fallback Default Credentials (untuk Local / Offline / E2E Testing mode)
-    if (cleanUsername === 'rizlfauzy' && password === 'admin123') {
-      const defaultRole: Role = {
-        id: 1,
-        name: 'SUPERADMIN',
-        is_debug: true,
-      };
-      const defaultUser: User = {
-        uuid: 'a0000000-0000-0000-0000-000000000001',
-        username: 'rizlfauzy',
-        name: 'Rizal Fauzi',
-        roleId: 1,
-        role: defaultRole,
-      };
+    // if (cleanUsername === 'rizlfauzy' && password === 'admin123') {
+    //   const defaultRole: Role = {
+    //     id: 1,
+    //     name: 'SUPERADMIN',
+    //     is_debug: true,
+    //   };
+    //   const defaultUser: User = {
+    //     uuid: 'a0000000-0000-0000-0000-000000000001',
+    //     username: 'rizlfauzy',
+    //     name: 'Rizal Fauzi',
+    //     roleId: 1,
+    //     role: defaultRole,
+    //   };
 
-      get().setUserSession(defaultUser, defaultRole);
-      alertStore.showSuccess(`Selamat datang kembali, ${defaultUser.name}!`);
-      return { success: true };
-    }
+    //   get().setUserSession(defaultUser, defaultRole);
+    //   alertStore.showSuccess(`Selamat datang kembali, ${defaultUser.name}!`);
+    //   return { success: true };
+    // }
 
     set({ isLoading: false });
     alertStore.showError('Username atau password salah!');
