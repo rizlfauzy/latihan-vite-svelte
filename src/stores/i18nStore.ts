@@ -28,7 +28,7 @@ export interface I18nStoreState {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   toggleLocale: () => void;
-  t: (key: string) => string;
+  t: (key: string, defaultValue?: string) => string;
 }
 
 const rawI18nStore: StoreApi<I18nStoreState> = createZustandStore<I18nStoreState>((set, get) => ({
@@ -50,10 +50,10 @@ const rawI18nStore: StoreApi<I18nStoreState> = createZustandStore<I18nStoreState
     get().setLocale(nextLocale);
   },
 
-  t: (key: string): string => {
+  t: (key: string, defaultValue: string = ''): string => {
     const current = get().locale;
-    const dict = dictionaries[current] || dictionaries.id;
-    return dict[key] || dictionaries.id[key] || key;
+    const dict = dictionaries[current] || dictionaries.en;
+    return dict[key] || dictionaries.en[key] || defaultValue;
   },
 }));
 
@@ -62,7 +62,7 @@ export const i18nStore = {
   ...rawI18nStore,
   setLocale: (locale: Locale) => rawI18nStore.getState().setLocale(locale),
   toggleLocale: () => rawI18nStore.getState().toggleLocale(),
-  t: (key: string) => rawI18nStore.getState().t(key),
+  t: (key: string, defaultValue?: string) => rawI18nStore.getState().t(key, defaultValue),
   subscribe(run: (state: I18nStoreState) => void) {
     run(rawI18nStore.getState());
     return rawI18nStore.subscribe((state) => run(state));

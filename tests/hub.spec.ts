@@ -4,11 +4,19 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    // Clear localStorage before each test so tests are idempotent
-    await page.addInitScript(() => {
-      window.localStorage.clear();
-    });
     await page.goto('/');
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      const defaultRole = { id: 1, name: 'SUPERADMIN', is_debug: true };
+      const defaultUser = {
+        uuid: 'a0000000-0000-0000-0000-000000000001',
+        username: 'rizlfauzy',
+        name: 'Rizal Fauzi',
+        roleId: 1,
+        role: defaultRole,
+      };
+      (window as any).__authStore?.setUserSession?.(defaultUser, defaultRole);
+    });
     await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading);
     await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
     await expect(page.locator('[data-testid="apps-list"]').or(page.locator('[data-testid="apps-empty-state"]'))).toBeVisible();
@@ -20,20 +28,23 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.goto('/');
     await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading);
     await page.evaluate(async () => {
+      // Pastikan memiliki hak akses superadmin agar operasi delete diizinkan RBAC
+      const defaultRole = { id: 1, name: 'SUPERADMIN', is_debug: true };
+      const defaultUser = {
+        uuid: 'a0000000-0000-0000-0000-000000000001',
+        username: 'rizlfauzy',
+        name: 'Rizal Fauzi',
+        roleId: 1,
+        role: defaultRole,
+      };
+      (window as any).__authStore?.setUserSession?.(defaultUser, defaultRole);
+
       const store = (window as any).__appStore;
       if (store) {
         const apps = store.getState?.()?.apps || [];
+        // Pembersihan otomatis: hapus semua aplikasi hasil test yang mengandung 'test'
         const testApps = apps.filter((a: any) =>
-          a.name?.startsWith('E2E Automated') ||
-          a.name?.startsWith('App Cascade') ||
-          a.name?.startsWith('App Filter') ||
-          a.name?.startsWith('Delete Target') ||
-          a.name?.startsWith('Edit Target') ||
-          a.name?.startsWith('Portfolio Pro Edition') ||
-          a.name?.startsWith('Search Test App') ||
-          a.name?.startsWith('Topic Test App') ||
-          a.name?.startsWith('Demo App') ||
-          a.name?.startsWith('Bulk')
+          a.name?.toLowerCase().includes('test')
         );
         for (const app of testApps) {
           await store.deleteApp(app.id);
@@ -43,19 +54,9 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
       const todoStore = (window as any).__todoStore;
       if (todoStore) {
         const todos = todoStore.getState?.()?.todos || [];
+        // Pembersihan otomatis: hapus semua to-do list hasil test yang mengandung 'test'
         const testTodos = todos.filter((t: any) =>
-          t.text?.startsWith('Playwright Automated') ||
-          t.text?.startsWith('Proyek Besar') ||
-          t.text?.startsWith('Deletion Test Note') ||
-          t.text?.startsWith('Catatan Baris') ||
-          t.text?.startsWith('Resilience Verification') ||
-          t.text?.startsWith('Task for Specific App Topic') ||
-          t.text?.startsWith('Cascade Task') ||
-          t.text?.startsWith('Unrelated Keeper Task') ||
-          t.text?.startsWith('App 1 Task') ||
-          t.text?.startsWith('App 2 Task') ||
-          t.text?.startsWith('Cascading Task for App A') ||
-          t.text?.startsWith('Task Check All')
+          t.text?.toLowerCase().includes('test')
         );
         for (const todo of testTodos) {
           await todoStore.deleteTodo(todo.id);
@@ -92,7 +93,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     let openAppButtons = page.getByRole('link', { name: /BUKA APLIKASI/i });
     if ((await openAppButtons.count()) === 0) {
       await page.locator('[data-testid="btn-open-add-app"]').click();
-      await page.locator('[data-testid="input-app-name"]').fill('Demo App');
+      await page.locator('[data-testid="input-app-name"]').fill('Demo Test App');
       await page.locator('[data-testid="input-app-url"]').fill('https://example.com/demo');
       await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi demo');
       await page.locator('[data-testid="input-app-pic"]').fill('Demo PIC');
@@ -154,7 +155,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
   test('Sub-tasks feature can expand, add sub-task, toggle checkbox, and delete sub-task', async ({ page }) => {
     // Add a fresh parent task
-    const parentTaskTitle = `Proyek Besar dengan Sub-tasks ${Date.now()}`;
+    const parentTaskTitle = `Test Proyek Besar Subtasks ${Date.now()}`;
     await page.locator('[data-testid="todo-input"]').fill(parentTaskTitle);
     await page.locator('[data-testid="todo-add-button"]').click();
 
@@ -245,16 +246,16 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     const todoInput = page.locator('[data-testid="todo-input"]');
     await todoInput.focus();
-    await page.keyboard.type('Catatan Baris 1');
+    await page.keyboard.type('Test Catatan Baris 1');
     await page.keyboard.press('Shift+Enter');
-    await page.keyboard.type('Catatan Baris 2');
+    await page.keyboard.type('Test Catatan Baris 2');
 
     // Press Enter without Shift to submit
     await page.keyboard.press('Enter');
 
     // Verify task is added and contains both lines
     const firstTodo = page.locator('[data-testid^="todo-item-"]').first();
-    await expect(firstTodo).toContainText('Catatan Baris 1\nCatatan Baris 2');
+    await expect(firstTodo).toContainText('Test Catatan Baris 1\nTest Catatan Baris 2');
 
     // Verify input is cleared
     await expect(todoInput).toHaveValue('');
@@ -265,7 +266,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
     await page.locator('[data-testid="modal-confirm-button"]').click();
     await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
-    await expect(page.getByText('Catatan Baris 1')).not.toBeVisible();
+    await expect(page.getByText('Test Catatan Baris 1')).not.toBeVisible();
   });
 
   test('Dev Mode indicator badge is visible in development environment', async ({ page }) => {
@@ -283,11 +284,12 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     // Click company profile link
     await navCompany.click();
     await expect(page).toHaveURL(/.*company-profile/);
-    await expect(page.locator('[data-testid="cp-title"]')).toHaveText('CV SUKSES GEMILANG');
-    await expect(page.getByText('VISI KAMI')).toBeVisible();
-    await expect(page.getByText('MISI KAMI')).toBeVisible();
-    await expect(page.getByText('Tim Manajemen CV Sukses Gemilang')).toBeVisible();
-    await expect(page.getByText('Rizal Fauzi')).not.toBeVisible();
+    const cpContainer = page.locator('[data-testid="company-profile-container"]');
+    await expect(cpContainer.locator('[data-testid="cp-title"]')).toHaveText('CV SUKSES GEMILANG');
+    await expect(cpContainer.getByText('VISI KAMI')).toBeVisible();
+    await expect(cpContainer.getByText('MISI KAMI')).toBeVisible();
+    await expect(cpContainer.getByText('Tim Manajemen CV Sukses Gemilang')).toBeVisible();
+    await expect(cpContainer.getByText('Rizal Fauzi')).not.toBeVisible();
 
     // Click back to dashboard link
     await navHome.click();
@@ -311,7 +313,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(modalBackdrop).toBeVisible();
 
     // Fill form
-    const appName = `E2E Automated App ${Date.now()}`;
+    const appName = `Test E2E Automated App ${Date.now()}`;
     await page.locator('[data-testid="input-app-name"]').fill(appName);
     await page.locator('[data-testid="input-app-url"]').fill('https://example.com/e2e');
     await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi uji otomatis Playwright');
@@ -346,7 +348,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
   test('Delete App button in debug mode opens confirmation modal and removes app from grid', async ({ page }) => {
     // Create a dedicated app to test deletion
-    const targetName = `Delete Target ${Date.now()}`;
+    const targetName = `Test Delete Target ${Date.now()}`;
     await page.locator('[data-testid="btn-open-add-app"]').click();
     await page.locator('[data-testid="input-app-name"]').fill(targetName);
     await page.locator('[data-testid="input-app-url"]').fill('https://example.com/delete');
@@ -397,7 +399,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
   test('Edit App button in debug mode opens modal, updates app data, and shows alert toast', async ({ page }) => {
     // Create a dedicated app to test editing
-    const baseName = `Edit Target ${Date.now()}`;
+    const baseName = `Test Edit Target ${Date.now()}`;
     await page.locator('[data-testid="btn-open-add-app"]').click();
     await page.locator('[data-testid="input-app-name"]').fill(baseName);
     await page.locator('[data-testid="input-app-url"]').fill('https://example.com/edit');
@@ -419,7 +421,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(editModal).toBeVisible();
 
     // Edit app name
-    const editedName = `Portfolio Pro Edition ${Date.now()}`;
+    const editedName = `Test Portfolio Pro Edition ${Date.now()}`;
     const nameInput = page.locator('[data-testid="input-edit-app-name"]');
     await nameInput.fill(editedName);
 
@@ -950,7 +952,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     const secondOption = appOptions.nth(1);
     await secondOption.click();
 
-    const taskWithTopic = `Task for Specific App Topic ${Date.now()}`;
+    const taskWithTopic = `Test Task for Specific App Topic ${Date.now()}`;
     await page.locator('[data-testid="todo-input"]').fill(taskWithTopic);
     await page.locator('[data-testid="todo-add-button"]').click();
 
@@ -974,7 +976,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     let appCards = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]');
     while ((await appCards.count()) < 2) {
       const idx = await appCards.count();
-      const appName = `App Cascade ${idx} ${Date.now()}`;
+      const appName = `Test App Cascade ${idx} ${Date.now()}`;
       await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
       await page.locator('[data-testid="btn-open-add-app"]').click({ force: true });
       await page.locator('[data-testid="input-app-name"]').fill(appName);
@@ -1001,8 +1003,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.locator(`[data-testid="todo-app-topic-select-option-${targetAppId}"]`).click();
 
     // 3. Add two todo items specifically for targetAppId
-    const todoTitle1 = `Cascade Task A ${Date.now()}`;
-    const todoTitle2 = `Cascade Task B ${Date.now()}`;
+    const todoTitle1 = `Test Cascade Task A ${Date.now()}`;
+    const todoTitle2 = `Test Cascade Task B ${Date.now()}`;
 
     await page.locator('[data-testid="todo-input"]').fill(todoTitle1);
     await page.locator('[data-testid="todo-add-button"]').click();
@@ -1013,7 +1015,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(page.locator(`text=${todoTitle2}`)).toBeVisible();
 
     // Also add an unrelated todo for keeperAppId
-    const unrelatedTodo = `Unrelated Keeper Task ${Date.now()}`;
+    const unrelatedTodo = `Test Unrelated Keeper Task ${Date.now()}`;
     await topicTrigger.click();
     await page.locator(`[data-testid="todo-app-topic-select-option-${keeperAppId}"]`).click();
     await page.locator('[data-testid="todo-input"]').fill(unrelatedTodo);
@@ -1055,7 +1057,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     let appCards = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]');
     while ((await appCards.count()) < 2) {
       const idx = await appCards.count();
-      const appName = `App Filter ${idx} ${Date.now()}`;
+      const appName = `Test App Filter ${idx} ${Date.now()}`;
       await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
       await page.locator('[data-testid="btn-open-add-app"]').click({ force: true });
       await page.locator('[data-testid="input-app-name"]').fill(appName);
@@ -1080,7 +1082,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
     await topicTrigger.click();
     await page.locator(`[data-testid="todo-app-topic-select-option-${app1Id}"]`).click();
-    const app1Task = `App 1 Task ${Date.now()}`;
+    const app1Task = `Test App 1 Task ${Date.now()}`;
     await page.locator('[data-testid="todo-input"]').fill(app1Task);
     await page.locator('[data-testid="todo-add-button"]').click();
     await expect(page.locator(`text=${app1Task}`)).toBeVisible();
@@ -1088,7 +1090,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     // Add a todo for app2Id
     await topicTrigger.click();
     await page.locator(`[data-testid="todo-app-topic-select-option-${app2Id}"]`).click();
-    const app2Task = `App 2 Task ${Date.now()}`;
+    const app2Task = `Test App 2 Task ${Date.now()}`;
     await page.locator('[data-testid="todo-input"]').fill(app2Task);
     await page.locator('[data-testid="todo-add-button"]').click();
     await expect(page.locator(`text=${app2Task}`)).toBeVisible();
@@ -1123,7 +1125,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     let appCards = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]');
     while ((await appCards.count()) < 2) {
       const idx = await appCards.count();
-      const appName = `Bulk Seed ${idx} ${Date.now()}`;
+      const appName = `Test Bulk Seed ${idx} ${Date.now()}`;
       await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
       await page.locator('[data-testid="btn-open-add-app"]').click({ force: true });
       await page.locator('[data-testid="input-app-name"]').fill(appName);
@@ -1161,8 +1163,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(bulkDeleteBtn).not.toBeVisible();
 
     // Now create two specific test apps to delete in bulk
-    const appA = `Bulk Target A ${Date.now()}`;
-    const appB = `Bulk Target B ${Date.now()}`;
+    const appA = `Test Bulk Target A ${Date.now()}`;
+    const appB = `Test Bulk Target B ${Date.now()}`;
 
     for (const name of [appA, appB]) {
       await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
@@ -1188,7 +1190,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     const topicTrigger = page.locator('[data-testid="todo-app-topic-select-trigger"]');
     await topicTrigger.click();
     await page.locator(`[data-testid="todo-app-topic-select-option-${idA}"]`).click();
-    const todoForA = `Cascading Task for App A ${Date.now()}`;
+    const todoForA = `Test Cascading Task for App A ${Date.now()}`;
     await page.locator('[data-testid="todo-input"]').fill(todoForA);
     await page.locator('[data-testid="todo-add-button"]').click();
     await expect(page.locator(`text=${todoForA}`)).toBeVisible();
@@ -1223,8 +1225,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
   test('Check All button in To-Do List marks all tasks completed and allows Clear Completed to wipe them', async ({ page }) => {
     // Add two active todos
-    const task1 = `Task Check All 1 ${Date.now()}`;
-    const task2 = `Task Check All 2 ${Date.now()}`;
+    const task1 = `Test Task Check All 1 ${Date.now()}`;
+    const task2 = `Test Task Check All 2 ${Date.now()}`;
 
     await page.locator('[data-testid="todo-input"]').fill(task1);
     await page.locator('[data-testid="todo-add-button"]').click();
@@ -1271,7 +1273,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
   test('Search in To-Do List filters tasks dynamically by task name and category/topic', async ({ page }) => {
     // Create an app with distinct category/topic
-    const appName = `Searchable App ${Date.now()}`;
+    const appName = `Test Searchable App ${Date.now()}`;
     const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
     await openAddBtn.click();
     await page.locator('[data-testid="input-app-name"]').fill(appName);
@@ -1291,8 +1293,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await topicTrigger.click();
     await page.locator(`[data-testid="todo-app-topic-select-option-${createdId}"]`).click();
 
-    const uniqueTaskAlpha = `Alpha Unique Task ${Date.now()}`;
-    const uniqueTaskBeta = `Beta Different Task ${Date.now()}`;
+    const uniqueTaskAlpha = `Test Alpha Unique Task ${Date.now()}`;
+    const uniqueTaskBeta = `Test Beta Different Task ${Date.now()}`;
 
     // Add Alpha task under our created app
     await page.locator('[data-testid="todo-input"]').fill(uniqueTaskAlpha);
@@ -1339,6 +1341,87 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(confirmModal).toBeVisible();
     await page.locator('[data-testid="modal-confirm-button"]').click();
     await expect(confirmModal).not.toBeVisible();
+  });
+
+  test('Public visitors can browse portal and to-do list without login, but cannot see or access app management buttons', async ({ page }) => {
+    // Logout to simulate an unauthenticated visitor
+    await page.evaluate(() => {
+      (window as any).__authStore?.logout?.();
+    });
+    await page.waitForFunction(() => !(window as any).__authStore?.getState?.()?.isAuthenticated);
+
+    // Verify visitor sees public login button in navbar
+    const loginNavBtn = page.locator('[data-testid="nav-login-btn"]');
+    await expect(loginNavBtn).toBeVisible();
+
+    // Verify app management buttons are hidden from public visitor
+    const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
+    await expect(openAddBtn).not.toBeVisible();
+
+    const selectAllBtn = page.locator('[data-testid="btn-select-all-apps"]');
+    await expect(selectAllBtn).not.toBeVisible();
+
+    // Verify visitor can still freely use to-do list
+    const visitorTask = `Test Public Visitor Task ${Date.now()}`;
+    await page.locator('[data-testid="todo-input"]').fill(visitorTask);
+    await page.locator('[data-testid="todo-add-button"]').click();
+
+    const visitorItem = page.locator('[data-testid^="todo-item-"]', { hasText: visitorTask });
+    await expect(visitorItem).toBeVisible();
+
+    // Toggle checkbox works for visitors
+    await visitorItem.locator('input[type="checkbox"]').check();
+    await expect(visitorItem.locator('input[type="checkbox"]')).toBeChecked();
+
+    // Clean up
+    await visitorItem.locator('[data-testid^="delete-todo-"]').first().click();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(visitorItem).not.toBeVisible();
+  });
+
+  test('Login page at /login allows authenticating with database user, displays role and debug status, and unlocks app management', async ({ page }) => {
+    // Start unauthenticated
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      (window as any).__authStore?.logout?.();
+    });
+    await page.goto('/login');
+
+    // Verify login page elements and notice box
+    await expect(page.locator('[data-testid="login-page"]')).toBeVisible();
+    await expect(page.locator('[data-testid="login-notice-box"]')).toBeVisible();
+
+    // Attempt invalid login
+    await page.locator('[data-testid="input-username"]').fill('rizlfauzy');
+    await page.locator('[data-testid="input-password"]').fill('wrongpassword123');
+    await page.locator('[data-testid="btn-login-submit"]').click();
+
+    await expect(page.locator('[data-testid="login-error-alert"]')).toBeVisible();
+
+    // Login with valid credentials
+    await page.locator('[data-testid="input-username"]').fill('rizlfauzy');
+    await page.locator('[data-testid="input-password"]').fill('admin123');
+    await page.locator('[data-testid="btn-login-submit"]').click();
+
+    // Should redirect to dashboard
+    await expect(page).toHaveURL(/\/$/);
+
+    // Verify navbar displays user name
+    const userProfileBtn = page.locator('[data-testid="nav-user-profile-btn"]');
+    await expect(userProfileBtn).toBeVisible();
+    await expect(userProfileBtn).toContainText('Rizal Fauzi');
+
+    // Verify Add App button is now unlocked
+    const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
+    await expect(openAddBtn).toBeVisible();
+
+    // Test logout via navbar
+    const logoutBtn = page.locator('[data-testid="nav-logout-btn"]');
+    await logoutBtn.click();
+
+    // Verify returned to unauthenticated state
+    await expect(page.locator('[data-testid="nav-login-btn"]')).toBeVisible();
+    await expect(openAddBtn).not.toBeVisible();
   });
 });
 

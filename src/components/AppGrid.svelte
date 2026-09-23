@@ -8,9 +8,11 @@
   import SkeletonCard from './SkeletonCard.svelte';
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
+  import { authStore } from '@/stores/authStore';
 
   let { apps }: { apps?: AppItem[] } = $props();
 
+  let canManageApps = $derived($authStore.hasDebugAccess);
   let isLoading = $derived($appStore.isLoading);
   let allApps = $derived(apps ?? $appStore.apps);
   let searchQuery = $state('');
@@ -102,7 +104,7 @@
     </div>
 
     <div class="flex items-center gap-2.5 flex-wrap">
-      {#if env.enableDebug}
+      {#if canManageApps}
         {#if filteredApps.length > 0}
           <button
             type="button"
@@ -246,7 +248,7 @@
     </div>
   {/if}
 
-  {#if env.enableDebug}
+  {#if canManageApps}
     <AddAppModal bind:isOpen={isAddModalOpen} />
 
     <ConfirmModal
