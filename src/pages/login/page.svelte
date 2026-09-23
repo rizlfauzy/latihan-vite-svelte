@@ -25,7 +25,14 @@
     try {
       const res = await authStore.login(username, password);
       if (res.success) {
-        router.navigate('/');
+        const search = router.route.search;
+        const redirectParam = typeof search?.redirect === 'string' ? search.redirect : '';
+        const validTargets = ['/', '/company-profile', '/login', '/profile'] as const;
+        type AppRoute = typeof validTargets[number];
+        const target: AppRoute = validTargets.includes(redirectParam as AppRoute)
+          ? (redirectParam as AppRoute)
+          : '/profile';
+        router.navigate(target);
       } else {
         errorMessage = res.message || $i18nStore.t('login.errorInvalid') || 'Kredensial tidak valid!';
       }

@@ -51,6 +51,7 @@
   function handleLogout() {
     isModalLogoutOpen = false;
     authStore.logout();
+    closeMobileMenu();
   }
 </script>
 
@@ -221,7 +222,7 @@
       {#if $authStore.isAuthenticated && $authStore.user}
         <div class="flex items-center gap-1.5" data-testid="nav-user-section">
           <a
-            href="/login"
+            href="/profile"
             class="nb-btn bg-nb-yellow hover:bg-yellow-300 text-xs font-black px-2.5 py-2 flex items-center gap-1.5 text-black"
             data-testid="nav-user-profile-btn"
             title="Profil Pengguna"
@@ -367,7 +368,7 @@
       {#if $authStore.isAuthenticated && $authStore.user}
         <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t-2 border-dashed border-gray-300">
           <a
-            href="/login"
+            href="/profile"
             class="nb-btn bg-nb-yellow text-xs font-black px-3 py-2 flex items-center gap-1.5 grow text-black"
             onclick={closeMobileMenu}
             data-testid="mobile-user-profile-btn"
@@ -378,7 +379,7 @@
           <button
             type="button"
             class="nb-btn bg-nb-red text-white text-xs font-black px-3 py-2 cursor-pointer"
-            onclick={() => { authStore.logout(); closeMobileMenu(); }}
+            onclick={() => isModalLogoutOpen = true}
             data-testid="mobile-logout-btn"
           >
             🚪
