@@ -5,12 +5,14 @@
   const icons = {
     success: '✅',
     error: '❌',
+    warning: '⚠️',
     info: 'ℹ️',
   };
 
   const bgClasses = {
     success: 'bg-nb-green text-nb-black',
     error: 'bg-nb-red text-white',
+    warning: 'bg-nb-yellow text-nb-black',
     info: 'bg-nb-blue text-nb-black',
   };
 </script>

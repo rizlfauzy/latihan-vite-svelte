@@ -14,6 +14,11 @@
   "nav.submenuContact": "Kontak & Manajemen",
   "nav.themeDark": "MODE GELAP",
   "nav.themeLight": "MODE TERANG",
+  "nav.logoutConfirm": "Apakah Anda yakin ingin keluar?",
+  "nav.logout": "Keluar",
+
+  "common.yes": "Iya",
+  "common.no": "Tidak",
 
   "hero.subtitle": "Central Dashboard & Portal Aplikasi Terintegrasi Perusahaan",
   "hero.badgeSvelte": "🏢 PORTAL RESMI",
@@ -190,5 +195,14 @@
   "login.passwordPlaceholder": "Masukkan password...",
   "login.submitButton": "MASUK SEKARANG ➔",
   "login.submitting": "MEMERIKSA...",
-  "auth.unauthorizedApps": "Akses ditolak: Hanya role dengan izin debug yang dapat mengelola aplikasi!"
+
+  "profile.title": "Profile User",
+  "profile.subtitle": "Informasi Akun",
+
+  "auth.unauthorizedApps": "Akses ditolak: Hanya role dengan izin debug yang dapat mengelola aplikasi!",
+  "auth.loginRequired": "Silakan login terlebih dahulu untuk mengakses halaman ini!",
+  "auth.alreadyLoggedIn": "Anda sudah login.",
+  "auth.redirecting": "Mengalihkan...",
+  "auth.redirectingLogin": "Mengalihkan ke halaman login..."
 }
+

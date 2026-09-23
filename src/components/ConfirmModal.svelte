@@ -93,11 +93,11 @@
           <div class="bg-gray-100 p-3 border-2 border-dashed border-gray-400 rounded text-sm font-semibold text-gray-700 wrap-break-word whitespace-pre-wrap max-h-28 overflow-y-auto italic">
             {itemText}
           </div>
+          <p class="text-xs font-semibold text-gray-500 m-0">
+            * {$i18nStore.t('confirm.warning')}
+          </p>
         {/if}
 
-        <p class="text-xs font-semibold text-gray-500 m-0">
-          * {$i18nStore.t('confirm.warning')}
-        </p>
       </div>
 
       <!-- Modal Actions -->
