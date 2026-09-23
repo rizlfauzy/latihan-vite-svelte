@@ -165,8 +165,8 @@
           <span>👑</span>
           <span>{$i18nStore.t('cp.leadBadge')}</span>
         </div>
-        <h2 class="text-2xl sm:text-3xl font-black uppercase text-nb-black">
-          Rizal Fauzi
+        <h2 class="text-2xl sm:text-3xl font-black uppercase text-nb-black" data-testid="cp-lead-name">
+          {$i18nStore.t('cp.leadName')}
         </h2>
         <p class="text-sm font-extrabold text-gray-900 mt-1">
           {$i18nStore.t('cp.leadRole')}
@@ -177,7 +177,7 @@
       </div>
 
       <a
-        href="https://wa.me/6281234567890?text=Halo%20Rizal%20Fauzi,%20saya%20ingin%20berdiskusi%20terkait%20CV%20Sukses%20Gemilang."
+        href="https://wa.me/6281234567890?text=Halo%20Tim%20CV%20Sukses%20Gemilang,%20saya%20ingin%20berdiskusi%20terkait%20arena%20game%20center."
         target="_blank"
         rel="noopener noreferrer"
         class="nb-btn bg-nb-green text-sm px-5 py-3 whitespace-nowrap flex items-center gap-2"
