@@ -4,6 +4,7 @@ import { alertStore } from '@/stores/alertStore';
 import { todoStore } from '@/stores/todoStore';
 import { supabase, isSupabaseEnabled } from '@/lib/supabase';
 import { i18nStore } from '@/stores/i18nStore';
+import { authStore } from '@/stores/authStore';
 
 export type { AppItem };
 
@@ -75,6 +76,11 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
   },
 
   addApp: async (newApp: AppItem) => {
+    if (!authStore.getState().hasDebugAccess) {
+      alertStore.showError(t("auth.unauthorizedApps") || 'Akses ditolak: Hanya role dengan izin debug yang dapat menambah aplikasi!');
+      return false;
+    }
+
     // Optimistically update Zustand store & UI
     const updated = [newApp, ...get().apps.filter((a) => a.id !== newApp.id)];
     set({ apps: updated, isLoading: false });
@@ -97,6 +103,11 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
   },
 
   editApp: async (updatedApp: AppItem) => {
+    if (!authStore.getState().hasDebugAccess) {
+      alertStore.showError(t("auth.unauthorizedApps") || 'Akses ditolak: Hanya role dengan izin debug yang dapat mengubah aplikasi!');
+      return false;
+    }
+
     // Optimistically update Zustand store & UI
     const updated = get().apps.map((a) => (a.id === updatedApp.id ? { ...a, ...updatedApp } : a));
     set({ apps: updated });
@@ -122,6 +133,11 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
   },
 
   deleteApp: async (id: string) => {
+    if (!authStore.getState().hasDebugAccess) {
+      alertStore.showError(t("auth.unauthorizedApps") || 'Akses ditolak: Hanya role dengan izin debug yang dapat menghapus aplikasi!');
+      return false;
+    }
+
     const targetApp = get().apps.find((a) => a.id === id);
     const targetName = targetApp?.name || t("todo.app");
 
@@ -154,6 +170,11 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
   },
 
   deleteApps: async (ids: string[]) => {
+    if (!authStore.getState().hasDebugAccess) {
+      alertStore.showError(t("auth.unauthorizedApps") || 'Akses ditolak: Hanya role dengan izin debug yang dapat menghapus aplikasi!');
+      return false;
+    }
+
     if (ids.length === 0) return true;
     const idSet = new Set(ids);
     const count = ids.length;

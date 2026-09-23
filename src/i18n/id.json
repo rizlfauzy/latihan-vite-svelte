@@ -172,5 +172,23 @@
   "cp.leadWaBtn": "HUBUNGI VIA WHATSAPP",
   "cp.servicesSelectLabel": "PILIH WAHANA & LAYANAN YANG DIMINATI (MULTI-SELECT):",
   "cp.servicesSelectPlaceholder": "Pilih beberapa wahana/layanan...",
-  "cp.servicesSelectSearch": "Cari wahana/layanan..."
+  "cp.servicesSelectSearch": "Cari wahana/layanan...",
+
+  "nav.login": "MASUK",
+  "login.title": "MASUK KE HUB",
+  "login.subtitle": "Autentikasi Akun & Akses Pengembang",
+  "login.backToHome": "Beranda",
+  "login.noticeTitle": "Informasi Akses Sistem",
+  "login.noticeBody": "Pengunjung tidak wajib melakukan login untuk menjelajahi portal dan to-do list. Autentikasi hanya dibutuhkan bagi admin/developer dengan hak akses debug. Registrasi pengguna baru hanya dapat dilakukan langsung melalui database.",
+  "login.goToDashboard": "KE DASHBOARD",
+  "login.logout": "KELUAR",
+  "login.errorEmpty": "Username dan password wajib diisi!",
+  "login.errorInvalid": "Username atau password salah!",
+  "login.usernameLabel": "Username",
+  "login.usernamePlaceholder": "Masukkan username...",
+  "login.passwordLabel": "Password",
+  "login.passwordPlaceholder": "Masukkan password...",
+  "login.submitButton": "MASUK SEKARANG ➔",
+  "login.submitting": "MEMERIKSA...",
+  "auth.unauthorizedApps": "Akses ditolak: Hanya role dengan izin debug yang dapat mengelola aplikasi!"
 }

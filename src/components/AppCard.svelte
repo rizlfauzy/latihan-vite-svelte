@@ -2,6 +2,7 @@
   import type { AppItem } from '@/data/apps';
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
+  import { authStore } from '@/stores/authStore';
 
   let {
     app,
@@ -17,6 +18,8 @@
     onDelete?: (app: AppItem) => void;
   } = $props();
 
+  let canManageApps = $derived($authStore.hasDebugAccess);
+
   const waMessage = $derived(
     encodeURIComponent(`Halo ${app.picName}, saya ingin bertanya dan konsultasi mengenai aplikasi "${app.name}" di Portal Aplikasi Perusahaan.`)
   );
@@ -29,7 +32,7 @@
 >
   <div class="flex items-center justify-between gap-2.5">
     <div class="flex items-center gap-2.5">
-      {#if env.enableDebug}
+      {#if canManageApps}
         <label class="cursor-pointer flex items-center justify-center m-0" title="Pilih aplikasi">
           <input
             type="checkbox"
@@ -55,7 +58,7 @@
         {app.category}
       </span>
 
-      {#if env.enableDebug}
+      {#if canManageApps}
         <button
           type="button"
           class="nb-btn bg-nb-blue hover:bg-blue-400 text-xs px-2 py-1 flex items-center justify-center font-black transition-all cursor-pointer"

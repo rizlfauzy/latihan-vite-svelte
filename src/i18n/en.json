@@ -172,5 +172,23 @@
   "cp.leadWaBtn": "CONTACT VIA WHATSAPP",
   "cp.servicesSelectLabel": "SELECT DESIRED ATTRACTIONS & SERVICES (MULTI-SELECT):",
   "cp.servicesSelectPlaceholder": "Select attractions/services...",
-  "cp.servicesSelectSearch": "Search attractions..."
+  "cp.servicesSelectSearch": "Search attractions...",
+
+  "nav.login": "LOGIN",
+  "login.title": "LOG IN TO HUB",
+  "login.subtitle": "Account Authentication & Developer Access",
+  "login.backToHome": "Home",
+  "login.noticeTitle": "System Access Information",
+  "login.noticeBody": "Visitors are not required to log in to explore the portal and to-do list. Authentication is only required for admins/developers with debug access. New user registration can only be done directly via the database.",
+  "login.goToDashboard": "GO TO DASHBOARD",
+  "login.logout": "LOGOUT",
+  "login.errorEmpty": "Username and password are required!",
+  "login.errorInvalid": "Invalid username or password!",
+  "login.usernameLabel": "Username",
+  "login.usernamePlaceholder": "Enter username...",
+  "login.passwordLabel": "Password",
+  "login.passwordPlaceholder": "Enter password...",
+  "login.submitButton": "LOG IN NOW ➔",
+  "login.submitting": "CHECKING...",
+  "auth.unauthorizedApps": "Access denied: Only roles with debug permission can manage applications!"
 }

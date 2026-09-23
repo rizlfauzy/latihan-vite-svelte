@@ -1,6 +1,7 @@
 stages:
   - test
   - build
+  - migrate
   - deploy
 
 workflow:
@@ -52,7 +53,16 @@ build:
     expire_in: 1 hour
 
 # ==========================================
-# 3. Deploy Stage (Rsync via SSH to VPS)
+# 3. Migrate Stage (Supabase DB Push)
+# ==========================================
+migrate:
+  stage: migrate
+  image: oven/bun:1-alpine
+  script:
+    - bunx supabase db push --db-url "$SUPABASE_DB_URL" --include-all
+
+# ==========================================
+# 4. Deploy Stage (Rsync via SSH to VPS)
 # ==========================================
 deploy:
   stage: deploy
