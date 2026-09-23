@@ -7,6 +7,8 @@
   import { todoStore, type Todo, type SubTask } from '@/stores/todoStore';
   import CustomSelect from './CustomSelect.svelte';
 
+  const t = $derived((key: string, defaultValue?: string):string => $i18nStore.t(key, defaultValue));
+
   type DeleteTarget =
     | { type: 'todo'; id: string; text: string }
     | { type: 'subtask'; todoId: string; subTaskId: string; text: string }
@@ -60,7 +62,7 @@
     const targetDone = !allTodosDone;
     await todoStore.checkAllTodos(targetDone);
     if (targetDone) {
-      alertStore.showSuccess($i18nStore.t('todo.checkAllDoneMsg'));
+      alertStore.showSuccess(t('todo.checkAllDoneMsg'));
     }
   }
 
@@ -169,11 +171,14 @@
   function addSubTask(todoId: string, e?: Event) {
     if (e) e.preventDefault();
     const inputVal = (subTaskInputs[todoId] || '').trim();
-    if (!inputVal) return;
-
-    todoStore.addSubTask(todoId, inputVal);
-    subTaskInputs[todoId] = '';
-    expandedTodoIds[todoId] = true;
+    try {
+      if (!inputVal) throw new Error(t('todo.errSubTask', "Isi sub task tidak boleh kosong !!!"));
+      todoStore.addSubTask(todoId, inputVal);
+      subTaskInputs[todoId] = '';
+      expandedTodoIds[todoId] = true;
+    } catch (e) {
+      alertStore.showError((e as Error).message);
+    }
   }
 
   function handleSubTaskKeydown(todoId: string, e: KeyboardEvent) {
@@ -196,16 +201,16 @@
   <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
     <div class="inline-flex items-center gap-2.5 bg-nb-yellow px-4.5 py-2 border-3 border-nb-black shadow-nb rounded-md text-lg md:text-xl font-extrabold uppercase tracking-wide text-black">
       <span>📝</span>
-      <span>{$i18nStore.t('todo.title')}</span>
+      <span>{t('todo.title')}</span>
     </div>
 
     <div class="flex gap-2">
       <span class="nb-badge bg-nb-yellow text-black">
-        {remainingCount} {$i18nStore.t('todo.pending')}
+        {remainingCount} {t('todo.pending')}
       </span>
       {#if completedCount > 0}
         <span class="nb-badge bg-nb-green">
-          {completedCount} {$i18nStore.t('todo.completed')}
+          {completedCount} {t('todo.completed')}
         </span>
       {/if}
     </div>
@@ -219,7 +224,7 @@
         <div class="flex items-center gap-2 flex-wrap text-xs">
           <label for="todo-app-topic-select" class="font-extrabold text-nb-black flex items-center gap-1.5 select-none">
             <span>🎯</span>
-            <span>{$i18nStore.t('todo.appTopic')}:</span>
+            <span>{t('todo.appTopic')}:</span>
           </label>
           <div class="grow max-w-xs">
             <CustomSelect
@@ -227,8 +232,8 @@
               options={apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))}
               bind:value={selectedAppId}
               dataTestId="todo-app-topic-select"
-              placeholder={$i18nStore.t('todo.selectAppTopic')}
-              searchPlaceholder={$i18nStore.t('todo.searchAppTopic')}
+              placeholder={t('todo.selectAppTopic')}
+              searchPlaceholder={t('todo.searchAppTopic')}
             />
           </div>
         </div>
@@ -238,7 +243,7 @@
         <textarea
           bind:value={newTodoText}
           onkeydown={handleTodoKeydown}
-          placeholder={$i18nStore.t('todo.placeholder')}
+          placeholder={t('todo.placeholder')}
           rows="2"
           class="nb-input grow resize-y min-h-14 leading-relaxed"
           data-testid="todo-input"
@@ -249,7 +254,7 @@
           data-testid="todo-add-button"
         >
           <span>+</span>
-          <span>{$i18nStore.t('todo.addButton')}</span>
+          <span>{t('todo.addButton')}</span>
         </button>
       </div>
 
@@ -257,7 +262,7 @@
       <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500 select-none">
         <span>💡</span>
         <span>
-          {$i18nStore.t('todo.shortcutPrefix')} <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-nb-yellow text-black font-mono text-[11px] shadow-nb-xs">Enter</kbd> {$i18nStore.t('todo.shortcutToSave')}, <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-gray-200 text-black font-mono text-[11px] shadow-nb-xs">Shift + Enter</kbd> {$i18nStore.t('todo.shortcutForNewLine')}
+          {t('todo.shortcutPrefix')} <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-nb-yellow text-black font-mono text-[11px] shadow-nb-xs">Enter</kbd> {t('todo.shortcutToSave')}, <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-gray-200 text-black font-mono text-[11px] shadow-nb-xs">Shift + Enter</kbd> {t('todo.shortcutForNewLine')}
         </span>
       </div>
     </form>
@@ -272,7 +277,7 @@
         <input
           type="text"
           bind:value={searchQuery}
-          placeholder={$i18nStore.t('todo.searchPlaceholder')}
+          placeholder={t('todo.searchPlaceholder')}
           class="nb-input pl-10 pr-10 py-2 text-sm font-bold w-full"
           data-testid="search-todo-input"
         />
@@ -281,8 +286,8 @@
             type="button"
             class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-nb-pink text-xs font-black flex items-center justify-center cursor-pointer border border-nb-black shadow-nb-xs text-black"
             onclick={() => (searchQuery = '')}
-            title={$i18nStore.t('todo.clearSearch')}
-            aria-label={$i18nStore.t('todo.clearSearch')}
+            title={t('todo.clearSearch')}
+            aria-label={t('todo.clearSearch')}
             data-testid="btn-clear-todo-search"
           >
             ✕
@@ -298,7 +303,7 @@
             onclick={() => (filter = 'all')}
             data-testid="filter-all"
           >
-            {$i18nStore.t('todo.filterAll')} ({todos.length})
+            {t('todo.filterAll')} ({todos.length})
           </button>
           <button
             type="button"
@@ -306,7 +311,7 @@
             onclick={() => (filter = 'active')}
             data-testid="filter-active"
           >
-            {$i18nStore.t('todo.filterActive')} ({remainingCount})
+            {t('todo.filterActive')} ({remainingCount})
           </button>
           <button
             type="button"
@@ -314,7 +319,7 @@
             onclick={() => (filter = 'done')}
             data-testid="filter-done"
           >
-            {$i18nStore.t('todo.filterDone')} ({completedCount})
+            {t('todo.filterDone')} ({completedCount})
           </button>
 
           {#if apps.length > 0}
@@ -322,11 +327,11 @@
               <span class="text-xs font-extrabold text-nb-black select-none">🎯</span>
               <CustomSelect
                 width="min-w-[15dvw]"
-                options={[{ label: $i18nStore.t('todo.allTopics'), value: 'all' }, ...apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))]}
+                options={[{ label: t('todo.allTopics'), value: 'all' }, ...apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))]}
                 bind:value={topicFilter}
                 dataTestId="todo-topic-filter"
-                placeholder={$i18nStore.t('todo.allTopics')}
-                searchPlaceholder={$i18nStore.t('todo.searchTopics')}
+                placeholder={t('todo.allTopics')}
+                searchPlaceholder={t('todo.searchTopics')}
               />
             </div>
           {/if}
@@ -339,10 +344,10 @@
               class="nb-btn text-xs px-3.5 py-1.5 {allTodosDone ? 'bg-nb-yellow text-black' : 'bg-white hover:bg-gray-100 text-black'} border-2 border-nb-black shadow-nb-xs cursor-pointer flex items-center gap-1.5"
               onclick={handleToggleAllTodos}
               data-testid="btn-check-all-todos"
-              title={allTodosDone ? $i18nStore.t('todo.uncheckAll') : $i18nStore.t('todo.checkAll')}
+              title={allTodosDone ? t('todo.uncheckAll') : t('todo.checkAll')}
             >
               <span class="text-sm">{allTodosDone ? '☑' : '☐'}</span>
-              <span>{allTodosDone ? $i18nStore.t('todo.uncheckAll') : $i18nStore.t('todo.checkAll')}</span>
+              <span>{allTodosDone ? t('todo.uncheckAll') : t('todo.checkAll')}</span>
             </button>
           {/if}
 
@@ -353,7 +358,7 @@
               onclick={promptDeleteAllCompleted}
               data-testid="clear-completed-button"
             >
-              {$i18nStore.t('todo.clearCompleted')}
+              {t('todo.clearCompleted')}
             </button>
           {/if}
         </div>
@@ -372,8 +377,8 @@
         <li class="p-9 text-center border-2 border-dashed border-gray-300 rounded-md text-gray-500 font-semibold" data-testid="todo-empty-state">
           <p class="m-0">
             {searchQuery.trim().length > 0
-              ? $i18nStore.t('todo.emptySearch')
-              : $i18nStore.t('todo.emptyState')}
+              ? t('todo.emptySearch')
+              : t('todo.emptyState')}
           </p>
         </li>
       {:else}
@@ -441,9 +446,9 @@
                   type="button"
                   onclick={() => toggleExpand(todo.id)}
                   class="nb-badge shrink-0 cursor-pointer {subDoneCount === subList.length ? 'bg-nb-green' : 'bg-nb-yellow'}"
-                  title={$i18nStore.t('todo.subtasksTitle')}
+                  title={t('todo.subtasksTitle')}
                 >
-                  {subDoneCount}/{subList.length} {$i18nStore.t('todo.subtasksCount')}
+                  {subDoneCount}/{subList.length} {t('todo.subtasksCount')}
                 </button>
               {/if}
 
@@ -452,8 +457,8 @@
                 type="button"
                 class="w-8 h-8 shrink-0 border-2 border-nb-black bg-nb-red text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
                 onclick={() => promptDeleteTodo(todo)}
-                title={$i18nStore.t('todo.deleteNote')}
-                aria-label={$i18nStore.t('todo.deleteNote')}
+                title={t('todo.deleteNote')}
+                aria-label={t('todo.deleteNote')}
                 data-testid={`delete-todo-${todo.id}`}
               >
                 ✕
@@ -492,8 +497,8 @@
                           type="button"
                           class="w-6 h-6 shrink-0 border border-nb-black bg-gray-100 hover:bg-nb-red hover:text-white text-gray-600 font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
                           onclick={() => promptDeleteSubTask(todo.id, sub)}
-                          title={$i18nStore.t('todo.deleteSubtask')}
-                          aria-label={$i18nStore.t('todo.deleteSubtask')}
+                          title={t('todo.deleteSubtask')}
+                          aria-label={t('todo.deleteSubtask')}
                           data-testid={`delete-subtask-${sub.id}`}
                         >
                           ✕
@@ -503,7 +508,7 @@
                   </ul>
                 {:else}
                   <p class="text-xs text-gray-500 font-semibold italic pl-4 sm:pl-6 m-0">
-                    {$i18nStore.t('todo.subtasksEmpty')}
+                    {t('todo.subtasksEmpty')}
                   </p>
                 {/if}
 
@@ -515,7 +520,7 @@
                   <textarea
                     bind:value={subTaskInputs[todo.id]}
                     onkeydown={(e) => handleSubTaskKeydown(todo.id, e)}
-                    placeholder={$i18nStore.t('todo.subtaskPlaceholder')}
+                    placeholder={t('todo.subtaskPlaceholder')}
                     rows="1"
                     class="w-full text-xs font-semibold px-3 py-1.5 border-2 border-nb-black rounded shadow-nb-xs bg-white outline-none focus:shadow-nb-sm resize-y min-h-8.5 leading-snug"
                     data-testid={`input-subtask-${todo.id}`}
@@ -525,7 +530,7 @@
                     class="nb-btn bg-nb-blue text-xs font-bold px-3 py-1.5 shadow-nb-xs border-2 border-nb-black shrink-0 self-start h-auto"
                     data-testid={`button-add-subtask-${todo.id}`}
                   >
-                    {$i18nStore.t('todo.subtaskAddButton')}
+                    {t('todo.subtaskAddButton')}
                   </button>
                 </form>
               </div>
@@ -539,13 +544,13 @@
   <!-- Deletion Confirmation Modal -->
   <ConfirmModal
     isOpen={deleteTarget !== null}
-    title={deleteTarget?.type === 'todo' ? $i18nStore.t('todo.confirmModalDeleteNoteTitle') : deleteTarget?.type === 'subtask' ? $i18nStore.t('todo.confirmModalDeleteSubtaskTitle') : $i18nStore.t('todo.confirmModalDeleteAllTitle')}
+    title={deleteTarget?.type === 'todo' ? t('todo.confirmModalDeleteNoteTitle') : deleteTarget?.type === 'subtask' ? t('todo.confirmModalDeleteSubtaskTitle') : t('todo.confirmModalDeleteAllTitle')}
     message={deleteTarget?.type === 'todo'
-      ? $i18nStore.t('todo.confirmModalDeleteNoteMsg')
-      : deleteTarget?.type == 'subtask' ? $i18nStore.t('todo.confirmModalDeleteSubtaskMsg') : $i18nStore.t('todo.confirmModalDeleteAllMsg')}
+      ? t('todo.confirmModalDeleteNoteMsg')
+      : deleteTarget?.type == 'subtask' ? t('todo.confirmModalDeleteSubtaskMsg') : t('todo.confirmModalDeleteAllMsg')}
     itemText={deleteTarget?.text || ''}
-    confirmText={$i18nStore.t('action.delete')}
-    cancelText={$i18nStore.t('action.cancel')}
+    confirmText={t('action.delete')}
+    cancelText={t('action.cancel')}
     onConfirm={handleConfirmDelete}
     onCancel={handleCancelDelete}
   />

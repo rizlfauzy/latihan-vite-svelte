@@ -5,7 +5,7 @@
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
 
-  const { t } = i18nStore;
+  const t = $derived((key: string, defaultValue?:string):string => $i18nStore.t(key, defaultValue));
 </script>
 
 <AlertContainer />
