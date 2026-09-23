@@ -3,6 +3,7 @@
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
   import { themeStore } from '@/stores/themeStore';
+  import { authStore } from '@/stores/authStore';
 
   let mobileMenuOpen = $state(false);
   let openDropdown = $state<'home' | 'company' | null>(null);
@@ -207,6 +208,39 @@
         <span>{$i18nStore.locale === 'id' ? '🇮🇩 ID' : '🇬🇧 EN'}</span>
       </button>
 
+      <!-- User Profile / Login Button -->
+      {#if $authStore.isAuthenticated && $authStore.user}
+        <div class="flex items-center gap-1.5" data-testid="nav-user-section">
+          <a
+            href="/login"
+            class="nb-btn bg-nb-yellow hover:bg-yellow-300 text-xs font-black px-2.5 py-2 flex items-center gap-1.5 text-black"
+            data-testid="nav-user-profile-btn"
+            title="Profil Pengguna"
+          >
+            <span>👤</span>
+            <span class="max-w-28 truncate">{$authStore.user.name}</span>
+          </a>
+          <button
+            type="button"
+            class="nb-btn bg-nb-red text-white hover:bg-red-500 text-xs font-black px-2 py-2 flex items-center justify-center cursor-pointer"
+            onclick={() => authStore.logout()}
+            data-testid="nav-logout-btn"
+            title="Keluar / Logout"
+            aria-label="Keluar / Logout"
+          >
+            🚪
+          </button>
+        </div>
+      {:else}
+        <a
+          href="/login"
+          class="nb-btn bg-white hover:bg-nb-yellow text-xs font-black px-3 py-2 flex items-center gap-1.5 text-black"
+          data-testid="nav-login-btn"
+        >
+          <span>🔐</span>
+          <span>{$i18nStore.t('nav.login')}</span>
+        </a>
+      {/if}
     </div>
 
     <!-- Mobile Menu Button & Mobile Switchers -->
@@ -320,6 +354,37 @@
           <span>{$i18nStore.t('nav.submenuContact')}</span>
         </button>
       </div>
+
+      {#if $authStore.isAuthenticated && $authStore.user}
+        <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t-2 border-dashed border-gray-300">
+          <a
+            href="/login"
+            class="nb-btn bg-nb-yellow text-xs font-black px-3 py-2 flex items-center gap-1.5 grow text-black"
+            onclick={closeMobileMenu}
+            data-testid="mobile-user-profile-btn"
+          >
+            <span>👤</span>
+            <span class="truncate">{$authStore.user.name}</span>
+          </a>
+          <button
+            type="button"
+            class="nb-btn bg-nb-red text-white text-xs font-black px-3 py-2 cursor-pointer"
+            onclick={() => { authStore.logout(); closeMobileMenu(); }}
+            data-testid="mobile-logout-btn"
+          >
+            🚪
+          </button>
+        </div>
+      {:else}
+        <a
+          href="/login"
+          class="nb-btn bg-white hover:bg-nb-yellow text-xs font-black px-4 py-2 text-center mt-2 text-black"
+          onclick={closeMobileMenu}
+          data-testid="mobile-login-btn"
+        >
+          🔐 {$i18nStore.t('nav.login')}
+        </a>
+      {/if}
 
       <a
         href="https://github.com/rizlfauzy/latihan-vite-svelte"

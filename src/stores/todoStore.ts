@@ -68,13 +68,30 @@ function saveLocalTodos(todos: Todo[]) {
 }
 
 function mapRowToTodo(row: any): Todo {
+  let subTasks: SubTask[] = [];
+
+  // 1. Cek relasi dari tabel subtodos
+  if (Array.isArray(row.subtodos)) {
+    subTasks = row.subtodos
+      .map((s: any) => ({
+        id: s.id,
+        text: s.text,
+        done: Boolean(s.done),
+        createdAt: Number(s.created_at) || Date.now(),
+      }))
+      .sort((a: SubTask, b: SubTask) => a.createdAt - b.createdAt);
+  } else if (Array.isArray(row.sub_tasks)) {
+    // Fallback legacy JSON array
+    subTasks = row.sub_tasks;
+  }
+
   return {
     id: row.id,
     appId: row.appId || row.app_id || null,
     text: row.text,
     done: Boolean(row.done),
     createdAt: Number(row.created_at) || Date.now(),
-    subTasks: Array.isArray(row.sub_tasks) ? row.sub_tasks : [],
+    subTasks,
   };
 }
 
@@ -85,7 +102,6 @@ function mapTodoToRow(todo: Todo) {
     text: todo.text,
     done: todo.done,
     created_at: todo.createdAt,
-    sub_tasks: todo.subTasks || [],
   };
 }
 
@@ -97,12 +113,22 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     if (!isSupabaseEnabled || !supabase) return;
     set({ isLoading: true });
     try {
-      const { data, error } = await supabase
+      // Query todos bersama dengan relasi tabel subtodos
+      let { data, error } = await supabase
         .from('todos')
-        .select('*')
+        .select('*, subtodos(*)')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback jika relasi tabel subtodos belum diaktifkan di schema
+        const fallback = await supabase
+          .from('todos')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (fallback.error) throw fallback.error;
+        data = fallback.data;
+      }
+
       if (data && data.length > 0) {
         const fetched = data.map(mapRowToTodo);
         set({ todos: fetched });
@@ -174,6 +200,8 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
 
     if (isSupabaseEnabled && supabase) {
       try {
+        // Hapus subtodos terkait terlebih dahulu atau cascade via postgres
+        await supabase.from('subtodos').delete().eq('todo_id', id);
         await supabase.from('todos').delete().eq('id', id);
       } catch (err) {
         console.error('[todoStore] Failed to delete todo in Supabase', err);
@@ -182,12 +210,18 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
   },
 
   deleteTodosByAppId: async (appId: string) => {
+    const removedTodos = get().todos.filter((t) => t.appId === appId);
+    const removedIds = removedTodos.map((t) => t.id);
+
     const updated = get().todos.filter((t) => t.appId !== appId);
     set({ todos: updated });
     saveLocalTodos(updated);
 
     if (isSupabaseEnabled && supabase) {
       try {
+        if (removedIds.length > 0) {
+          await supabase.from('subtodos').delete().in('todo_id', removedIds);
+        }
         const { error } = await supabase.from('todos').delete().eq('appId', appId);
         if (error) {
           await supabase.from('todos').delete().eq('app_id', appId);
@@ -201,12 +235,18 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
   deleteTodosByAppIds: async (appIds: string[]) => {
     if (appIds.length === 0) return;
     const appIdSet = new Set(appIds);
+    const removedTodos = get().todos.filter((t) => t.appId && appIdSet.has(t.appId));
+    const removedIds = removedTodos.map((t) => t.id);
+
     const updated = get().todos.filter((t) => !t.appId || !appIdSet.has(t.appId));
     set({ todos: updated });
     saveLocalTodos(updated);
 
     if (isSupabaseEnabled && supabase) {
       try {
+        if (removedIds.length > 0) {
+          await supabase.from('subtodos').delete().in('todo_id', removedIds);
+        }
         const { error } = await supabase.from('todos').delete().in('appId', appIds);
         if (error) {
           await supabase.from('todos').delete().in('app_id', appIds);
@@ -237,10 +277,12 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
   },
 
   clearCompleted: async () => {
-    const completedIds = get().todos.filter((t) => t.done).map((t) => t.id);
+    const completedTodos = get().todos.filter((t) => t.done);
+    const completedIds = completedTodos.map((t) => t.id);
 
     if (isSupabaseEnabled && supabase && completedIds.length > 0) {
       try {
+        await supabase.from('subtodos').delete().in('todo_id', completedIds);
         await supabase.from('todos').delete().in('id', completedIds);
       } catch (err) {
         console.error('[todoStore] Failed to clear completed todos in Supabase', err);
@@ -271,9 +313,21 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
 
     if (isSupabaseEnabled && supabase) {
       try {
-        await supabase.from('todos').update({ sub_tasks: updatedSubs }).eq('id', todoId);
+        // Simpan ke tabel relasional subtodos
+        const { error } = await supabase.from('subtodos').insert([{
+          id: newSub.id,
+          todo_id: todoId,
+          text: newSub.text,
+          done: false,
+          created_at: newSub.createdAt,
+        }]);
+
+        if (error) {
+          // Fallback ke kolom JSON jika tabel subtodos belum tersedia
+          await supabase.from('todos').update({ sub_tasks: updatedSubs }).eq('id', todoId);
+        }
       } catch (err) {
-        console.error('[todoStore] Failed to add subtask in Supabase', err);
+        console.error('[todoStore] Failed to add subtask into subtodos table', err);
       }
     }
   },
@@ -292,9 +346,17 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
 
     if (isSupabaseEnabled && supabase) {
       try {
-        await supabase.from('todos').update({ sub_tasks: updatedSubs }).eq('id', todoId);
+        const targetSub = updatedSubs.find((s) => s.id === subTaskId);
+        const { error } = await supabase
+          .from('subtodos')
+          .update({ done: targetSub ? targetSub.done : false })
+          .eq('id', subTaskId);
+
+        if (error) {
+          await supabase.from('todos').update({ sub_tasks: updatedSubs }).eq('id', todoId);
+        }
       } catch (err) {
-        console.error('[todoStore] Failed to toggle subtask in Supabase', err);
+        console.error('[todoStore] Failed to toggle subtask in subtodos table', err);
       }
     }
   },
@@ -311,9 +373,12 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
 
     if (isSupabaseEnabled && supabase) {
       try {
-        await supabase.from('todos').update({ sub_tasks: updatedSubs }).eq('id', todoId);
+        const { error } = await supabase.from('subtodos').delete().eq('id', subTaskId);
+        if (error) {
+          await supabase.from('todos').update({ sub_tasks: updatedSubs }).eq('id', todoId);
+        }
       } catch (err) {
-        console.error('[todoStore] Failed to delete subtask in Supabase', err);
+        console.error('[todoStore] Failed to delete subtask from subtodos table', err);
       }
     }
   },
