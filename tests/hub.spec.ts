@@ -1387,9 +1387,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     });
     await page.goto('/login');
 
-    // Verify login page elements and notice box
+    // Verify login page element
     await expect(page.locator('[data-testid="login-page"]')).toBeVisible();
-    await expect(page.locator('[data-testid="login-notice-box"]')).toBeVisible();
 
     // Attempt invalid login
     await page.locator('[data-testid="input-username"]').fill('rizlfauzy');
@@ -1403,21 +1402,27 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="input-password"]').fill('admin123');
     await page.locator('[data-testid="btn-login-submit"]').click();
 
-    // Should redirect to dashboard
-    await expect(page).toHaveURL(/\/$/);
+    // Redirects to /profile with profile info
+    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page.locator('[data-testid="profile-page"]')).toBeVisible();
+    await expect(page.locator('[data-testid="user-display-name"]')).toContainText('Rizal Fauzi');
+    await expect(page.locator('[data-testid="user-display-role"]')).toContainText('SUPERADMIN');
 
     // Verify navbar displays user name
     const userProfileBtn = page.locator('[data-testid="nav-user-profile-btn"]');
     await expect(userProfileBtn).toBeVisible();
     await expect(userProfileBtn).toContainText('Rizal Fauzi');
 
-    // Verify Add App button is now unlocked
+    // Navigate to dashboard and verify Add App button is unlocked
+    await page.locator('[data-testid="btn-go-dashboard"]').click();
+    await expect(page).toHaveURL(/\/$/);
     const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
     await expect(openAddBtn).toBeVisible();
 
-    // Test logout via navbar
+    // Test logout via navbar with confirmation modal
     const logoutBtn = page.locator('[data-testid="nav-logout-btn"]');
     await logoutBtn.click();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
 
     // Verify returned to unauthenticated state
     await expect(page.locator('[data-testid="nav-login-btn"]')).toBeVisible();
