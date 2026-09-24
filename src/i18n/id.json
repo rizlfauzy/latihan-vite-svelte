@@ -137,6 +137,8 @@
   "todo.clearSearch": "Hapus pencarian",
   "todo.app": "Aplikasi",
   "todo.apps": "aplikasi",
+  "todo.textTodoRequired": "Teks catatan tidak boleh kosong",
+  "todo.textSubTaskRequired": "Teks sub-task tidak boleh kosong",
   "app.app": "Aplikasi",
   "app.apps": "aplikasi",
   "add.success": "berhasil ditambahkan",

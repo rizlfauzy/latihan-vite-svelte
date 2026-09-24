@@ -137,6 +137,8 @@
   "todo.clearSearch": "Clear search",
   "todo.app": "Application",
   "todo.apps": "applications",
+  "todo.textTodoRequired": "Todo text cannot be empty",
+  "todo.textSubTaskRequired": "Subtask text cannot be empty",
   "app.app": "Application",
   "app.apps": "applications",
   "add.success": "added successfully",
