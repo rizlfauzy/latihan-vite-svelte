@@ -198,7 +198,8 @@
 
   "profile.title": "Profile User",
   "profile.subtitle": "Account Information",
-  
+  "profile.backToHome": "Home",
+
   "auth.unauthorizedApps": "Access denied: Only roles with debug permission can manage applications!",
   "auth.loginRequired": "Please log in first to access this page!",
   "auth.alreadyLoggedIn": "You are already logged in.",

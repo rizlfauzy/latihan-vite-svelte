@@ -198,6 +198,7 @@
 
   "profile.title": "Profile User",
   "profile.subtitle": "Informasi Akun",
+  "profile.backToHome": "Beranda",
 
   "auth.unauthorizedApps": "Akses ditolak: Hanya role dengan izin debug yang dapat mengelola aplikasi!",
   "auth.loginRequired": "Silakan login terlebih dahulu untuk mengakses halaman ini!",
