@@ -2,29 +2,32 @@
   import { authStore } from '@/stores/authStore';
   import { router } from '@/router';
   import { i18nStore } from '@/stores/i18nStore';
+  import { alertStore } from '@/stores/alertStore';
+  import { Warning } from '@/exceptions/CustomError';
+  import { Eye, EyeOff } from '@lucide/svelte'
+
+  const t = $derived((key:string, defaultValue: string = ''): string => $i18nStore.t(key,defaultValue))
 
   let username = $state('');
   let password = $state('');
   let errorMessage = $state('');
   let isSubmitting = $state(false);
+  let isPasswordVisible = $state(false);
 
   let isAuthenticated = $derived($authStore.isAuthenticated);
   let currentUser = $derived($authStore.user);
   let currentRole = $derived($authStore.role);
+  let inputPassword = $state<HTMLElement | null>(null);
 
   async function handleLogin(e: SubmitEvent) {
     e.preventDefault();
-    errorMessage = '';
-
-    if (!username.trim() || !password) {
-      errorMessage = $i18nStore.t('login.errorEmpty') || 'Username dan password wajib diisi!';
-      return;
-    }
 
     isSubmitting = true;
     try {
+      if (!username.trim() || !password) throw new Warning(t('login.errorEmpty', 'Username dan password wajib diisi!'));
       const res = await authStore.login(username, password);
-      if (res.success) {
+      if (!res.success) throw new Error(res.message || t('login.errorInvalid') || 'Kredensial tidak valid!');
+
         const search = router.route.search;
         const redirectParam = typeof search?.redirect === 'string' ? search.redirect : '';
         const validTargets = ['/', '/company-profile', '/login', '/profile'] as const;
@@ -33,11 +36,22 @@
           ? (redirectParam as AppRoute)
           : '/profile';
         router.navigate(target);
-      } else {
-        errorMessage = res.message || $i18nStore.t('login.errorInvalid') || 'Kredensial tidak valid!';
-      }
+    } catch (e) {
+      alertStore.throwAlert(e as Error);
     } finally {
       isSubmitting = false;
+    }
+  }
+
+  function togglePasswordVisibility() {
+    try {
+      isPasswordVisible = !isPasswordVisible;
+      if (inputPassword) {
+        (inputPassword as HTMLInputElement).type = isPasswordVisible ? 'text' : 'password';
+        (inputPassword as HTMLInputElement).focus();
+      }
+    } catch (e) {
+      alertStore.throwAlert(e as Error)
     }
   }
 
@@ -45,7 +59,6 @@
     authStore.logout();
     username = '';
     password = '';
-    errorMessage = '';
   }
 </script>
 
@@ -60,10 +73,10 @@
         </span>
         <div>
           <h1 class="text-xl sm:text-2xl font-black tracking-tight text-nb-black uppercase m-0">
-            {$i18nStore.t('login.title')}
+            {t('login.title')}
           </h1>
           <p class="text-xs font-bold text-gray-500 m-0">
-            {$i18nStore.t('login.subtitle')}
+            {t('login.subtitle')}
           </p>
         </div>
       </div>
@@ -73,7 +86,7 @@
         onclick={() => router.navigate('/')}
         data-testid="btn-back-home"
       >
-        ← {$i18nStore.t('login.backToHome')}
+        ← {t('login.backToHome')}
       </button>
     </div>
 
@@ -81,10 +94,10 @@
     <!-- <div class="p-3 bg-yellow-50 border-2 border-nb-black rounded-md shadow-nb-xs mb-6 text-xs font-bold text-yellow-900 flex flex-col gap-1.5" data-testid="login-notice-box">
       <div class="flex items-center gap-1.5 text-black font-extrabold uppercase text-[11px]">
         <span>ℹ️</span>
-        <span>{$i18nStore.t('login.noticeTitle')}</span>
+        <span>{t('login.noticeTitle')}</span>
       </div>
       <p class="m-0 leading-relaxed font-semibold text-gray-800">
-        {$i18nStore.t('login.noticeBody')}
+        {t('login.noticeBody')}
       </p>
     </div> -->
 
@@ -121,7 +134,7 @@
             onclick={() => router.navigate('/')}
             data-testid="btn-go-dashboard"
           >
-            🚀 {$i18nStore.t('login.goToDashboard')}
+            🚀 {t('login.goToDashboard')}
           </button>
           <button
             type="button"
@@ -129,7 +142,7 @@
             onclick={handleLogout}
             data-testid="btn-logout"
           >
-            🚪 {$i18nStore.t('login.logout')}
+            🚪 {t('login.logout')}
           </button>
         </div>
       </div>
@@ -144,34 +157,48 @@
 
         <div class="flex flex-col gap-1.5">
           <label for="input-username" class="text-xs font-black uppercase text-nb-black">
-            {$i18nStore.t('login.usernameLabel')}
+            {t('login.usernameLabel')}
           </label>
           <input
             id="input-username"
             type="text"
             bind:value={username}
-            placeholder={$i18nStore.t('login.usernamePlaceholder')}
+            placeholder={t('login.usernamePlaceholder')}
             class="nb-input w-full text-sm font-bold"
             data-testid="input-username"
             autocomplete="username"
-            required
           />
         </div>
 
         <div class="flex flex-col gap-1.5">
           <label for="input-password" class="text-xs font-black uppercase text-nb-black">
-            {$i18nStore.t('login.passwordLabel')}
+            {t('login.passwordLabel')}
           </label>
-          <input
-            id="input-password"
-            type="password"
-            bind:value={password}
-            placeholder={$i18nStore.t('login.passwordPlaceholder')}
-            class="nb-input w-full text-sm font-bold"
-            data-testid="input-password"
-            autocomplete="current-password"
-            required
-          />
+          <div class="relative">
+            <input
+              id="input-password"
+              type="password"
+              bind:this={inputPassword}
+              bind:value={password}
+              placeholder={t('login.passwordPlaceholder')}
+              class="nb-input w-full text-sm font-bold"
+              data-testid="input-password"
+              autocomplete="current-password"
+            />
+            <!-- button show pass -->
+            <button
+              type="button"
+              class="absolute inset-y-0 right-0 cursor-pointer flex items-center px-3 text-gray-500 hover:text-gray-700 focus:outline-none nb-btn"
+              onclick={togglePasswordVisibility}
+              data-testid="btn-toggle-password"
+            >
+            {#if isPasswordVisible}
+              <EyeOff size={18} />
+            {:else}
+              <Eye size={18} />
+            {/if}
+            </button>
+          </div>
         </div>
 
         <button
@@ -180,7 +207,7 @@
           disabled={isSubmitting}
           data-testid="btn-login-submit"
         >
-          {isSubmitting ? $i18nStore.t('login.submitting') : $i18nStore.t('login.submitButton')}
+          {isSubmitting ? t('login.submitting') : t('login.submitButton')}
         </button>
       </form>
     {/if}

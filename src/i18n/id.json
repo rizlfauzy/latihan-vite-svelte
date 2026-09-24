@@ -204,6 +204,9 @@
   "auth.loginRequired": "Silakan login terlebih dahulu untuk mengakses halaman ini!",
   "auth.alreadyLoggedIn": "Anda sudah login.",
   "auth.redirecting": "Mengalihkan...",
-  "auth.redirectingLogin": "Mengalihkan ke halaman login..."
+  "auth.redirectingLogin": "Mengalihkan ke halaman login...",
+  "auth.welcomeBack": "Selamat Datang Kembali",
+  "auth.errorInvalid": "Username atau password salah!",
+  "auth.loggedOut": "Anda telah berhasil keluar."
 }
 
