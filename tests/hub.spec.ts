@@ -1,4 +1,20 @@
 import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Pastikan environment variable development ter-load jika belum terdefinisi
+if (!process.env.ADMIN_PASSWORD) {
+  for (const envFile of ['.env.development', '.env']) {
+    const envPath = path.resolve(process.cwd(), envFile);
+    if (fs.existsSync(envPath) && typeof process.loadEnvFile === 'function') {
+      try {
+        process.loadEnvFile(envPath);
+      } catch {}
+    }
+  }
+}
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || '';
 
 test.describe('Apps Hub — UI & E2E Tests', () => {
   test.describe.configure({ mode: 'serial' });
@@ -105,12 +121,21 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     expect(await openAppButtons.count()).toBeGreaterThanOrEqual(1);
 
-    // Verify WhatsApp PIC buttons exist with wa.me link
-    const waButtons = page.getByRole('link', { name: /HUBUNGI PIC/i });
+    // Verify WhatsApp PIC buttons exist and open preview modal with wa.me link
+    const waButtons = page.locator('[data-testid^="btn-contact-pic-"]');
     expect(await waButtons.count()).toBeGreaterThanOrEqual(1);
 
-    const firstWaHref = await waButtons.first().getAttribute('href');
+    await waButtons.first().click();
+    const waModal = page.locator('[data-testid="wa-preview-modal"]');
+    await expect(waModal).toBeVisible();
+
+    const sendLink = page.locator('[data-testid="btn-send-whatsapp"]');
+    await expect(sendLink).toBeVisible();
+    const firstWaHref = await sendLink.getAttribute('href');
     expect(firstWaHref).toContain('https://wa.me/');
+
+    await page.locator('[data-testid="btn-cancel-wa-modal"]').click();
+    await expect(waModal).not.toBeVisible();
   });
 
   test('To-Do List can add, toggle, filter, and delete tasks', async ({ page }) => {
@@ -1379,6 +1404,29 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(visitorItem).not.toBeVisible();
   });
 
+  test('Password visibility toggle on login page changes input type', async ({ page }) => {
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      (window as any).__authStore?.logout?.();
+    });
+    await page.goto('/login');
+
+    const passwordInput = page.locator('[data-testid="input-password"]');
+    const toggleBtn = page.locator('[data-testid="btn-toggle-password"]');
+
+    // Initially password type
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+    await expect(toggleBtn).toBeVisible();
+
+    // Click toggle to show password
+    await toggleBtn.click();
+    await expect(passwordInput).toHaveAttribute('type', 'text');
+
+    // Click toggle to hide password again
+    await toggleBtn.click();
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
   test('Login page at /login allows authenticating with database user, displays role and debug status, and unlocks app management', async ({ page }) => {
     // Start unauthenticated
     await page.evaluate(() => {
@@ -1395,11 +1443,12 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="input-password"]').fill('wrongpassword123');
     await page.locator('[data-testid="btn-login-submit"]').click();
 
-    await expect(page.locator('[data-testid="login-error-alert"]')).toBeVisible();
+    await expect(page.locator('[data-testid="alert-toast"]').first()).toBeVisible();
+    await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
 
     // Login with valid credentials
     await page.locator('[data-testid="input-username"]').fill('rizlfauzy');
-    await page.locator('[data-testid="input-password"]').fill('admin123');
+    await page.locator('[data-testid="input-password"]').fill(ADMIN_PASSWORD);
     await page.locator('[data-testid="btn-login-submit"]').click();
 
     // Redirects to /profile with profile info
@@ -1427,6 +1476,148 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     // Verify returned to unauthenticated state
     await expect(page.locator('[data-testid="nav-login-btn"]')).toBeVisible();
     await expect(openAddBtn).not.toBeVisible();
+  });
+
+  test('WhatsApp PIC Preview modal supports message editing and automatically appends pending To-Do items for selected app', async ({ page }) => {
+    // 1. Tambah aplikasi test baru
+    const testAppName = `Test WhatsApp App ${Date.now()}`;
+    await page.locator('[data-testid="btn-open-add-app"]').click();
+    await page.locator('[data-testid="input-app-name"]').fill(testAppName);
+    await page.locator('[data-testid="input-app-url"]').fill('https://example.com/test-wa');
+    await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi test integrasi WhatsApp');
+    await page.locator('[data-testid="input-app-pic"]').fill('Test PIC Budi');
+    await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
+    await page.locator('[data-testid="btn-submit-add-app"]').click();
+    await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
+
+    const addedApp = await page.evaluate((name) => {
+      const apps = (window as any).__appStore?.getState?.()?.apps || [];
+      return apps.find((a: any) => a.name === name);
+    }, testAppName);
+    expect(addedApp).toBeTruthy();
+
+    // 2. Tambah to-do list: satu pending (belum selesai) dan satu selesai
+    const pendingTaskText = `Test Pending Task ${Date.now()}`;
+    const completedTaskText = `Test Completed Task ${Date.now()}`;
+    await page.evaluate(async ({ appId, pendingText, completedText }) => {
+      const tStore = (window as any).__todoStore;
+      const t1 = await tStore.addTodo(pendingText, appId);
+      const t2 = await tStore.addTodo(completedText, appId);
+      await tStore.toggleTodo(t2.id);
+    }, { appId: addedApp.id, pendingText: pendingTaskText, completedText: completedTaskText });
+
+    // 3. Klik tombol Hubungi PIC pada kartu aplikasi test
+    const waContactBtn = page.locator(`[data-testid="btn-contact-pic-${addedApp.id}"]`);
+    await expect(waContactBtn).toBeVisible();
+    await waContactBtn.click();
+
+    // 4. Verifikasi modal preview muncul
+    const waModal = page.locator('[data-testid="wa-preview-modal"]');
+    await expect(waModal).toBeVisible();
+    await expect(page.locator('[data-testid="wa-modal-title"]')).toBeVisible();
+
+    // 5. Verifikasi isi draft pesan memuat salam, nama app, PIC, dan to-do pending (bukan yang completed)
+    const textarea = page.locator('[data-testid="textarea-wa-message"]');
+    await expect(textarea).toBeVisible();
+    const messageContent = await textarea.inputValue();
+    expect(messageContent).toContain(testAppName);
+    expect(messageContent).toContain('Test PIC Budi');
+    expect(messageContent).toContain(pendingTaskText);
+    expect(messageContent).not.toContain(completedTaskText);
+
+    // 6. Uji fitur edit pesan di dalam modal
+    const customSuffix = ' Tambahan pesan kustom untuk PIC.';
+    await textarea.fill(messageContent + customSuffix);
+    const updatedContent = await textarea.inputValue();
+    expect(updatedContent).toContain(customSuffix);
+
+    // 7. Verifikasi tombol kirim memuat URL wa.me dengan teks yang telah diedit
+    const sendLink = page.locator('[data-testid="btn-send-whatsapp"]');
+    await expect(sendLink).toBeVisible();
+    const href = await sendLink.getAttribute('href');
+    expect(href).toContain('https://wa.me/6281234567890');
+    expect(href).toContain(encodeURIComponent(customSuffix));
+
+    // 8. Tutup modal via tombol batal
+    await page.locator('[data-testid="btn-cancel-wa-modal"]').click();
+    await expect(waModal).not.toBeVisible();
+  });
+
+  test('Register page at /register allows user registration, show/hide password, defaults to VIEWER role with is_debug false, and is accessible only from login page', async ({ page }) => {
+    // 1. Verifikasi navigasi utama (Navbar) TIDAK memiliki tombol langsung ke register
+    await page.goto('/');
+    const navRegisterLink = page.locator('nav').locator('a[href*="/register"], button:has-text("Daftar"), button:has-text("Register")');
+    await expect(navRegisterLink).not.toBeVisible();
+
+    // 2. Kunjungi halaman /login dan pastikan tombol navigasi ke registrasi tersedia
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      (window as any).__authStore?.logout?.();
+    });
+    await page.goto('/login');
+    await expect(page.locator('[data-testid="login-page"]')).toBeVisible();
+
+    const toRegisterBtn = page.locator('[data-testid="btn-to-register"]');
+    await expect(toRegisterBtn).toBeVisible();
+
+    // 3. Klik tombol untuk menuju halaman register
+    await toRegisterBtn.click();
+    await expect(page).toHaveURL(/\/register$/);
+    await expect(page.locator('[data-testid="register-page"]')).toBeVisible();
+
+    // 4. Verifikasi fitur toggle show/hide password di halaman register
+    const passwordInput = page.locator('[data-testid="input-register-password"]');
+    const toggleBtn = page.locator('[data-testid="btn-toggle-register-password"]');
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+
+    await toggleBtn.click();
+    await expect(passwordInput).toHaveAttribute('type', 'text');
+
+    await toggleBtn.click();
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+
+    // 5. Verifikasi validasi input kosong
+    await page.locator('[data-testid="btn-register-submit"]').click();
+    await expect(page.locator('[data-testid="alert-toast"]').first()).toBeVisible();
+    await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+
+    // 6. Lakukan pendaftaran akun baru (memenuhi konvensi kata "test")
+    const testUsername = `testviewer_${Date.now()}`;
+    const testFullName = `Test Viewer User ${Date.now()}`;
+    await page.locator('[data-testid="input-register-name"]').fill(testFullName);
+    await page.locator('[data-testid="input-register-username"]').fill(testUsername);
+    await passwordInput.fill('password123');
+    await page.locator('[data-testid="btn-register-submit"]').click();
+
+    // 7. Pengguna otomatis terdaftar, login, dan diarahkan ke /profile
+    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page.locator('[data-testid="profile-page"]')).toBeVisible();
+    await expect(page.locator('[data-testid="user-display-name"]')).toContainText(testFullName);
+    await expect(page.locator('[data-testid="user-display-username"]')).toContainText(testUsername);
+
+    // 8. Verifikasi role default adalah VIEWER dan is_debug adalah false
+    await expect(page.locator('[data-testid="user-display-role"]')).toContainText('VIEWER');
+    await expect(page.locator('[data-testid="user-display-debug"]')).not.toBeVisible();
+
+    // 9. Akses dashboard dan verifikasi user VIEWER (is_debug: false) TIDAK BISA melihat tombol kelola aplikasi
+    await page.goto('/');
+    await expect(page.locator('[data-testid="btn-open-add-app"]')).not.toBeVisible();
+    await expect(page.locator('[data-testid="btn-select-all-apps"]')).not.toBeVisible();
+    await expect(page.locator('[data-testid^="btn-edit-app-"]')).not.toBeVisible();
+    await expect(page.locator('[data-testid^="btn-delete-app-"]')).not.toBeVisible();
+
+    // 10. Logout dan pastikan akun yang baru terdaftar bisa login kembali via /login
+    const logoutBtn = page.locator('[data-testid="nav-logout-btn"]');
+    await logoutBtn.click();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+
+    await page.goto('/login');
+    await page.locator('[data-testid="input-username"]').fill(testUsername);
+    await page.locator('[data-testid="input-password"]').fill('password123');
+    await page.locator('[data-testid="btn-login-submit"]').click();
+
+    await expect(page).toHaveURL(/\/profile$/);
+    await expect(page.locator('[data-testid="user-display-role"]')).toContainText('VIEWER');
   });
 });
 

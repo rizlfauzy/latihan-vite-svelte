@@ -137,6 +137,8 @@
   "todo.clearSearch": "Clear search",
   "todo.app": "Application",
   "todo.apps": "applications",
+  "todo.textTodoRequired": "Todo text cannot be empty",
+  "todo.textSubTaskRequired": "Subtask text cannot be empty",
   "app.app": "Application",
   "app.apps": "applications",
   "add.success": "added successfully",
@@ -195,14 +197,45 @@
   "login.passwordPlaceholder": "Enter password...",
   "login.submitButton": "LOG IN NOW ➔",
   "login.submitting": "CHECKING...",
+  "login.noAccount": "Don't have an account?",
+  "login.registerHere": "Register New Account",
+  "login.errorPasswordLength": "Password must be at least 6 characters!",
+
+  "register.title": "REGISTER NEW ACCOUNT",
+  "register.subtitle": "Create a new user account (Viewer Role)",
+  "register.nameLabel": "FULL NAME",
+  "register.namePlaceholder": "Enter full name...",
+  "register.usernameLabel": "USERNAME",
+  "register.usernamePlaceholder": "Enter unique username...",
+  "register.passwordLabel": "PASSWORD",
+  "register.passwordPlaceholder": "At least 6 characters...",
+  "register.submitButton": "REGISTER NOW ➔",
+  "register.submitting": "REGISTERING...",
+  "register.hasAccount": "Already have an account?",
+  "register.loginHere": "Log in Here",
+  "register.success": "Registration successful! Welcome, {name}!",
+  "register.errorEmpty": "Name, username, and password are required!",
+  "register.errorPasswordLength": "Password must be at least 6 characters!",
+
+  "waModal.title": "WHATSAPP MESSAGE PREVIEW",
+  "waModal.subtitle": "Contact PIC {pic} for {app}",
+  "waModal.messageLabel": "DRAFT MESSAGE (EDITABLE)",
+  "waModal.pendingTodosNotice": "Pending tasks for this app are automatically included below:",
+  "waModal.noPendingTodos": "No pending tasks for this application.",
+  "waModal.sendButton": "SEND VIA WHATSAPP ➔",
+  "waModal.cancelButton": "CANCEL",
 
   "profile.title": "Profile User",
   "profile.subtitle": "Account Information",
-  
+  "profile.backToHome": "Home",
+
   "auth.unauthorizedApps": "Access denied: Only roles with debug permission can manage applications!",
   "auth.loginRequired": "Please log in first to access this page!",
   "auth.alreadyLoggedIn": "You are already logged in.",
   "auth.redirecting": "Redirecting...",
-  "auth.redirectingLogin": "Redirecting to login page..."
+  "auth.redirectingLogin": "Redirecting to login page...",
+  "auth.welcomeBack": "Welcome Back",
+  "auth.errorInvalid": "Invalid username or password!",
+  "auth.loggedOut": "You have been logged out."
 }
 

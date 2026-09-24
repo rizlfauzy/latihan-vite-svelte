@@ -4,7 +4,7 @@
 
 **Apps Hub — CV Sukses Gemilang** adalah platform portal dan *enterprise dashboard* modern yang dirancang untuk mengagregasi seluruh sistem operasional internal, utilitas manajemen gerai, dan aplikasi mikro **CV Sukses Gemilang** (perusahaan pusat hiburan keluarga & game center arcade interaktif sekelas Timezone).
 
-Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, dibangun menggunakan arsitektur modern **Svelte 5** dengan paradigma **Runes** (`$state`, `$derived`, `$effect`), dibundel dengan **Vite 8**, dan dilengkapi integrasi cloud database **Supabase** (PostgreSQL), sistem **Autentikasi & Role-Based Access Control (RBAC)**, tabel relasional terpisah untuk subtask (*subtodos*), relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), komponen interaktif kustom (*CustomSelect*), *Progressive Web App* (PWA), *Dark Mode*, sistem notifikasi toast (*alertStore*), lokalisasi multibahasa (ID & EN), otomasi pengujian E2E menyeluruh dengan Playwright (36 test cases), serta pipeline deployment otomatis (CI/CD) lengkap dengan eksekusi migrasi database Supabase.
+Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, dibangun menggunakan arsitektur modern **Svelte 5** dengan paradigma **Runes** (`$state`, `$derived`, `$effect`), dibundel dengan **Vite 8**, dan dilengkapi integrasi cloud database **Supabase** (PostgreSQL), sistem **Autentikasi & Role-Based Access Control (RBAC)** dengan halaman **Registrasi Mandiri** (`/register` dengan role otomatis `VIEWER` dan `is_debug: false`), fitur **Preview & Edit Pesan WhatsApp PIC** dengan integrasi to-do list pending, tabel relasional terpisah untuk subtask (*subtodos*), relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), komponen interaktif kustom (*CustomSelect*), *Progressive Web App* (PWA), *Dark Mode*, sistem notifikasi toast (*alertStore*), lokalisasi multibahasa (ID & EN), otomasi pengujian E2E menyeluruh dengan Playwright (39 test cases), serta pipeline deployment otomatis (CI/CD) lengkap dengan eksekusi migrasi database Supabase.
 
 ---
 
@@ -35,34 +35,39 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 1. **Pengunjung Publik / Tamu (Guest)**:
    - Mengakses portal operasional tanpa kewajiban login.
    - Melihat daftar modul aplikasi operasional dan profil perusahaan.
-   - Menggunakan fitur kontak langsung ke PIC teknis via WhatsApp.
+   - Menggunakan fitur kontak langsung ke PIC teknis via WhatsApp dengan modal preview dan draft pesan interaktif.
    - Menggunakan to-do list harian lokal/sinkronisasi publik.
    - **Batasan**: Tidak dapat menambah, mengedit, atau menghapus modul aplikasi.
 
-2. **Pengguna Terotentikasi (Authenticated Staff)**:
-   - Masuk melalui halaman login khusus di `/login`.
-   - Mengakses dashboard operasional dengan identitas terverifikasi.
-   - Hak akses manipulasi data bergantung pada hak spesifik role pengguna.
+2. **Pengguna Terdaftar (Role: `VIEWER`, `is_debug: false`)**:
+   - Mendaftar secara mandiri melalui rute `/register` yang tautan/tombolnya hanya dapat diakses via halaman Login.
+   - Otomatis mendapatkan role `VIEWER` dengan flag `is_debug: false`.
+   - Mengakses profil akun di `/profile` dan menjelajahi portal dengan identitas terautentikasi.
+   - **Batasan**: Tidak memiliki akses debug; tidak dapat melihat tombol Tambah Aplikasi, Edit, Hapus, maupun Hapus Massal.
 
 3. **Superadmin / Role dengan Debug Access (`is_debug: true`)**:
    - Memiliki kendali penuh (CRUD) terhadap daftar modul aplikasi operasional (Tambah, Edit, Hapus, dan Hapus Massal).
    - Memiliki visibilitas kontrol debug di antarmuka pengguna.
-   - Akun pengguna dan role dikelola secara terpusat langsung dari database (tidak disediakan pendaftaran mandiri/registrasi publik).
+   - Akun default (`rizlfauzy`) disemai langsung melalui skrip seeder migrasi database.
 
 ---
 
 ## 🧱 Core Features & Functional Requirements
 
-### 1. Hub Aplikasi Operasional & Link Grid
+### 1. Hub Aplikasi Operasional & Enhanced WhatsApp PIC
 - Menampilkan kartu-kartu aplikasi operasional dalam tata letak grid responsif Neo Brutalism.
-- Setiap kartu menyajikan icon emoji, nama aplikasi, deskripsi fungsi, tag kategori, tombol direct access, dan tombol WhatsApp PIC berformat pesan instan.
-- Counter reaktif total aplikasi operasional yang aktif.
-- Empty state informatif jika belum ada aplikasi yang terdaftar.
+- Setiap kartu menyajikan icon emoji, nama aplikasi, deskripsi fungsi, tag kategori, tombol direct access, dan tombol kontak WhatsApp PIC.
+- **WhatsApp Preview Modal**: Mengklik tombol WhatsApp PIC memunculkan pop-up modal interaktif (`WhatsAppPreviewModal`) yang menampilkan draf pesan chat.
+- **Integrasi Tugas Pending**: Draf pesan otomatis merangkum dan menyertakan catatan To-Do yang berstatus belum selesai (*not done*) untuk aplikasi terkait.
+- **Editable Message**: Pengguna dapat mengedit pesan secara langsung di textarea sebelum mengklik tautan kirim ke WhatsApp (`wa.me`).
 
-### 2. Autentikasi & Role-Based Access Control (RBAC)
-- **Halaman Login Dedicated**: Rute khusus di `/login` dengan desain Neo Brutalism untuk otentikasi pengguna.
-- **Manajemen Akun Terpusat**: Pembuatan akun pengguna dan penugasan peran hanya dilakukan via database (`users` dan `roles`), meniadakan registrasi publik untuk menjamin keamanan operasional internal.
-- **Verifikasi Kredensial Aman**: Otentikasi menggunakan RPC Supabase dengan verifikasi password terenkripsi (Bcrypt via modul ekstensi PostgreSQL).
+### 2. Autentikasi, Registrasi & Role-Based Access Control (RBAC)
+- **Halaman Login Dedicated**: Rute khusus di `/login` dengan toggle show/hide password untuk otentikasi pengguna.
+- **Halaman Registrasi Baru (`/register`)**:
+  - Tombol akses ke halaman registrasi ditempatkan khusus di halaman Login.
+  - Form mencakup input `name` (nama lengkap), `username`, dan `password` dengan fitur *show/hide password* yang konsisten.
+  - Setiap pendaftar baru otomatis diberikan role `VIEWER` dengan hak akses `is_debug: false`.
+- **Verifikasi Kredensial & Pendaftaran Aman**: Otentikasi dan pendaftaran menggunakan RPC Supabase (`authenticate_user` dan `register_user`) dengan hashing Bcrypt (`pgcrypto`).
 - **Proteksi Fitur Aplikasi**: Tombol Tambah Aplikasi, Edit, Hapus, dan Hapus Massal (*Bulk Action*) hanya muncul dan dapat dieksekusi jika pengguna yang login memiliki role dengan flag `is_debug: true`.
 - **Navigasi Dinamis**: Navbar menampilkan tombol "Masuk" untuk tamu, atau profil pengguna beserta tombol "Keluar" (*Logout*) saat pengguna telah terotentikasi.
 
@@ -206,14 +211,38 @@ Pipeline integrasi dan deployment berkelanjutan dijalankan melalui GitLab CI pad
 │   │   └── todoStore.ts         # Store to-do list, subtodos & offline queue
 │   ├── app.css                  # Custom theme tokens Neo Brutalism & Dark Mode
 │   ├── App.svelte               # Root component & layout wrapper
+│   ├── components/              # Komponen UI Neo Brutalism
+│   │   ├── AddAppModal.svelte
+│   │   ├── EditAppModal.svelte
+│   │   ├── ConfirmModal.svelte
+│   │   ├── WhatsAppPreviewModal.svelte # Modal preview & edit pesan WA PIC
+│   │   ├── CustomSelect.svelte
+│   │   ├── AppCard.svelte
+│   │   ├── AppGrid.svelte
+│   │   ├── TodoList.svelte
+│   │   └── ...
+│   ├── pages/
+│   │   ├── home/
+│   │   ├── company-profile/
+│   │   ├── login/
+│   │   ├── register/            # Halaman pendaftaran akun baru
+│   │   └── profile/
+│   ├── stores/
+│   │   ├── authStore.ts         # Store autentikasi, registrasi & RBAC
+│   │   ├── appStore.ts
+│   │   ├── themeStore.ts        # Store tema Light / Dark
+│   │   └── todoStore.ts         # Store to-do list, subtodos & offline queue
+│   ├── app.css                  # Custom theme tokens Neo Brutalism & Dark Mode
+│   ├── App.svelte               # Root component & layout wrapper
 │   └── main.ts                  # Entry point & PWA service worker registration
 ├── supabase/
 │   ├── migrations/              # Berkas migrasi database terversi
 │   │   ├── 20260923000001_create_tables.sql
-│   │   └── 20260923000002_seed_defaults.sql
+│   │   ├── 20260923000002_seed_defaults.sql
+│   │   └── 20260924000001_add_viewer_role_and_registration.sql
 │   └── schema.sql               # Konsolidasi skema database & RPC
 ├── tests/
-│   └── hub.spec.ts              # Playwright E2E automated test suite (36 tests)
+│   └── hub.spec.ts              # Playwright E2E automated test suite (39 tests)
 ├── .gitlab-ci.yml               # Konfigurasi GitLab CI/CD Pipeline
 ├── Dockerfile                   # Multi-stage production container build
 ├── docker-compose.yml           # Docker Compose orchestrator
@@ -227,8 +256,12 @@ Pipeline integrasi dan deployment berkelanjutan dijalankan melalui GitLab CI pad
 ## ✅ Quality & Acceptance Criteria
 
 - [x] Tampilan konsisten bergaya Neo Brutalism di seluruh komponen dan halaman.
-- [x] Transisi rute SPA mulus antara Home (`/`), Company Profile (`/company-profile`), dan Login (`/login`).
+- [x] Transisi rute SPA mulus antara Home (`/`), Company Profile (`/company-profile`), Login (`/login`), dan Register (`/register`).
 - [x] Pengunjung umum dapat mengakses dashboard operasional secara publik tanpa hambatan login.
+- [x] Akses pendaftaran akun mandiri melalui `/register` yang hanya dapat diakses melalui halaman login.
+- [x] Pengguna baru yang mendaftar otomatis diberikan role `VIEWER` dengan hak akses `is_debug: false`.
+- [x] Form pendaftaran dan login dilengkapi tombol toggle show/hide password yang konsisten.
+- [x] Tombol kontak WhatsApp PIC memunculkan modal preview dengan pesan yang dapat diedit dan otomatis merangkum to-do list belum selesai untuk aplikasi yang dipilih.
 - [x] Akses CUD aplikasi (Tambah, Edit, Hapus, Bulk Delete) diproteksi secara ketat melalui RBAC (`is_debug: true`).
 - [x] Skema database Supabase telah dinormalisasi dengan tabel `subtodos` terpisah dan *foreign key* yang tepat.
 - [x] Penghapusan aplikasi memicu *cascading deletion* terhadap to-do list dan subtodos terkait secara konsisten.
@@ -238,6 +271,6 @@ Pipeline integrasi dan deployment berkelanjutan dijalankan melalui GitLab CI pad
 - [x] Dark Mode toggle tersimpan di `localStorage` dan terintegrasi dengan skema warna Neo Brutalism.
 - [x] PWA terdaftar dengan Service Worker aktif dan caching aset.
 - [x] Sistem translasi dwibahasa (ID & EN) tersimpan dalam file JSON terpisah dan bekerja instan di seluruh elemen UI.
-- [x] Seluruh 36 skenario automated E2E test cases Playwright lulus pengujian (`bun run test`).
+- [x] Seluruh 39 skenario automated E2E test cases Playwright lulus pengujian (`bun run test`).
 - [x] Svelte check dan TypeScript compiler bersih dari error maupun warning (`bun run check`).
 - [x] Production build berhasil dibuat tanpa kendala (`bun run build`).
