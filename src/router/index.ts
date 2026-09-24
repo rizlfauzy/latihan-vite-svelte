@@ -2,6 +2,7 @@ import { createRouter } from 'sv-router';
 import Home from '@/pages/home/page.svelte';
 import CompanyProfile from '@/pages/company-profile/page.svelte';
 import Login from '@/pages/login/page.svelte';
+import Register from '@/pages/register/page.svelte';
 import Profile from '@/pages/profile/page.svelte';
 import ProtectedRoute from '@/middleware/ProtectedRoute.svelte';
 import UnprotectedRoute from '@/middleware/UnprotectedRoute.svelte';
@@ -52,6 +53,11 @@ export const router = createRouter({
   '/login': {
     layout: UnprotectedRoute,
     '/': Login,
+    meta: { guestOnly: true },
+  },
+  '/register': {
+    layout: UnprotectedRoute,
+    '/': Register,
     meta: { guestOnly: true },
   },
   '/profile': {

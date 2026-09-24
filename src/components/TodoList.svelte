@@ -6,6 +6,7 @@
   import { appStore } from '@/stores/appStore';
   import { todoStore, type Todo, type SubTask } from '@/stores/todoStore';
   import CustomSelect from './CustomSelect.svelte';
+  import { Warning } from '@/exceptions/CustomError';
 
   const t = $derived((key: string, defaultValue?: string):string => $i18nStore.t(key, defaultValue));
 
@@ -94,14 +95,13 @@
     if (e) e.preventDefault();
     const trimmed = newTodoText.trim();
     try {
-      if (!trimmed) throw new Error('Catatan tidak boleh kosong');
+      if (!trimmed) throw new Warning(t('todo.textTodoRequired', "Catatan Tidak Boleh Kosong"));
       newTodoText = '';
       const chosenAppId = selectedAppId || (apps.length > 0 ? apps[0].id : null);
       const newTodo = await todoStore.addTodo(trimmed, chosenAppId);
       expandedTodoIds[newTodo.id] = true;
     } catch (e) {
-      console.error('Failed to add todo', e);
-      alertStore.showError(`Gagal menambahkan catatan "${(e as Error).message}"!`);
+      alertStore.throwAlert(e as Error);
     }
   }
 
@@ -172,12 +172,12 @@
     if (e) e.preventDefault();
     const inputVal = (subTaskInputs[todoId] || '').trim();
     try {
-      if (!inputVal) throw new Error(t('todo.errSubTask', "Isi sub task tidak boleh kosong !!!"));
+      if (!inputVal) throw new Warning(t('todo.textSubTaskRequired', "Isi sub task tidak boleh kosong !!!"));
       todoStore.addSubTask(todoId, inputVal);
       subTaskInputs[todoId] = '';
       expandedTodoIds[todoId] = true;
     } catch (e) {
-      alertStore.showError((e as Error).message);
+      alertStore.throwAlert(e as Error);
     }
   }
 

@@ -25,6 +25,8 @@
     isSubmitting = true;
     try {
       if (!username.trim() || !password) throw new Warning(t('login.errorEmpty', 'Username dan password wajib diisi!'));
+      // if (password.length < 6) throw new Warning(t('login.errorPasswordLength', 'Password minimal 6 karakter!'));
+
       const res = await authStore.login(username, password);
       if (!res.success) throw new Error(res.message || t('login.errorInvalid') || 'Kredensial tidak valid!');
 
@@ -209,6 +211,20 @@
         >
           {isSubmitting ? t('login.submitting') : t('login.submitButton')}
         </button>
+
+        <div class="pt-4 border-t-2 border-dashed border-gray-300 text-center">
+          <p class="text-xs font-bold text-gray-600 mb-2">
+            {t('login.noAccount', 'Belum punya akun?')}
+          </p>
+          <button
+            type="button"
+            class="nb-btn bg-nb-blue hover:bg-blue-300 text-black text-xs font-black py-2 px-4 shadow-nb-xs border-2 border-nb-black cursor-pointer w-full"
+            onclick={() => router.navigate('/register')}
+            data-testid="btn-to-register"
+          >
+            📝 {t('login.registerHere', 'Daftar Akun Baru')}
+          </button>
+        </div>
       </form>
     {/if}
   </div>

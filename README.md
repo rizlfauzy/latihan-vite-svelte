@@ -1,6 +1,6 @@
 # ⚡ Apps Hub — CV Sukses Gemilang
 
-> **Portal Aplikasi & Dashboard Operasional Terpadu** untuk **CV Sukses Gemilang** (Pusat Hiburan Keluarga & Game Center Arcade). Dilengkapi manajemen aplikasi terhubung ke database cloud Supabase, sistem autentikasi & Role-Based Access Control (RBAC), tabel relasional mandiri untuk subtask (*subtodos*), fitur aksi massal (*Select All & Bulk Delete* bagi user dengan hak akses debug), relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), fitur *Check All* pada To-Do list, komponen dropdown interaktif kustom (*CustomSelect*), sistem navigasi SPA, sticky navbar, catatan tugas bertingkat (*sub-tasks*), sistem notifikasi toast, Progressive Web App (PWA) dengan Service Worker caching, dukungan Dark Mode, lokalisasi dwibahasa (ID & EN), integrasi kontak WhatsApp PIC teknis, rangkaian pengujian otomatis E2E Playwright (36 skenario), serta pipeline CI/CD terotomatisasi dengan migrasi database.
+> **Portal Aplikasi & Dashboard Operasional Terpadu** untuk **CV Sukses Gemilang** (Pusat Hiburan Keluarga & Game Center Arcade). Dilengkapi manajemen aplikasi terhubung ke database cloud Supabase, sistem autentikasi & Role-Based Access Control (RBAC), halaman registrasi mandiri (`/register` dengan role otomatis `VIEWER` & `is_debug: false`), fitur *WhatsApp PIC Preview Modal* dengan integrasi to-do list pending, tabel relasional mandiri untuk subtask (*subtodos*), fitur aksi massal (*Select All & Bulk Delete* bagi user dengan hak akses debug), relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), fitur *Check All* pada To-Do list, komponen dropdown interaktif kustom (*CustomSelect*), sistem navigasi SPA, sticky navbar, catatan tugas bertingkat (*sub-tasks*), sistem notifikasi toast, Progressive Web App (PWA) dengan Service Worker caching, dukungan Dark Mode, lokalisasi dwibahasa (ID & EN), rangkaian pengujian otomatis E2E Playwright (39 skenario), serta pipeline CI/CD terotomatisasi dengan migrasi database.
 
 ![Svelte 5](https://img.shields.io/badge/Svelte-5.x_Runes-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)
@@ -8,7 +8,7 @@
 ![Supabase](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![RBAC](https://img.shields.io/badge/Auth-RBAC_Ready-blueviolet?style=for-the-badge)
 ![GitLab CI](https://img.shields.io/badge/CI%2FCD-GitLab_Pipeline-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-36_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-39_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
 ![i18n](https://img.shields.io/badge/i18n-EN_%26_ID-1d76db?style=for-the-badge)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -19,11 +19,13 @@
 ## 🎨 Fitur Utama
 
 - 🚀 **Enterprise App Hub Grid**: Menampilkan modul aplikasi operasional game center dalam tata letak kartu responsif dengan hard-shadow dan border tegas khas Neo Brutalism.
-- 🔐 **Autentikasi & Role-Based Access Control (RBAC)**:
+- 🔐 **Autentikasi & Registrasi Mandiri (RBAC)**:
   - **Akses Publik Bebas**: Pengunjung dan staf umum dapat mengakses portal tanpa kewajiban login.
-  - **Halaman Login Khusus**: Tersedia di rute `/login` untuk otentikasi pengguna internal.
+  - **Halaman Login Khusus**: Tersedia di rute `/login` dengan toggle show/hide password untuk otentikasi akun.
+  - **Halaman Registrasi Baru (`/register`)**: Tautan ke halaman registrasi hanya tersedia di halaman login. Form mencakup kolom `name`, `username`, dan `password` dengan fitur show/hide password.
+  - **Penugasan Role Otomatis**: Setiap pengguna baru yang mendaftar otomatis diberikan peran `VIEWER` dengan flag `is_debug: false`.
   - **Proteksi Akses Mutasi**: Aksi Tambah, Edit, Hapus, dan Hapus Massal pada modul aplikasi hanya diizinkan untuk pengguna dengan role yang memiliki flag `is_debug: true`.
-  - **Manajemen Akun Terpusat**: Akun pengguna dan role dikelola langsung dari database (tanpa pendaftaran mandiri publik).
+- 💬 **Enhanced WhatsApp PIC Preview Modal**: Setiap kartu aplikasi dilengkapi tombol WhatsApp yang memunculkan pop-up modal preview sebelum membuka WhatsApp. Pesan dapat diedit secara langsung dan otomatis merangkum catatan to-do list belum selesai (*not done*) untuk aplikasi yang bersangkutan.
 - ⚡ **Supabase Cloud Database & Relasi Subtodos**:
   - Persistensi data aplikasi, pengguna, peran, dan to-do list ke PostgreSQL Supabase.
   - Subtask dikelola dalam tabel relasional mandiri (`subtodos`) dengan *foreign key* `todo_id` dan *cascading deletion*.
@@ -35,10 +37,9 @@
 - 🌙 **Dark Mode & Theming**: Dukungan peralihan tema terang dan gelap dengan kontras tinggi yang tersimpan di `localStorage`.
 - 📱 **Progressive Web App (PWA)**: Dilengkapi Service Worker caching (`sw.js`) dan App Manifest (`manifest.json`) agar dapat diinstal di perangkat desktop maupun mobile.
 - 🏢 **Profil Perusahaan (CV Sukses Gemilang)**: Halaman company profile interaktif (`/company-profile`) yang memaparkan visi, layanan wahana game center (Arcade & VR, Redemption & Prize Center, Event & Tournament Hall), serta konsultasi WhatsApp.
-- 💬 **WhatsApp PIC Direct Contact**: Setiap kartu aplikasi dilengkapi tombol WhatsApp dengan pesan otomatis terformat untuk percepatan eskalasi teknis operasional.
 - 🔔 **Global Toast Alert System**: Komponen notifikasi mengambang di sudut kanan atas dengan status *success*, *error*, dan *info*.
 - 🌐 **Sistem Multibahasa Modular (i18n)**: Dukungan penuh Bahasa Indonesia (`id`) dan Bahasa Inggris (`en`) yang tersimpan rapi dalam file JSON modular ([`src/i18n/id.json`](src/i18n/id.json) & [`src/i18n/en.json`](src/i18n/en.json)).
-- 🎭 **Automated E2E Testing**: Suite pengujian komprehensif Playwright dengan 36 skenario test end-to-end yang memvalidasi seluruh alur kerja sistem.
+- 🎭 **Automated E2E Testing**: Suite pengujian komprehensif Playwright dengan 39 skenario test end-to-end yang memvalidasi seluruh alur kerja sistem.
 
 ---
 

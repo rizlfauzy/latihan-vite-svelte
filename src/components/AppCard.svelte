@@ -10,20 +10,17 @@
     onToggleSelect,
     onEdit,
     onDelete,
+    onContactPic,
   }: {
     app: AppItem;
     isSelected?: boolean;
     onToggleSelect?: (app: AppItem) => void;
     onEdit?: (app: AppItem) => void;
     onDelete?: (app: AppItem) => void;
+    onContactPic?: (app: AppItem) => void;
   } = $props();
 
   let canManageApps = $derived($authStore.hasDebugAccess);
-
-  const waMessage = $derived(
-    encodeURIComponent(`Halo ${app.picName}, saya ingin bertanya dan konsultasi mengenai aplikasi "${app.name}" di Portal Aplikasi Perusahaan.`)
-  );
-  const waUrl = $derived(`https://wa.me/${app.picWhatsapp}?text=${waMessage}`);
 </script>
 
 <div
@@ -92,15 +89,15 @@
     <div class="flex items-center justify-between text-xs font-bold text-gray-700">
       <span>{$i18nStore.t('grid.pic')} <span class="text-nb-black">{app.picName}</span></span>
     </div>
-    <a
-      href={waUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      class="nb-btn bg-nb-wa text-white text-xs px-3 py-1.5 shadow-nb-sm border-2 border-nb-black flex items-center justify-center gap-1.5 font-extrabold tracking-normal hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-nb-md transition-all"
+    <button
+      type="button"
+      onclick={() => onContactPic?.(app)}
+      class="nb-btn bg-nb-wa text-white text-xs px-3 py-1.5 shadow-nb-sm border-2 border-nb-black flex items-center justify-center gap-1.5 font-extrabold tracking-normal hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-nb-md transition-all cursor-pointer"
+      data-testid="btn-contact-pic-{app.id}"
     >
       <span>💬</span>
       <span>{$i18nStore.t('grid.contactPic')}</span>
-    </a>
+    </button>
   </div>
 
   <div class="pt-3 border-t-2 border-dashed border-gray-200 flex items-center justify-between">

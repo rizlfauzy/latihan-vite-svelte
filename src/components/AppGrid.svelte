@@ -5,6 +5,7 @@
   import AddAppModal from './AddAppModal.svelte';
   import EditAppModal from './EditAppModal.svelte';
   import ConfirmModal from './ConfirmModal.svelte';
+  import WhatsAppPreviewModal from './WhatsAppPreviewModal.svelte';
   import SkeletonCard from './SkeletonCard.svelte';
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
@@ -42,6 +43,7 @@
   let isAddModalOpen = $state(false);
   let appToDelete = $state<AppItem | null>(null);
   let appToEdit = $state<AppItem | null>(null);
+  let appForWhatsApp = $state<AppItem | null>(null);
   let selectedAppIds = $state<string[]>([]);
   let isBulkDeleteConfirmOpen = $state(false);
 
@@ -243,10 +245,17 @@
           onToggleSelect={toggleSelectApp}
           onEdit={(a) => (appToEdit = a)}
           onDelete={(a) => (appToDelete = a)}
+          onContactPic={(a) => (appForWhatsApp = a)}
         />
       {/each}
     </div>
   {/if}
+
+  <WhatsAppPreviewModal
+    isOpen={appForWhatsApp !== null}
+    app={appForWhatsApp}
+    onClose={() => (appForWhatsApp = null)}
+  />
 
   {#if canManageApps}
     <AddAppModal bind:isOpen={isAddModalOpen} />
