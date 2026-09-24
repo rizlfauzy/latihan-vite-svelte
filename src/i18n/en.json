@@ -198,11 +198,15 @@
 
   "profile.title": "Profile User",
   "profile.subtitle": "Account Information",
-  
+  "profile.backToHome": "Home",
+
   "auth.unauthorizedApps": "Access denied: Only roles with debug permission can manage applications!",
   "auth.loginRequired": "Please log in first to access this page!",
   "auth.alreadyLoggedIn": "You are already logged in.",
   "auth.redirecting": "Redirecting...",
-  "auth.redirectingLogin": "Redirecting to login page..."
+  "auth.redirectingLogin": "Redirecting to login page...",
+  "auth.welcomeBack": "Welcome Back",
+  "auth.errorInvalid": "Invalid username or password!",
+  "auth.loggedOut": "You have been logged out."
 }
 

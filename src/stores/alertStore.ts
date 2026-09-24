@@ -1,4 +1,5 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
+import { Warning, Info, Success } from '@/exceptions/CustomError';
 
 export interface AlertItem {
   id: string;
@@ -21,6 +22,7 @@ export interface AlertStoreState {
   showWarning: (message: string, duration?: number) => string;
   showInfo: (message: string, duration?: number) => string;
   showSkeleton: (duration?: number) => string;
+  throwAlert: (e: Error) => string;
   clearAlerts: () => void;
 }
 
@@ -121,6 +123,15 @@ const rawAlertStore: StoreApi<AlertStoreState> = createZustandStore<AlertStoreSt
     return get().addAlert({ type: 'skeleton', message: 'Loading...', duration });
   },
 
+  throwAlert(e: Error) {
+    const { name, message } = e;
+    if (name === 'Warning') return get().showWarning(message);
+    if (name === 'Error') return get().showError(message);
+    if (name === 'Info') return get().showInfo(message);
+    if (name === 'Success') return get().showSuccess(message);
+    return get().showInfo(message);
+  },
+
   clearAlerts: () => {
     timerMap.forEach((timer) => clearTimeout(timer));
     timerMap.clear();
@@ -140,6 +151,7 @@ export const alertStore = {
   showWarning: (message: string, duration?: number) => rawAlertStore.getState().showWarning(message, duration),
   showInfo: (message: string, duration?: number) => rawAlertStore.getState().showInfo(message, duration),
   showSkeleton: (duration?: number) => rawAlertStore.getState().showSkeleton(duration),
+  throwAlert: (e: Error) => rawAlertStore.getState().throwAlert(e),
   clearAlerts: () => rawAlertStore.getState().clearAlerts(),
   subscribe(run: (state: AlertStoreState) => void) {
     run(rawAlertStore.getState());

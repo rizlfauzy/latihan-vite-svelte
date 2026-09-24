@@ -1,6 +1,9 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
 import { supabase, isSupabaseEnabled } from '@/lib/supabase';
 import { alertStore } from '@/stores/alertStore';
+import { i18nStore } from '@/stores/i18nStore';
+
+const { t } = i18nStore;
 
 export interface Role {
   id: number | string;
@@ -115,15 +118,16 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
           };
 
           get().setUserSession(user, role);
-          alertStore.showSuccess(`Selamat datang kembali, ${user.name}!`);
+          alertStore.showSuccess(`${t('auth.welcomeBack')}, ${user.name}!`);
           return { success: true };
         } else {
           set({ isLoading: false });
-          alertStore.showError('Username atau password salah!');
-          return { success: false, message: 'Username atau password salah!' };
+          return { success: false, message: `${t("auth.errorInvalid")}` };
         }
       } catch (err) {
         console.warn('[authStore] Supabase auth error, checking fallback', err);
+        alertStore.throwAlert(err as Error);
+        return { success: false, message: `${t("auth.errorInvalid")}` };
       }
     }
 
@@ -148,8 +152,8 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
     // }
 
     set({ isLoading: false });
-    alertStore.showError('Username atau password salah!');
-    return { success: false, message: 'Username atau password salah!' };
+    alertStore.showError(`${t('auth.errorInvalid')}`);
+    return { success: false, message: `${t('auth.errorInvalid')}` };
   },
 
   logout: () => {
@@ -161,7 +165,7 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
       isLoading: false,
     });
     saveStoredSession(null, null);
-    alertStore.showInfo('Anda telah berhasil keluar.');
+    alertStore.showInfo(`${t('auth.loggedOut')}`);
   },
 }));
 
