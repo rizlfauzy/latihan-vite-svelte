@@ -1,4 +1,20 @@
 import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Pastikan environment variable development ter-load jika belum terdefinisi
+if (!process.env.ADMIN_PASSWORD) {
+  for (const envFile of ['.env.development', '.env']) {
+    const envPath = path.resolve(process.cwd(), envFile);
+    if (fs.existsSync(envPath) && typeof process.loadEnvFile === 'function') {
+      try {
+        process.loadEnvFile(envPath);
+      } catch {}
+    }
+  }
+}
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || '';
 
 test.describe('Apps Hub — UI & E2E Tests', () => {
   test.describe.configure({ mode: 'serial' });
@@ -1379,6 +1395,29 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(visitorItem).not.toBeVisible();
   });
 
+  test('Password visibility toggle on login page changes input type', async ({ page }) => {
+    await page.evaluate(() => {
+      window.localStorage.clear();
+      (window as any).__authStore?.logout?.();
+    });
+    await page.goto('/login');
+
+    const passwordInput = page.locator('[data-testid="input-password"]');
+    const toggleBtn = page.locator('[data-testid="btn-toggle-password"]');
+
+    // Initially password type
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+    await expect(toggleBtn).toBeVisible();
+
+    // Click toggle to show password
+    await toggleBtn.click();
+    await expect(passwordInput).toHaveAttribute('type', 'text');
+
+    // Click toggle to hide password again
+    await toggleBtn.click();
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
   test('Login page at /login allows authenticating with database user, displays role and debug status, and unlocks app management', async ({ page }) => {
     // Start unauthenticated
     await page.evaluate(() => {
@@ -1395,11 +1434,12 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="input-password"]').fill('wrongpassword123');
     await page.locator('[data-testid="btn-login-submit"]').click();
 
-    await expect(page.locator('[data-testid="login-error-alert"]')).toBeVisible();
+    await expect(page.locator('[data-testid="alert-toast"]').first()).toBeVisible();
+    await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
 
     // Login with valid credentials
     await page.locator('[data-testid="input-username"]').fill('rizlfauzy');
-    await page.locator('[data-testid="input-password"]').fill('admin123');
+    await page.locator('[data-testid="input-password"]').fill(ADMIN_PASSWORD);
     await page.locator('[data-testid="btn-login-submit"]').click();
 
     // Redirects to /profile with profile info
