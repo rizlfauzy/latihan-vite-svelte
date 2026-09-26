@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { AppItem } from '@/data/apps';
-  import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
   import { authStore } from '@/stores/authStore';
 
@@ -21,6 +20,7 @@
   } = $props();
 
   let canManageApps = $derived($authStore.hasDebugAccess);
+  const t = $derived((key: string, defaultValue: string = ''): string => $i18nStore.t(key, defaultValue))
 </script>
 
 <div
@@ -60,7 +60,7 @@
           type="button"
           class="nb-btn bg-nb-blue hover:bg-blue-400 text-xs px-2 py-1 flex items-center justify-center font-black transition-all cursor-pointer"
           onclick={() => onEdit?.(app)}
-          title={$i18nStore.t('grid.editTooltip')}
+          title={t('grid.editTooltip')}
           data-testid="btn-edit-app-{app.id}"
         >
           ✏️
@@ -70,7 +70,7 @@
           type="button"
           class="nb-btn bg-red-400 hover:bg-red-500 text-xs px-2 py-1 flex items-center justify-center font-black transition-all cursor-pointer"
           onclick={() => onDelete?.(app)}
-          title={$i18nStore.t('grid.deleteTooltip')}
+          title={t('grid.deleteTooltip')}
           data-testid="btn-delete-app-{app.id}"
         >
           🗑️
@@ -87,7 +87,7 @@
   <!-- PIC & WhatsApp Contact Info -->
   <div class="p-2.5 bg-gray-50 border-2 border-nb-black rounded-md shadow-nb-sm flex flex-col gap-2">
     <div class="flex items-center justify-between text-xs font-bold text-gray-700">
-      <span>{$i18nStore.t('grid.pic')} <span class="text-nb-black">{app.picName}</span></span>
+      <span>{t('grid.pic')} <span class="text-nb-black">{app.picName}</span></span>
     </div>
     <button
       type="button"
@@ -96,7 +96,7 @@
       data-testid="btn-contact-pic-{app.id}"
     >
       <span>💬</span>
-      <span>{$i18nStore.t('grid.contactPic')}</span>
+      <span>{t('grid.contactPic')}</span>
     </button>
   </div>
 
@@ -105,9 +105,10 @@
       href={app.url}
       target="_blank"
       rel="noopener noreferrer"
-      class="nb-btn bg-nb-yellow text-xs px-4 py-2 w-full flex items-center justify-center gap-1.5 font-mono font-extrabold text-black"
+      class="nb-btn text-xs px-4 py-2 w-full flex items-center justify-center gap-1.5 font-mono font-extrabold text-black"
+      style="background: {app.color};"
     >
-      <span>{$i18nStore.t('grid.openApp')}</span>
+      <span>{t('grid.openApp')}</span>
       <span class="text-base transition-transform duration-150 group-hover:translate-x-1 group-hover:-translate-y-1">
         ↗
       </span>
