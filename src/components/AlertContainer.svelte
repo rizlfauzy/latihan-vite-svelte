@@ -10,10 +10,10 @@
   };
 
   const bgClasses = {
-    success: 'bg-nb-green text-nb-black',
+    success: 'bg-nb-green text-black',
     error: 'bg-nb-red text-white',
-    warning: 'bg-nb-yellow text-nb-black',
-    info: 'bg-nb-blue text-nb-black',
+    warning: 'bg-nb-yellow text-black',
+    info: 'bg-nb-blue text-black',
   };
 </script>
 
@@ -44,7 +44,7 @@
       </div>
     {:else}
     <div
-      class="pointer-events-auto nb-card p-3 sm:p-3.5 flex flex-col gap-2 shadow-nb-md border-3 border-nb-black overflow-hidden relative group {bgClasses[alert.type] || 'bg-white text-nb-black'}"
+      class="pointer-events-auto nb-card p-3 sm:p-3.5 flex flex-col gap-2 shadow-nb-md border-3 border-nb-black overflow-hidden relative group {bgClasses[alert.type] || 'bg-white text-black'}"
       transition:slide={{ duration: 200 }}
       role="status"
       aria-live="polite"
