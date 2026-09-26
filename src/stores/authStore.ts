@@ -40,7 +40,7 @@ function saveLocalRegisteredUser(user: User, password: string) {
     const raw = localStorage.getItem(REGISTERED_USERS_KEY) || '[]';
     const list = JSON.parse(raw);
     const filtered = Array.isArray(list) ? list.filter((u: any) => u.username !== user.username) : [];
-    filtered.push({ ...user, password });
+    // filtered.push({ ...user, password });
     localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(filtered));
   } catch {}
 }
