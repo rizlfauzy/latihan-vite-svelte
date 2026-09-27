@@ -78,6 +78,12 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
           await todoStore.deleteTodo(todo.id);
         }
       }
+
+      const authStore = (window as any).__authStore;
+      if (authStore?.cleanupTestUsers) {
+        // Pembersihan otomatis: hapus semua user hasil test registrasi yang mengandung 'test'
+        await authStore.cleanupTestUsers();
+      }
     });
     await page.close();
   });
@@ -1618,6 +1624,176 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     await expect(page).toHaveURL(/\/profile$/);
     await expect(page.locator('[data-testid="user-display-role"]')).toContainText('VIEWER');
+
+    // 11. Otomatis hapus hasil pengecekan register user (test user) agar database tetap bersih
+    await page.evaluate(async (uname) => {
+      await (window as any).__authStore?.deleteTestUser?.(uname);
+    }, testUsername);
+
+    // 12. Verifikasi user yang dihapus sudah tidak dapat login lagi
+    const cleanLogoutBtn = page.locator('[data-testid="nav-logout-btn"]');
+    if (await cleanLogoutBtn.isVisible()) {
+      await cleanLogoutBtn.click();
+      await page.locator('[data-testid="modal-confirm-button"]').click();
+    }
+    await page.goto('/login');
+    await page.locator('[data-testid="input-username"]').fill(testUsername);
+    await page.locator('[data-testid="input-password"]').fill('password123');
+    await page.locator('[data-testid="btn-login-submit"]').click();
+    await expect(page.locator('[data-testid="alert-toast"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid="alert-toast"]').first()).toContainText(/salah|tidak|invalid/i);
+    await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+  });
+
+  test('To-Do List image upload with drag-and-drop, validation via throwAlert, click-to-preview, and WhatsApp PIC context', async ({ page }) => {
+    // 1. Pastikan tombol lampirkan gambar terlihat di form To-Do
+    const attachBtn = page.locator('[data-testid="btn-open-image-modal"]');
+    await expect(attachBtn).toBeVisible();
+
+    // 2. Buka Image Upload Modal
+    await attachBtn.click();
+    const modal = page.locator('[data-testid="image-upload-modal"]');
+    await expect(modal).toBeVisible();
+
+    const fileInput = page.locator('[data-testid="image-file-input"]');
+
+    // 3. Uji validasi ekstensi tidak valid (.pdf)
+    await fileInput.setInputFiles({
+      name: 'test-document.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('invalid file content'),
+    });
+    const errorToastExt = page.locator('[data-testid="alert-toast"]').first();
+    await expect(errorToastExt).toBeVisible();
+    await expect(errorToastExt).toContainText(/ekstensi|format/i);
+    await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+
+    // 4. Uji validasi ukuran melebihi batas 5 MB (5 MB + 1 KB)
+    await fileInput.setInputFiles({
+      name: 'test-oversized.png',
+      mimeType: 'image/png',
+      buffer: Buffer.alloc(5 * 1024 * 1024 + 1024),
+    });
+    const errorToastSize = page.locator('[data-testid="alert-toast"]').first();
+    await expect(errorToastSize).toBeVisible();
+    await expect(errorToastSize).toContainText(/5 MB|terlalu besar|melebihi/i);
+    await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
+
+    // 5. Upload multiple gambar yang valid (.png base64 1x1 pixel)
+    await fileInput.setInputFiles([
+      {
+        name: 'test-image-1.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          'base64'
+        ),
+      },
+      {
+        name: 'test-image-2.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          'base64'
+        ),
+      },
+    ]);
+
+    // 6. Verifikasi image preview dan thumbnail list muncul
+    const previewImg = page.locator('[data-testid="image-preview"]');
+    await expect(previewImg).toBeVisible();
+    await expect(page.locator('[data-testid="image-thumbnails-list"]')).toBeVisible();
+    await expect(page.locator('[data-testid="thumb-item-0"]')).toBeVisible();
+    await expect(page.locator('[data-testid="thumb-item-1"]')).toBeVisible();
+
+    // 7. Uji fitur "click to preview" (membuka full resolution preview overlay)
+    const triggerFullPreview = page.locator('[data-testid="btn-trigger-full-preview"]');
+    await triggerFullPreview.click();
+    const fullOverlay = page.locator('[data-testid="full-image-preview-overlay"]');
+    await expect(fullOverlay).toBeVisible();
+    await expect(page.locator('[data-testid="full-image-preview"]')).toBeVisible();
+
+    // Tutup full-preview overlay
+    await page.locator('[data-testid="btn-close-full-preview"]').click();
+    await expect(fullOverlay).not.toBeVisible();
+
+    // 8. Klik "GUNAKAN GAMBAR"
+    await page.locator('[data-testid="btn-save-image-upload"]').click();
+    await expect(modal).not.toBeVisible();
+
+    // Verifikasi badge indikator gambar terlampir di form
+    const formBadge = page.locator('[data-testid="new-todo-image-preview-badge"]');
+    await expect(formBadge).toBeVisible();
+
+    // 9. Pastikan ada aplikasi yang tersedia untuk topik To-Do
+    const testApp = await page.evaluate(async () => {
+      const store = (window as any).__appStore;
+      let app = store?.getState?.()?.apps?.[0];
+      if (!app) {
+        app = await store.addApp({
+          name: `Test App Image WA ${Date.now()}`,
+          description: 'Aplikasi testing untuk upload gambar dan WA',
+          url: 'https://example.com/test-wa',
+          icon: '🖼️',
+          category: 'Testing',
+          color: '#ffd900',
+          picName: 'Test PIC Budi',
+          picWhatsapp: '6281234567890',
+        });
+      }
+      return app;
+    });
+
+    // 10. Tambah To-Do baru yang memuat kata "test" (Data Convention) dengan gambar terlampir
+    const testTodoText = `Test Catatan Tugas Berlampiran Gambar ${Date.now()}`;
+    await page.locator('[data-testid="todo-input"]').fill(testTodoText);
+    await page.locator('[data-testid="todo-add-button"]').click();
+
+    // 11. Cari to-do item yang baru dibuat di daftar
+    const todoItem = page.locator('li', { hasText: testTodoText });
+    await expect(todoItem).toBeVisible();
+
+    // Verifikasi tombol "Lihat Gambar" muncul pada todo item
+    const viewImgBtn = todoItem.locator('[data-testid^="btn-view-image-todo-"]');
+    await expect(viewImgBtn).toBeVisible();
+
+    // Klik untuk melihat gambar dari todo item
+    await viewImgBtn.click();
+    await expect(page.locator('[data-testid="image-upload-modal"]')).toBeVisible();
+    await expect(page.locator('[data-testid="image-preview"]')).toBeVisible();
+    await page.locator('[data-testid="btn-close-image-modal"]').click();
+    await expect(page.locator('[data-testid="image-upload-modal"]')).not.toBeVisible();
+
+    // 12. Buka WhatsApp Preview Modal dari kartu aplikasi terkait
+    const waButton = page.locator(`[data-testid="btn-contact-pic-${testApp.id}"]`);
+    await waButton.click();
+
+    const waModal = page.locator('[data-testid="wa-preview-modal"]');
+    await expect(waModal).toBeVisible();
+
+    // Verifikasi draf pesan WhatsApp menyertakan konteks task dan lampiran gambar
+    const waTextarea = page.locator('[data-testid="textarea-wa-message"]');
+    await expect(waTextarea).toBeVisible();
+    const messageContent = await waTextarea.inputValue();
+    expect(messageContent).toContain(testTodoText);
+    expect(messageContent).toContain('Lampiran gambar:');
+
+    // Verifikasi link lampiran pada notice daftar pending todos di modal
+    const waNoticeImageLink = page.locator(`[data-testid^="wa-todo-image-link-"]`).first();
+    await expect(waNoticeImageLink).toBeVisible();
+
+    // Tutup modal WhatsApp
+    await page.locator('[data-testid="btn-close-wa-modal"]').click();
+    await expect(waModal).not.toBeVisible();
+
+    // 13. Cascade deletion: Hapus To-Do item dan verifikasi terhapus dari tampilan
+    const deleteBtn = todoItem.locator('[data-testid^="delete-todo-"]');
+    await deleteBtn.click();
+
+    const confirmModal = page.locator('[data-testid="confirm-modal"]');
+    await expect(confirmModal).toBeVisible();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(todoItem).not.toBeVisible();
   });
 });
 

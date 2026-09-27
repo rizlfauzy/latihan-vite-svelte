@@ -236,6 +236,25 @@
   "auth.redirectingLogin": "Mengalihkan ke halaman login...",
   "auth.welcomeBack": "Selamat Datang Kembali",
   "auth.errorInvalid": "Username atau password salah!",
-  "auth.loggedOut": "Anda telah berhasil keluar."
+  "auth.loggedOut": "Anda telah berhasil keluar.",
+
+  "imageModal.title": "UPLOAD & PREVIEW GAMBAR",
+  "imageModal.subtitle": "Lampirkan gambar untuk catatan tugas",
+  "imageModal.dropzoneTitle": "Tarik & Lepas gambar di sini",
+  "imageModal.dropzoneSub": "atau klik untuk memilih file dari komputer (bisa lebih dari satu)",
+  "imageModal.formatNotice": "Maksimal 5 MB per gambar (Hanya .jpg, .jpeg, .png, dan .svg)",
+  "imageModal.previewTitle": "Pratinjau Gambar:",
+  "imageModal.clickToPreview": "Klik gambar untuk melihat ukuran penuh",
+  "imageModal.saveButton": "GUNAKAN GAMBAR",
+  "imageModal.removeButton": "HAPUS GAMBAR",
+  "imageModal.removeAllButton": "HAPUS SEMUA",
+  "imageModal.cancelButton": "BATAL",
+  "imageModal.errSize": "Ukuran file terlalu besar! Maksimal 5 MB.",
+  "imageModal.errFormat": "Ekstensi file tidak valid! Hanya diperbolehkan jpg, jpeg, png, dan svg.",
+  "todo.attachImage": "Lampirkan Gambar",
+  "todo.imageAttached": "Gambar Terlampir",
+  "todo.imagesAttached": "Gambar Terlampir",
+  "todo.uploadImage": "Upload Gambar",
+  "todo.viewImage": "Lihat Gambar"
 }
 

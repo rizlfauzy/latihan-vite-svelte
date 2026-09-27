@@ -27,6 +27,8 @@ export interface AuthStoreState {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (name: string, username: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  deleteTestUser: (username: string) => Promise<boolean>;
+  cleanupTestUsers: () => Promise<number>;
   logout: () => void;
   setUserSession: (user: User, role: Role) => void;
 }
@@ -254,6 +256,78 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
     return { success: false, message: `${t('auth.errorInvalid')}` };
   },
 
+  deleteTestUser: async (username: string): Promise<boolean> => {
+    const cleanUsername = username.trim().toLowerCase();
+    if (!cleanUsername.includes('test')) {
+      console.warn('[authStore] deleteTestUser only allows usernames containing "test"');
+      return false;
+    }
+
+    // 1. Remove from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(REGISTERED_USERS_KEY) || '[]';
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const filtered = list.filter((u: any) => u.username?.toLowerCase() !== cleanUsername);
+          localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(filtered));
+        }
+      } catch (e) {
+        console.error('[authStore] Failed to remove local registered user', e);
+      }
+    }
+
+    // 2. Remove from Supabase
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const { data, error } = await supabase.rpc('delete_test_user', { p_username: cleanUsername });
+        if (error) {
+          await supabase.from('users').delete().eq('username', cleanUsername);
+        }
+        return Boolean(data);
+      } catch (err) {
+        console.error('[authStore] Exception deleting test user in Supabase', err);
+      }
+    }
+
+    return true;
+  },
+
+  cleanupTestUsers: async (): Promise<number> => {
+    let deletedCount = 0;
+
+    // 1. Clean from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(REGISTERED_USERS_KEY) || '[]';
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const filtered = list.filter((u: any) => !u.username?.toLowerCase().includes('test'));
+          deletedCount += (list.length - filtered.length);
+          localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(filtered));
+        }
+      } catch (e) {
+        console.error('[authStore] Failed to cleanup local registered users', e);
+      }
+    }
+
+    // 2. Clean from Supabase
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const { data, error } = await supabase.rpc('cleanup_test_users');
+        if (!error && typeof data === 'number') {
+          deletedCount += data;
+        } else {
+          await supabase.from('users').delete().ilike('username', '%test%');
+        }
+      } catch (err) {
+        console.error('[authStore] Exception cleaning up test users in Supabase', err);
+      }
+    }
+
+    return deletedCount;
+  },
+
   logout: () => {
     set({
       user: null,
@@ -271,6 +345,8 @@ export const authStore = {
   ...rawAuthStore,
   login: (username: string, password: string) => rawAuthStore.getState().login(username, password),
   register: (name: string, username: string, password: string) => rawAuthStore.getState().register(name, username, password),
+  deleteTestUser: (username: string) => rawAuthStore.getState().deleteTestUser(username),
+  cleanupTestUsers: () => rawAuthStore.getState().cleanupTestUsers(),
   logout: () => rawAuthStore.getState().logout(),
   setUserSession: (user: User, role: Role) => rawAuthStore.getState().setUserSession(user, role),
   subscribe(run: (state: AuthStoreState) => void) {
