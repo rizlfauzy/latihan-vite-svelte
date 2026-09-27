@@ -11,10 +11,12 @@ export interface AppEnv {
   supabaseUrl: string;
   supabaseAnonKey: string;
   isSupabaseConfigured: boolean;
+  maxImageSizeMb: number;
 }
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const maxImageSizeMb = Number(import.meta.env.VITE_MAX_IMAGE_SIZE_MB) || 5;
 
 export const env: AppEnv = {
   mode: import.meta.env.MODE,
@@ -29,6 +31,7 @@ export const env: AppEnv = {
   supabaseUrl,
   supabaseAnonKey,
   isSupabaseConfigured: Boolean(supabaseUrl && supabaseAnonKey),
+  maxImageSizeMb,
 };
 
 if (env.enableDebug && typeof window !== 'undefined') {
