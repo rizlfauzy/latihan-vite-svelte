@@ -236,6 +236,25 @@
   "auth.redirectingLogin": "Redirecting to login page...",
   "auth.welcomeBack": "Welcome Back",
   "auth.errorInvalid": "Invalid username or password!",
-  "auth.loggedOut": "You have been logged out."
+  "auth.loggedOut": "You have been logged out.",
+
+  "imageModal.title": "UPLOAD & PREVIEW IMAGE",
+  "imageModal.subtitle": "Attach image for task note",
+  "imageModal.dropzoneTitle": "Drag & Drop images here",
+  "imageModal.dropzoneSub": "or click to select files from your computer (multiple supported)",
+  "imageModal.formatNotice": "Max 5 MB per image (Only .jpg, .jpeg, .png, and .svg)",
+  "imageModal.previewTitle": "Image Preview:",
+  "imageModal.clickToPreview": "Click image to view full size",
+  "imageModal.saveButton": "USE IMAGE",
+  "imageModal.removeButton": "REMOVE IMAGE",
+  "imageModal.removeAllButton": "REMOVE ALL",
+  "imageModal.cancelButton": "CANCEL",
+  "imageModal.errSize": "File size too large! Max 5 MB.",
+  "imageModal.errFormat": "Invalid file extension! Only jpg, jpeg, png, and svg are allowed.",
+  "todo.attachImage": "Attach Image",
+  "todo.imageAttached": "Image Attached",
+  "todo.imagesAttached": "Images Attached",
+  "todo.uploadImage": "Upload Image",
+  "todo.viewImage": "View Image"
 }
 

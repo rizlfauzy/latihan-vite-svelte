@@ -4,7 +4,7 @@
 
 **Apps Hub — CV Sukses Gemilang** adalah platform portal dan *enterprise dashboard* modern yang dirancang untuk mengagregasi seluruh sistem operasional internal, utilitas manajemen gerai, dan aplikasi mikro **CV Sukses Gemilang** (perusahaan pusat hiburan keluarga & game center arcade interaktif sekelas Timezone).
 
-Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, dibangun menggunakan arsitektur modern **Svelte 5** dengan paradigma **Runes** (`$state`, `$derived`, `$effect`), dibundel dengan **Vite 8**, dan dilengkapi integrasi cloud database **Supabase** (PostgreSQL), sistem **Autentikasi & Role-Based Access Control (RBAC)** dengan halaman **Registrasi Mandiri** (`/register` dengan role otomatis `VIEWER` dan `is_debug: false`), fitur **Preview & Edit Pesan WhatsApp PIC** dengan integrasi to-do list pending, tabel relasional terpisah untuk subtask (*subtodos*), relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), komponen interaktif kustom (*CustomSelect*), *Progressive Web App* (PWA), *Dark Mode*, sistem notifikasi toast (*alertStore*), lokalisasi multibahasa (ID & EN), otomasi pengujian E2E menyeluruh dengan Playwright (39 test cases), serta pipeline deployment otomatis (CI/CD) lengkap dengan eksekusi migrasi database Supabase.
+Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, dibangun menggunakan arsitektur modern **Svelte 5** dengan paradigma **Runes** (`$state`, `$derived`, `$effect`), dibundel dengan **Vite 8**, dan dilengkapi integrasi cloud database **Supabase** (PostgreSQL) serta **Supabase Storage** (`todo-images`), sistem **Autentikasi & Role-Based Access Control (RBAC)** dengan halaman **Registrasi Mandiri** (`/register` dengan role otomatis `VIEWER` dan `is_debug: false`), fitur **Upload & Preview Banyak Gambar (Multi-Image) To-Do List** (drag-and-drop, validasi 5 MB dari env variable/ekstensi via `throwAlert`, click-to-preview galeri thumbnail, dan *cascade deletion* file storage), fitur **Preview & Edit Pesan WhatsApp PIC** dengan konteks lampiran gambar tugas, tabel relasional terpisah untuk subtask (*subtodos*), relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), komponen interaktif kustom (*CustomSelect*), *Progressive Web App* (PWA), *Dark Mode*, sistem notifikasi toast (*alertStore*), lokalisasi multibahasa (ID & EN), otomasi pengujian E2E menyeluruh dengan Playwright (40 test cases), serta pipeline deployment otomatis (CI/CD) lengkap dengan eksekusi migrasi database Supabase.
 
 ---
 
@@ -58,7 +58,7 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 - Menampilkan kartu-kartu aplikasi operasional dalam tata letak grid responsif Neo Brutalism.
 - Setiap kartu menyajikan icon emoji, nama aplikasi, deskripsi fungsi, tag kategori, tombol direct access, dan tombol kontak WhatsApp PIC.
 - **WhatsApp Preview Modal**: Mengklik tombol WhatsApp PIC memunculkan pop-up modal interaktif (`WhatsAppPreviewModal`) yang menampilkan draf pesan chat.
-- **Integrasi Tugas Pending**: Draf pesan otomatis merangkum dan menyertakan catatan To-Do yang berstatus belum selesai (*not done*) untuk aplikasi terkait.
+- **Integrasi Tugas Pending & Konteks Gambar**: Draf pesan otomatis merangkum dan menyertakan catatan To-Do yang berstatus belum selesai (*not done*) untuk aplikasi terkait. Jika task pending memiliki lampiran gambar, link gambar disematkan langsung pada baris task (`Lampiran gambar: [URL]`) dan tautan pratinjau gambar ditampilkan di modal.
 - **Editable Message**: Pengguna dapat mengedit pesan secara langsung di textarea sebelum mengklik tautan kirim ke WhatsApp (`wa.me`).
 
 ### 2. Autentikasi, Registrasi & Role-Based Access Control (RBAC)
@@ -86,28 +86,38 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 - **Filter Status**: Filter cepat (*Semua*, *Belum*, *Selesai*) dan aksi massal *Hapus yang Selesai*.
 - **Offline Sync Queue**: Perubahan tugas tetap dicatat saat koneksi terputus dan disinkronkan kembali saat online.
 
-### 5. Custom Neo Brutalism Dropdown (`CustomSelect`)
+### 5. Fitur Upload Banyak Gambar (Multi-Image) To-Do List & Supabase Storage
+- **Dukungan Multi-Gambar**: Pengguna dapat melampirkan lebih dari satu gambar pada setiap catatan To-Do (galeri thumbnail, seleksi aktif, dan penghapusan per berkas/semua).
+- **Pengaturan Ukuran Dinamis via Environment Variable**: Batas ukuran maksimal gambar dipindahkan ke variabel lingkungan (`VITE_MAX_IMAGE_SIZE_MB="5"`) untuk lingkungan development, production, serta GitLab CI/CD variables (default: 5 MB).
+- **Format File**: Hanya menerima ekstensi `.jpg`, `.jpeg`, `.png`, serta `.svg`.
+- **Pop-up Modal Interaktif (`ImageUploadModal`)**:
+  - Mendukung interaksi *Drag and Drop* banyak file sekaligus maupun seleksi file explorer.
+  - Fitur **Click to Preview & Galeri Thumbnail**: Menampilkan strip thumbnail semua lampiran dan memungkinkan pengguna mengklik gambar untuk membuka overlay pratinjau resolusi penuh.
+- **Validasi Berbasis `throwAlert`**: Jika ukuran atau ekstensi file tidak memenuhi kriteria, sistem memunculkan toast alert error menggunakan fungsi `throwAlert(new Error(...))`.
+- **Cascade Deletion File Storage**: Saat item To-Do dihapus (baik satuan, per aplikasi, maupun pembersihan selesai), seluruh file gambar terkait di bucket Supabase Storage (`todo-images`) dihapus secara otomatis untuk mencegah penumpukan berkas tak terpakai.
+
+### 6. Custom Neo Brutalism Dropdown (`CustomSelect`)
 - Menggantikan elemen `<select>` native dengan dropdown kustom yang konsisten dengan estetika Neo Brutalism.
 - Mendukung keyboard navigation (Arrow Up/Down, Enter, Escape) dan state interaktif taktil.
 
-### 6. Profil Perusahaan (CV Sukses Gemilang)
+### 7. Profil Perusahaan (CV Sukses Gemilang)
 - Halaman profil korporat interaktif (`/company-profile`) yang memaparkan visi, misi, dan pilar bisnis game center keluarga (Arcade & VR, Redemption & Prize Center, Event & Tournament Space).
 - Metrik bisnis utama (Wahana Game Center, Simulator Modern, Pilihan Merchandise Hadiah).
 - Form kontak dan direct consultation WhatsApp terintegrasi.
 
-### 7. PWA & Offline Support
+### 8. PWA & Offline Support
 - Service Worker (`sw.js`) dan Web App Manifest (`manifest.json`) terkonfigurasi penuh untuk instalasi di desktop maupun mobile.
 - Cache-first strategy untuk aset statis dan offline badge indicator.
 
-### 8. Dark Mode & Theming Neo Brutalism
+### 9. Dark Mode & Theming Neo Brutalism
 - Toggle mode gelap / terang melalui `themeStore` dengan persistensi `localStorage`.
 - Palet warna kontras tinggi yang adaptif terhadap mode gelap (`dark:` variants di Tailwind CSS v4).
 
-### 9. Sistem Notifikasi Toast Global
+### 10. Sistem Notifikasi Toast Global
 - Komponen `AlertContainer` melayang di sudut kanan atas layar (`fixed top-4 right-4 z-50`).
 - Mendukung tipe `success`, `error`, dan `info` dengan auto-dismiss 3.5 detik dan manual close.
 
-### 10. Multibahasa Terisolasi (i18n)
+### 11. Multibahasa Terisolasi (i18n)
 - Kamus modular di `src/i18n/id.json` dan `src/i18n/en.json`.
 - Switcher instan di Navbar dengan penyimpanan preferensi pengguna di `localStorage`.
 
@@ -120,13 +130,14 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 | **Framework** | Svelte 5 | Reactive UI berbasis Runes (`$state`, `$derived`, `$effect`) |
 | **Bundler & Runtime** | Vite 8 + Bun | High-speed build tool, HMR, dan JavaScript/TypeScript runtime |
 | **Database & Cloud** | Supabase (PostgreSQL) | Skema relasional terstruktur: `roles`, `users`, `apps`, `todos`, dan `subtodos` |
+| **Cloud Storage** | Supabase Storage | Bucket `todo-images` publik dengan RLS policies untuk upload/delete berkas |
 | **Autentikasi & Enkripsi** | Supabase RPC + Bcrypt | Verifikasi password via `pgcrypto` (`crypt` & `gen_salt`) dengan session token |
 | **Database Migrations** | Supabase CLI | Version-controlled DDL migration scripts di `supabase/migrations/` |
 | **State Management** | Zustand (Vanilla) | Reactive stores (`authStore`, `appStore`, `todoStore`, `alertStore`, `i18nStore`, `themeStore`) |
-| **Routing** | `sv-router` | Client-side SPA routing (`/`, `/company-profile`, `/login`) |
+| **Routing** | `sv-router` | Client-side SPA routing (`/`, `/company-profile`, `/login`, `/register`) |
 | **Styling** | Tailwind CSS v4 | Custom design tokens Neo Brutalism & Dark Mode |
 | **PWA** | Service Worker + Manifest | Instalasi aplikasi offline & asset caching |
-| **Testing** | Playwright | End-to-end automated testing suite (36 test scenarios) dengan auto-cleanup |
+| **Testing** | Playwright | End-to-end automated testing suite (40 test scenarios) dengan auto-cleanup |
 | **CI/CD Pipeline** | GitLab CI | Pipeline terotomatisasi: Test -> Build -> Migrate -> Deploy (VPS Rsync) |
 | **Container** | Docker + Nginx Alpine | Multi-stage production container build (opsional/alternatif deployment) |
 
@@ -136,16 +147,17 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 
 Arsitektur database mengusung struktur relasional normalisasi:
 
-1. **`roles`**: Menyimpan daftar peran sistem (misal: `SUPERADMIN`).
+1. **`roles`**: Menyimpan daftar peran sistem (misal: `SUPERADMIN`, `VIEWER`).
    - Atribut utama: `id`, `name`, `is_debug`, timestamps, audit trail.
 2. **`users`**: Menyimpan kredensial dan referensi profil pengguna.
    - Atribut utama: `uuid`, `username`, `name`, `password` (hash), `role_id` (FK ke `roles.id`), timestamps, audit trail.
 3. **`apps`**: Menyimpan data modul aplikasi operasional.
    - Atribut utama: `id`, `name`, `url`, `description`, `category`, `icon`, `pic_name`, `pic_whatsapp`, timestamps.
 4. **`todos`**: Menyimpan tugas to-do list harian.
-   - Atribut utama: `id`, `text`, `completed`, `app_id` (FK ke `apps.id` *ON DELETE CASCADE*), timestamps.
+   - Atribut utama: `id`, `text`, `done`, `image_url`, `appId` (FK ke `apps.id` *ON DELETE CASCADE*), timestamps.
 5. **`subtodos`**: Menyimpan subtask hierarkis untuk tiap to-do.
-   - Atribut utama: `id`, `todo_id` (FK ke `todos.id` *ON DELETE CASCADE*), `text`, `completed`, timestamps.
+   - Atribut utama: `id`, `todo_id` (FK ke `todos.id` *ON DELETE CASCADE*), `text`, `done`, timestamps.
+6. **`storage.buckets & objects`**: Menyimpan file gambar lampiran tugas pada bucket `todo-images` dengan integrasi penghapusan berkas fisik (*cascade storage removal*).
 
 ---
 

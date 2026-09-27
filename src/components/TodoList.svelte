@@ -1,6 +1,7 @@
 <script lang="ts">
   import ConfirmModal from './ConfirmModal.svelte';
   import SkeletonTodo from './SkeletonTodo.svelte';
+  import ImageUploadModal from './ImageUploadModal.svelte';
   import { alertStore } from '@/stores/alertStore';
   import { i18nStore } from '@/stores/i18nStore';
   import { appStore } from '@/stores/appStore';
@@ -17,6 +18,12 @@
     | null;
 
   let newTodoText = $state('');
+  let newTodoImageUrls = $state<string[]>([]);
+  let newTodoImageFiles = $state<File[]>([]);
+  const newTodoImageUrl = $derived(newTodoImageUrls[0] || null);
+  let activeImageTodo = $state<Todo | null>(null);
+  let isImageModalOpen = $state(false);
+  let imageModalMode = $state<'new' | 'existing'>('new');
   let searchQuery = $state('');
   let filter = $state<'all' | 'active' | 'done'>('all');
   let topicFilter = $state<string>('all');
@@ -91,14 +98,72 @@
     })
   );
 
+  function openNewTodoImageModal() {
+    imageModalMode = 'new';
+    isImageModalOpen = true;
+  }
+
+  function openTodoImageModal(todo: Todo) {
+    imageModalMode = 'existing';
+    activeImageTodo = todo;
+    isImageModalOpen = true;
+  }
+
+  async function handleImageModalSave(urls: string[], files: File[]) {
+    if (imageModalMode === 'new') {
+      newTodoImageUrls = urls;
+      newTodoImageFiles = files;
+    } else if (imageModalMode === 'existing' && activeImageTodo) {
+      try {
+        let finalUrls = urls.filter((u) => !u.startsWith('blob:'));
+        if (files.length > 0) {
+          const uploadedUrls = await todoStore.uploadTodoImages(files);
+          finalUrls = [...finalUrls, ...uploadedUrls];
+        }
+        await todoStore.updateTodoImages(activeImageTodo.id, finalUrls);
+      } catch (err) {
+        alertStore.throwAlert(err as Error);
+      }
+      activeImageTodo = null;
+    }
+  }
+
+  async function handleImageModalRemove() {
+    if (imageModalMode === 'new') {
+      newTodoImageUrls = [];
+      newTodoImageFiles = [];
+    } else if (imageModalMode === 'existing' && activeImageTodo) {
+      try {
+        await todoStore.updateTodoImages(activeImageTodo.id, []);
+      } catch (err) {
+        alertStore.throwAlert(err as Error);
+      }
+      activeImageTodo = null;
+    }
+  }
+
+  function handleImageModalClose() {
+    isImageModalOpen = false;
+    activeImageTodo = null;
+  }
+
   async function addTodo(e?: Event) {
     if (e) e.preventDefault();
     const trimmed = newTodoText.trim();
     try {
       if (!trimmed) throw new Warning(t('todo.textTodoRequired', "Catatan Tidak Boleh Kosong"));
+
+      let finalUrls = newTodoImageUrls.filter((u) => !u.startsWith('blob:'));
+      if (newTodoImageFiles.length > 0) {
+        const uploadedUrls = await todoStore.uploadTodoImages(newTodoImageFiles);
+        finalUrls = [...finalUrls, ...uploadedUrls];
+      }
+
       newTodoText = '';
+      newTodoImageUrls = [];
+      newTodoImageFiles = [];
       const chosenAppId = selectedAppId || (apps.length > 0 ? apps[0].id : null);
-      const newTodo = await todoStore.addTodo(trimmed, chosenAppId);
+      const newTodo = await todoStore.addTodo(trimmed, chosenAppId, finalUrls);
       expandedTodoIds[newTodo.id] = true;
     } catch (e) {
       alertStore.throwAlert(e as Error);
@@ -248,15 +313,49 @@
           class="nb-input grow resize-y min-h-14 leading-relaxed"
           data-testid="todo-input"
         ></textarea>
-        <button
-          type="submit"
-          class="nb-btn bg-nb-pink whitespace-nowrap px-6 py-3 self-start sm:self-auto flex items-center justify-center gap-1.5"
-          data-testid="todo-add-button"
-        >
-          <span>+</span>
-          <span>{t('todo.addButton')}</span>
-        </button>
+        <div class="flex sm:flex-col gap-2 shrink-0">
+          <button
+            type="submit"
+            class="nb-btn bg-nb-pink whitespace-nowrap px-6 py-3 flex items-center justify-center gap-1.5 grow sm:grow-0"
+            data-testid="todo-add-button"
+          >
+            <span>+</span>
+            <span>{t('todo.addButton')}</span>
+          </button>
+          <button
+            type="button"
+            class="nb-btn text-xs px-3 py-2 border-2 border-nb-black shadow-nb-xs cursor-pointer flex items-center justify-center gap-1.5 {newTodoImageUrls.length > 0 ? 'bg-nb-green text-white' : 'bg-white hover:bg-gray-100 text-black'}"
+            onclick={openNewTodoImageModal}
+            data-testid="btn-open-image-modal"
+            title={newTodoImageUrls.length > 0 ? (newTodoImageUrls.length > 1 ? `${newTodoImageUrls.length} ${t('todo.imagesAttached', 'Gambar Terlampir')}` : t('todo.imageAttached', 'Gambar Terlampir')) : t('todo.attachImage', 'Lampirkan Gambar')}
+          >
+            <span>📷</span>
+            <span>{newTodoImageUrls.length > 0 ? (newTodoImageUrls.length > 1 ? `${newTodoImageUrls.length} ${t('todo.imagesAttached', 'Gambar Terlampir')}` : t('todo.imageAttached', 'Gambar Terlampir')) : t('todo.attachImage', 'Lampirkan Gambar')}</span>
+          </button>
+        </div>
       </div>
+
+      {#if newTodoImageUrls.length > 0}
+        <div class="flex items-center gap-2 p-1.5 px-2 bg-yellow-50 border-2 border-nb-black rounded shadow-nb-xs w-fit" data-testid="new-todo-image-preview-badge">
+          <div class="flex -space-x-2">
+            {#each newTodoImageUrls.slice(0, 3) as url}
+              <img src={url} alt="Lampiran" class="w-7 h-7 object-cover rounded border border-nb-black shadow-nb-xs" />
+            {/each}
+          </div>
+          <span class="text-xs font-bold text-gray-700">
+            {newTodoImageUrls.length > 1 ? `${newTodoImageUrls.length} ${t('todo.imagesAttached', 'Gambar Terlampir')}` : t('todo.imageAttached', 'Gambar Terlampir')}
+          </span>
+          <button
+            type="button"
+            class="text-nb-red font-black text-xs hover:underline cursor-pointer ml-1"
+            onclick={() => { newTodoImageUrls = []; newTodoImageFiles = []; }}
+            title="Hapus lampiran"
+            data-testid="btn-remove-new-todo-image"
+          >
+            ✕
+          </button>
+        </div>
+      {/if}
 
       <!-- Shortcut Info Helper -->
       <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500 select-none">
@@ -430,15 +529,44 @@
                       </span>
                     {/if}
                   {/if}
-                  <span
-                    class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap {todo.done
-                      ? 'line-through decoration-2 decoration-nb-black text-gray-500'
-                      : 'text-nb-black'}"
-                  >
-                    {todo.text}
-                  </span>
+                  <div class="flex flex-col gap-1 grow">
+                    <span
+                      class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap {todo.done
+                        ? 'line-through decoration-2 decoration-nb-black text-gray-500'
+                        : 'text-nb-black'}"
+                    >
+                      {todo.text}
+                    </span>
+                    {#if (todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl}
+                      {@const imgCount = todo.imageUrls?.length || (todo.imageUrl ? 1 : 0)}
+                      <div class="flex items-center gap-2 mt-0.5">
+                        <button
+                          type="button"
+                          class="inline-flex items-center gap-1.5 px-2 py-0.5 border-2 border-nb-black text-[11px] font-black uppercase rounded shadow-nb-xs bg-blue-100 hover:bg-blue-200 text-nb-black cursor-pointer transition-colors"
+                          onclick={() => openTodoImageModal(todo)}
+                          data-testid={`btn-view-image-todo-${todo.id}`}
+                          title={t('todo.viewImage', 'Lihat Gambar')}
+                        >
+                          <span>📷</span>
+                          <span>{t('todo.viewImage', 'Lihat Gambar')}{imgCount > 1 ? ` (${imgCount})` : ''}</span>
+                        </button>
+                      </div>
+                    {/if}
+                  </div>
                 </div>
               </label>
+
+              <!-- Upload Image Button for Todo -->
+              <button
+                type="button"
+                class="w-8 h-8 shrink-0 border-2 border-nb-black {(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? 'bg-blue-100 text-blue-900' : 'bg-white hover:bg-nb-yellow text-black'} font-bold text-xs rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
+                onclick={() => openTodoImageModal(todo)}
+                title={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t('todo.viewImage', 'Lihat / Ubah Gambar') : t('todo.uploadImage', 'Upload Gambar')}
+                aria-label={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t('todo.viewImage', 'Lihat / Ubah Gambar') : t('todo.uploadImage', 'Upload Gambar')}
+                data-testid={`btn-upload-image-todo-${todo.id}`}
+              >
+                📷
+              </button>
 
               <!-- Sub-tasks Progress Badge -->
               {#if subList.length > 0}
@@ -553,5 +681,16 @@
     cancelText={t('action.cancel')}
     onConfirm={handleConfirmDelete}
     onCancel={handleCancelDelete}
+  />
+
+  <!-- Image Upload & Preview Modal -->
+  <ImageUploadModal
+    isOpen={isImageModalOpen}
+    initialImageUrls={imageModalMode === 'new' ? newTodoImageUrls : (activeImageTodo?.imageUrls || (activeImageTodo?.imageUrl ? [activeImageTodo.imageUrl] : []))}
+    initialImageUrl={imageModalMode === 'new' ? newTodoImageUrl : (activeImageTodo?.imageUrl || null)}
+    title={imageModalMode === 'new' ? t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR') : `${t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR')}: ${activeImageTodo?.text || ''}`}
+    onClose={handleImageModalClose}
+    onSave={handleImageModalSave}
+    onRemove={handleImageModalRemove}
   />
 </section>

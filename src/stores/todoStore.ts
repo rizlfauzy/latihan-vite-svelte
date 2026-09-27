@@ -1,5 +1,9 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
 import { supabase, isSupabaseEnabled } from '@/lib/supabase';
+import { i18nStore } from '@/stores/i18nStore';
+import { env } from '@/lib/env';
+
+const t = i18nStore.t;
 
 export interface SubTask {
   id: string;
@@ -14,14 +18,70 @@ export interface Todo {
   text: string;
   done: boolean;
   createdAt: number;
+  imageUrl?: string | null;
+  imageUrls?: string[];
   subTasks?: SubTask[];
+}
+
+export function parseImageUrls(raw: any): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()));
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item): item is string => typeof item === 'string' && Boolean(item.trim()));
+        }
+      } catch {
+        // fallback
+      }
+    }
+    if (trimmed) return [trimmed];
+  }
+  return [];
+}
+
+export function extractStoragePath(imageUrl: string, bucketName: string = 'todo-images'): string | null {
+  if (!imageUrl) return null;
+  const marker = `/${bucketName}/`;
+  const index = imageUrl.indexOf(marker);
+  if (index !== -1) {
+    return decodeURIComponent(imageUrl.substring(index + marker.length).split('?')[0]);
+  }
+  if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://') && !imageUrl.startsWith('data:')) {
+    return imageUrl;
+  }
+  return null;
+}
+
+export function extractStoragePaths(imageUrls: string[], bucketName: string = 'todo-images'): string[] {
+  return imageUrls
+    .map((url) => extractStoragePath(url, bucketName))
+    .filter((path): path is string => Boolean(path));
+}
+
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export interface TodoStoreState {
   todos: Todo[];
   isLoading: boolean;
   fetchTodos: () => Promise<void>;
-  addTodo: (text: string, appId?: string | null) => Promise<Todo>;
+  addTodo: (text: string, appId?: string | null, imageUrlOrUrls?: string | string[] | null) => Promise<Todo>;
+  updateTodoImage: (id: string, imageUrl: string | null) => Promise<void>;
+  updateTodoImages: (id: string, imageUrls: string[]) => Promise<void>;
+  uploadTodoImage: (file: File) => Promise<string>;
+  uploadTodoImages: (files: File[]) => Promise<string[]>;
   toggleTodo: (id: string) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   deleteTodosByAppId: (appId: string) => Promise<void>;
@@ -45,11 +105,16 @@ function loadLocalTodos(): Todo[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
-        return parsed.map((item) => ({
-          ...item,
-          appId: item.appId || item.app_id || null,
-          subTasks: Array.isArray(item.subTasks) ? item.subTasks : [],
-        }));
+        return parsed.map((item) => {
+          const urls = parseImageUrls(item.imageUrls || item.imageUrl || item.image_urls || item.image_url);
+          return {
+            ...item,
+            appId: item.appId || item.app_id || null,
+            imageUrl: urls[0] || null,
+            imageUrls: urls,
+            subTasks: Array.isArray(item.subTasks) ? item.subTasks : [],
+          };
+        });
       }
     }
   } catch (e) {
@@ -85,24 +150,50 @@ function mapRowToTodo(row: any): Todo {
     subTasks = row.sub_tasks;
   }
 
+  const urls = parseImageUrls(row.image_urls || row.imageUrls || row.image_url || row.imageUrl);
+
   return {
     id: row.id,
     appId: row.appId || row.app_id || null,
     text: row.text,
     done: Boolean(row.done),
     createdAt: Number(row.created_at) || Date.now(),
+    imageUrl: urls[0] || null,
+    imageUrls: urls,
     subTasks,
   };
 }
 
 function mapTodoToRow(todo: Todo) {
+  const urls = todo.imageUrls || (todo.imageUrl ? [todo.imageUrl] : []);
   return {
     id: todo.id,
     appId: todo.appId || null,
     text: todo.text,
     done: todo.done,
     created_at: todo.createdAt,
+    image_url: urls.length > 1 ? JSON.stringify(urls) : (urls[0] || null),
   };
+}
+
+async function removeImagesForTodos(todos: Todo[]) {
+  if (!isSupabaseEnabled || !supabase) return;
+  const allUrls: string[] = [];
+  for (const t of todos) {
+    if (t.imageUrls && t.imageUrls.length > 0) {
+      allUrls.push(...t.imageUrls);
+    } else if (t.imageUrl) {
+      allUrls.push(t.imageUrl);
+    }
+  }
+  const paths = extractStoragePaths(allUrls, 'todo-images');
+  if (paths.length > 0) {
+    try {
+      await supabase.storage.from('todo-images').remove(paths);
+    } catch (err) {
+      console.error('[todoStore] Failed to batch remove images from storage', err);
+    }
+  }
 }
 
 const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((set, get) => ({
@@ -146,13 +237,115 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     saveLocalTodos(defaultTodos);
   },
 
-  addTodo: async (text: string, appId?: string | null) => {
+  uploadTodoImage: async (file: File): Promise<string> => {
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'svg'];
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !allowedExtensions.includes(ext)) {
+      throw new Error(t("imageModal.errFormat", "Ekstensi file tidak didukung! Hanya .jpg, .jpeg, .png, dan .svg yang diperbolehkan."));
+    }
+
+    const maxMb = env.maxImageSizeMb || 5;
+    const MAX_SIZE = maxMb * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      throw new Error(t('imageModal.errSize', `Ukuran file melebihi batas maksimal ${maxMb} MB!`));
+    }
+
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        const filePath = `todos/${fileName}`;
+        const { data, error } = await supabase.storage
+          .from('todo-images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (error) {
+          console.warn('[todoStore] Storage upload failed, fallback to Data URL', error);
+          return await fileToDataUrl(file);
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('todo-images')
+          .getPublicUrl(filePath);
+
+        return urlData.publicUrl;
+      } catch (err) {
+        console.warn('[todoStore] Storage upload exception, fallback to Data URL', err);
+        return await fileToDataUrl(file);
+      }
+    }
+
+    return await fileToDataUrl(file);
+  },
+
+  uploadTodoImages: async (files: File[]): Promise<string[]> => {
+    const urls: string[] = [];
+    for (const file of files) {
+      const url = await get().uploadTodoImage(file);
+      urls.push(url);
+    }
+    return urls;
+  },
+
+  updateTodoImages: async (id: string, imageUrls: string[]) => {
+    const target = get().todos.find((t) => t.id === id);
+    if (!target) return;
+
+    const oldUrls = target.imageUrls || (target.imageUrl ? [target.imageUrl] : []);
+    const removedUrls = oldUrls.filter((oldUrl) => !imageUrls.includes(oldUrl));
+
+    if (removedUrls.length > 0 && isSupabaseEnabled && supabase) {
+      try {
+        const paths = extractStoragePaths(removedUrls, 'todo-images');
+        if (paths.length > 0) {
+          await supabase.storage.from('todo-images').remove(paths);
+        }
+      } catch (err) {
+        console.error('[todoStore] Failed to remove previous images from Supabase storage', err);
+      }
+    }
+
+    const updated = get().todos.map((t) =>
+      t.id === id
+        ? {
+            ...t,
+            imageUrl: imageUrls[0] || null,
+            imageUrls: [...imageUrls],
+          }
+        : t
+    );
+    set({ todos: updated });
+    saveLocalTodos(updated);
+
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const dbImageUrl = imageUrls.length > 1 ? JSON.stringify(imageUrls) : (imageUrls[0] || null);
+        await supabase.from('todos').update({ image_url: dbImageUrl }).eq('id', id);
+      } catch (err) {
+        console.error('[todoStore] Failed to update todo image in Supabase', err);
+      }
+    }
+  },
+
+  updateTodoImage: async (id: string, imageUrl: string | null) => {
+    await get().updateTodoImages(id, imageUrl ? [imageUrl] : []);
+  },
+
+  addTodo: async (text: string, appId?: string | null, imageUrlOrUrls?: string | string[] | null) => {
+    const urls = Array.isArray(imageUrlOrUrls)
+      ? imageUrlOrUrls
+      : (imageUrlOrUrls ? [imageUrlOrUrls] : []);
+
     const newTodo: Todo = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       appId: appId || null,
       text: text.trim(),
       done: false,
       createdAt: Date.now(),
+      imageUrl: urls[0] || null,
+      imageUrls: urls,
       subTasks: [],
     };
 
@@ -194,9 +387,22 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
   },
 
   deleteTodo: async (id: string) => {
+    const target = get().todos.find((t) => t.id === id);
     const updated = get().todos.filter((t) => t.id !== id);
     set({ todos: updated });
     saveLocalTodos(updated);
+
+    if (target && isSupabaseEnabled && supabase) {
+      const targetUrls = target.imageUrls || (target.imageUrl ? [target.imageUrl] : []);
+      const paths = extractStoragePaths(targetUrls, 'todo-images');
+      if (paths.length > 0) {
+        try {
+          await supabase.storage.from('todo-images').remove(paths);
+        } catch (err) {
+          console.error('[todoStore] Failed to remove image from Supabase storage', err);
+        }
+      }
+    }
 
     if (isSupabaseEnabled && supabase) {
       try {
@@ -216,6 +422,8 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     const updated = get().todos.filter((t) => t.appId !== appId);
     set({ todos: updated });
     saveLocalTodos(updated);
+
+    await removeImagesForTodos(removedTodos);
 
     if (isSupabaseEnabled && supabase) {
       try {
@@ -241,6 +449,8 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     const updated = get().todos.filter((t) => !t.appId || !appIdSet.has(t.appId));
     set({ todos: updated });
     saveLocalTodos(updated);
+
+    await removeImagesForTodos(removedTodos);
 
     if (isSupabaseEnabled && supabase) {
       try {
@@ -279,6 +489,8 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
   clearCompleted: async () => {
     const completedTodos = get().todos.filter((t) => t.done);
     const completedIds = completedTodos.map((t) => t.id);
+
+    await removeImagesForTodos(completedTodos);
 
     if (isSupabaseEnabled && supabase && completedIds.length > 0) {
       try {
@@ -391,7 +603,11 @@ if (typeof window !== 'undefined' && isSupabaseEnabled) {
 export const todoStore = {
   ...rawStore,
   fetchTodos: () => rawStore.getState().fetchTodos(),
-  addTodo: (text: string, appId?: string | null) => rawStore.getState().addTodo(text, appId),
+  addTodo: (text: string, appId?: string | null, imageUrlOrUrls?: string | string[] | null) => rawStore.getState().addTodo(text, appId, imageUrlOrUrls),
+  updateTodoImage: (id: string, imageUrl: string | null) => rawStore.getState().updateTodoImage(id, imageUrl),
+  updateTodoImages: (id: string, imageUrls: string[]) => rawStore.getState().updateTodoImages(id, imageUrls),
+  uploadTodoImage: (file: File) => rawStore.getState().uploadTodoImage(file),
+  uploadTodoImages: (files: File[]) => rawStore.getState().uploadTodoImages(files),
   toggleTodo: (id: string) => rawStore.getState().toggleTodo(id),
   deleteTodo: (id: string) => rawStore.getState().deleteTodo(id),
   deleteTodosByAppId: (appId: string) => rawStore.getState().deleteTodosByAppId(appId),

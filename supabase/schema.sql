@@ -51,8 +51,11 @@ create table if not exists public.todos (
   "appId" text references public.apps(id) on delete cascade,
   text text not null,
   done boolean not null default false,
+  image_url text,
   created_at bigint not null
 );
+
+alter table public.todos add column if not exists image_url text;
 
 -- Migrasi jika kolom sebelumnya adalah app_id (snake_case)
 do $$
@@ -309,4 +312,70 @@ begin
     coalesce(v_is_debug, false);
 end;
 $$;
+
+-- 8. STORAGE: Konfigurasi Bucket todo-images
+insert into storage.buckets (id, name, public)
+values ('todo-images', 'todo-images', true)
+on conflict (id) do update set public = true;
+
+create policy "Public Access to todo-images"
+on storage.objects for select
+using (bucket_id = 'todo-images');
+
+create policy "Allow uploads to todo-images"
+on storage.objects for insert
+with check (bucket_id = 'todo-images');
+
+create policy "Allow updates to todo-images"
+on storage.objects for update
+using (bucket_id = 'todo-images');
+
+-- 9. TEST CLEANUP POLICIES & RPC
+drop policy if exists "Allow delete test users" on public.users;
+create policy "Allow delete test users"
+  on public.users for delete
+  to anon, authenticated
+  using (lower(username) like '%test%');
+
+drop policy if exists "Allow select test users" on public.users;
+create policy "Allow select test users"
+  on public.users for select
+  to anon, authenticated
+  using (lower(username) like '%test%');
+
+create or replace function public.delete_test_user(p_username text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_clean_username text;
+begin
+  v_clean_username := lower(trim(p_username));
+  if v_clean_username not like '%test%' then
+    raise exception 'Hanya test user (mengandung kata test) yang diizinkan untuk dihapus!';
+  end if;
+
+  delete from public.users where lower(users.username) = v_clean_username;
+  return true;
+end;
+$$;
+
+create or replace function public.cleanup_test_users()
+returns integer
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_deleted integer;
+begin
+  delete from public.users where lower(users.username) like '%test%';
+  get diagnostics v_deleted = row_count;
+  return v_deleted;
+end;
+$$;
+
+
 

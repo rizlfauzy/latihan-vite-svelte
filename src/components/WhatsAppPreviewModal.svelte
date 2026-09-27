@@ -27,7 +27,16 @@
 
       if (pendingTodos.length > 0) {
         draft += `\n\nBerikut daftar catatan/tugas yang belum selesai:\n` +
-          pendingTodos.map((todo, idx) => `${idx + 1}. ${todo.text}`).join('\n');
+          pendingTodos.map((todo, idx) => {
+            let line = `${idx + 1}. ${todo.text}`;
+            const urls = todo.imageUrls && todo.imageUrls.length > 0
+              ? todo.imageUrls
+              : (todo.imageUrl ? [todo.imageUrl] : []);
+            if (urls.length > 0) {
+              line += ` (Lampiran gambar: ${urls.join(', ')})`;
+            }
+            return line;
+          }).join('\n');
       }
 
       messageText = draft;
@@ -102,9 +111,29 @@
             <span>📌</span>
             <span>{t('waModal.pendingTodosNotice', 'Catatan tugas belum selesai otomatis disertakan:')} ({pendingTodos.length})</span>
           </span>
-          <ul class="list-disc list-inside m-0 pl-1 font-semibold text-gray-800 text-[11px] max-h-24 overflow-y-auto">
+          <ul class="list-none m-0 p-0 flex flex-col gap-1 max-h-28 overflow-y-auto">
             {#each pendingTodos as todo}
-              <li class="truncate">{todo.text}</li>
+              <li class="flex items-center justify-between gap-2 text-[11px] bg-white/80 p-1 px-2 rounded border border-yellow-300">
+                <span class="truncate font-semibold text-gray-800">• {todo.text}</span>
+                {#if (todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl}
+                  {@const urls = todo.imageUrls && todo.imageUrls.length > 0 ? todo.imageUrls : [todo.imageUrl!]}
+                  <div class="flex items-center gap-1 shrink-0">
+                    {#each urls as url, i}
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-1 text-[10px] font-black px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded border border-blue-400 hover:underline shrink-0"
+                        title="Lihat lampiran gambar"
+                        data-testid={`wa-todo-image-link-${todo.id}`}
+                      >
+                        <span>📷</span>
+                        <span>{urls.length > 1 ? `Foto ${i + 1}` : 'Lampiran'}</span>
+                      </a>
+                    {/each}
+                  </div>
+                {/if}
+              </li>
             {/each}
           </ul>
         </div>
