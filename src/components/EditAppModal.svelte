@@ -4,6 +4,9 @@
   import { i18nStore } from '@/stores/i18nStore';
   import CustomSelect from './CustomSelect.svelte';
   import SkeletonModal from './SkeletonModal.svelte';
+  import AppIcon from '@/components/AppIcon.svelte';
+  import { alertStore } from '@/stores/alertStore';
+  import { env } from '@/lib/env';
 
   let {
     isOpen = $bindable(false),
@@ -21,11 +24,14 @@
   let url = $state('');
   let description = $state('');
   let category = $state('Productivity');
-  let icon = $state('🚀');
+  let icon = $state('app-window');
   let selectedColor = $state('yellow');
   let picName = $state('');
   let picWhatsapp = $state('');
   let errorMessage = $state('');
+  let uploadedImageUrl = $state<string | null>(null);
+  let isUploadingImage = $state(false);
+  let fileInputRef = $state<HTMLInputElement | null>(null);
 
   const colorOptions = [
     { label: 'Yellow', value: 'yellow', cssVar: 'var(--color-nb-yellow)', bgClass: 'bg-nb-yellow' },
@@ -46,7 +52,20 @@
     'General',
   ];
 
-  const quickIcons = ['🚀', '⚡', '📊', '💼', '🛠️', '🔒', '👥', '💡', '📝', '🌐'];
+  const quickIcons = [
+    { label: 'AppWindow', value: 'app-window' },
+    { label: 'Rocket', value: 'rocket' },
+    { label: 'Zap', value: 'zap' },
+    { label: 'Activity', value: 'activity' },
+    { label: 'Briefcase', value: 'briefcase' },
+    { label: 'Wrench', value: 'wrench' },
+    { label: 'Lock', value: 'lock' },
+    { label: 'Users', value: 'users' },
+    { label: 'Lightbulb', value: 'lightbulb' },
+    { label: 'FileText', value: 'file-text' },
+    { label: 'Globe', value: 'globe' },
+    { label: 'Gamepad', value: 'gamepad' },
+  ];
 
   $effect(() => {
     if (isOpen && app) {
@@ -54,10 +73,12 @@
       url = app.url || '';
       description = app.description || '';
       category = app.category || 'Productivity';
-      icon = app.icon || '🚀';
+      icon = app.icon || 'app-window';
       picName = app.picName || '';
       picWhatsapp = app.picWhatsapp || '';
       errorMessage = '';
+      uploadedImageUrl = app.imageUrl || null;
+      isUploadingImage = false;
 
       // Match color
       const foundColor = colorOptions.find((c) => c.cssVar === app.color);
@@ -81,6 +102,42 @@
     if (e.key === 'Escape' && isOpen) {
       handleClose();
     }
+  }
+
+  async function handleFileSelect(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    const allowed = ['jpg', 'jpeg', 'png', 'svg'];
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !allowed.includes(ext)) {
+      alertStore.showError($i18nStore.t('imageModal.errFormat', 'Ekstensi file tidak didukung! Hanya .jpg, .jpeg, .png, dan .svg yang diperbolehkan.'));
+      if (fileInputRef) fileInputRef.value = '';
+      return;
+    }
+
+    const maxMb = env.maxImageSizeMb || 5;
+    if (file.size > maxMb * 1024 * 1024) {
+      alertStore.showError($i18nStore.t('imageModal.errSize', `Ukuran file melebihi batas maksimal ${maxMb} MB!`));
+      if (fileInputRef) fileInputRef.value = '';
+      return;
+    }
+
+    isUploadingImage = true;
+    try {
+      const url = await appStore.uploadAppImage(file);
+      uploadedImageUrl = url;
+    } catch (err: any) {
+      alertStore.showError(err?.message || 'Gagal mengupload gambar');
+    } finally {
+      isUploadingImage = false;
+      if (fileInputRef) fileInputRef.value = '';
+    }
+  }
+
+  function handleRemoveImage() {
+    uploadedImageUrl = null;
   }
 
   async function handleSubmit(e: SubmitEvent) {
@@ -117,10 +174,11 @@
       url: url.trim(),
       description: description.trim(),
       category: category.trim(),
-      icon: icon.trim() || '⚡',
+      icon: icon.trim() || 'app-window',
       color: resolvedColor,
       picName: picName.trim(),
       picWhatsapp: cleanedWa,
+      imageUrl: uploadedImageUrl || null,
     };
 
     await appStore.editApp(updatedApp);
@@ -158,7 +216,7 @@
 
         <button
           type="button"
-          class="w-8 h-8 border-2 border-nb-black hover:bg-nb-red rounded flex items-center justify-center font-bold text-sm cursor-pointer shadow-nb-xs transition-all text-nb-black bg-red-500"
+          class="w-8 h-8 border-2 border-nb-black hover:bg-nb-pink rounded flex items-center justify-center font-bold text-sm cursor-pointer shadow-nb-xs transition-all text-nb-black bg-red-500"
           onclick={handleClose}
           aria-label="Tutup form edit"
           data-testid="btn-close-edit-app"
@@ -176,7 +234,74 @@
       {/if}
 
       <!-- Form Body -->
-      <form onsubmit={handleSubmit} class="flex flex-col gap-4 text-nb-black">
+      <form onsubmit={handleSubmit} class="flex flex-col gap-4 text-nb-black text-xs font-bold">
+        <!-- Optional Image Upload -->
+        <div class="flex flex-col gap-2 p-3 border-2 border-nb-black bg-gray-50 rounded-md">
+          <div class="flex items-center justify-between">
+            <span class="uppercase text-[11px] font-black text-gray-700">Gambar Aplikasi (Opsional)</span>
+            {#if uploadedImageUrl}
+              <button
+                type="button"
+                class="text-[11px] text-red-600 hover:underline font-black cursor-pointer"
+                onclick={handleRemoveImage}
+                data-testid="btn-remove-edit-app-image"
+              >
+                ✕ Hapus Gambar
+              </button>
+            {/if}
+          </div>
+
+          {#if uploadedImageUrl}
+            <div class="flex items-center gap-3">
+              <div class="w-14 h-14 border-2 border-nb-black rounded bg-white overflow-hidden shadow-nb-sm shrink-0">
+                <img src={uploadedImageUrl} alt="Preview" class="w-full h-full object-cover" data-testid="preview-edit-app-image" />
+              </div>
+              <div class="text-[11px] text-gray-600">
+                <p class="font-bold text-green-700">✓ Gambar terpasang</p>
+                <p>Klik 'Ganti Gambar' di bawah jika ingin mengubah gambar.</p>
+                <div class="mt-1">
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.svg"
+                    bind:this={fileInputRef}
+                    onchange={handleFileSelect}
+                    class="hidden"
+                    id="edit-app-image-input-replace"
+                    data-testid="input-edit-app-image-replace"
+                  />
+                  <label
+                    for="edit-app-image-input-replace"
+                    class="nb-btn bg-white hover:bg-nb-yellow text-[10px] px-2 py-1 border-2 border-nb-black cursor-pointer inline-block text-black"
+                  >
+                    <span>🔄 Ganti Gambar</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          {:else}
+            <div class="flex items-center gap-2 flex-wrap">
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.svg"
+                bind:this={fileInputRef}
+                onchange={handleFileSelect}
+                class="hidden"
+                id="edit-app-image-input"
+                data-testid="input-edit-app-image"
+              />
+              <label
+                for="edit-app-image-input"
+                class="nb-btn bg-white hover:bg-nb-yellow text-xs px-3 py-1.5 border-2 border-nb-black flex items-center gap-1.5 cursor-pointer text-black"
+                data-testid="btn-upload-edit-app-image"
+              >
+                <span>📷</span>
+                <span>{isUploadingImage ? 'Mengunggah...' : 'Pilih Gambar (Maks 5 MB)'}</span>
+              </label>
+              <span class="text-[11px] text-gray-500 font-medium">Jika tidak diisi, akan memakai ikon default Lucide.</span>
+            </div>
+          {/if}
+        </div>
+
         <!-- App Name -->
         <div class="flex flex-col gap-1.5">
           <label for="edit-name" class="font-extrabold text-xs uppercase tracking-wide">
@@ -201,7 +326,7 @@
             </label>
             <input
               id="edit-url"
-              type="url"
+              type="text"
               bind:value={url}
               placeholder={$i18nStore.t('modal.urlPlaceholder')}
               class="nb-input w-full p-2.5 text-sm"
@@ -248,25 +373,29 @@
               {$i18nStore.t('modal.iconLabel')}
             </label>
             <div class="flex items-center gap-2">
+              <div class="w-10 h-10 border-2 border-nb-black bg-white flex items-center justify-center shrink-0">
+                <AppIcon name={icon} size={20} />
+              </div>
               <input
                 id="edit-icon"
                 type="text"
                 bind:value={icon}
-                maxlength="2"
-                class="nb-input w-12 text-center p-2 text-lg text-black"
+                class="nb-input w-24 text-center p-2 text-xs text-black"
                 data-testid="input-edit-app-icon"
               />
-              <div class="flex gap-1 flex-wrap">
-                {#each quickIcons.slice(0, 5) as emoji}
-                  <button
-                    type="button"
-                    class="w-7 h-7 border-2 border-nb-black bg-white hover:bg-nb-yellow rounded text-xs flex items-center justify-center cursor-pointer transition-all text-black"
-                    onclick={() => (icon = emoji)}
-                  >
-                    {emoji}
-                  </button>
-                {/each}
-              </div>
+            </div>
+            <div class="flex gap-1 flex-wrap pt-1">
+              {#each quickIcons.slice(0, 6) as qi}
+                <button
+                  type="button"
+                  class="w-7 h-7 border-2 border-nb-black bg-white hover:bg-nb-yellow rounded text-xs flex items-center justify-center cursor-pointer transition-all text-black {icon === qi.value ? 'bg-nb-yellow ring-2 ring-nb-black' : ''}"
+                  onclick={() => (icon = qi.value)}
+                  title={qi.label}
+                  data-testid="edit-quick-icon-{qi.value}"
+                >
+                  <AppIcon name={qi.value} size={15} />
+                </button>
+              {/each}
             </div>
           </div>
 

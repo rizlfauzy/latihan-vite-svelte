@@ -33,7 +33,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
       };
       (window as any).__authStore?.setUserSession?.(defaultUser, defaultRole);
     });
-    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading);
+    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading && !(window as any).__sectionStore?.getState?.()?.isLoading);
     await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
     await expect(page.locator('[data-testid="apps-list"]').or(page.locator('[data-testid="apps-empty-state"]'))).toBeVisible();
     await expect(page.locator('[data-testid="todo-input"]')).toBeVisible();
@@ -42,7 +42,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
   test.afterAll(async ({ browser }) => {
     const page = await browser.newPage();
     await page.goto('/');
-    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading);
+    await page.waitForFunction(() => !(window as any).__appStore?.getState?.()?.isLoading && !(window as any).__todoStore?.getState?.()?.isLoading && !(window as any).__sectionStore?.getState?.()?.isLoading);
     await page.evaluate(async () => {
       // Pastikan memiliki hak akses superadmin agar operasi delete diizinkan RBAC
       const defaultRole = { id: 1, name: 'SUPERADMIN', is_debug: true };
@@ -83,6 +83,12 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
       if (authStore?.cleanupTestUsers) {
         // Pembersihan otomatis: hapus semua user hasil test registrasi yang mengandung 'test'
         await authStore.cleanupTestUsers();
+      }
+
+      const sectionStore = (window as any).__sectionStore;
+      if (sectionStore) {
+        await sectionStore.resetSections?.('home');
+        await sectionStore.resetSections?.('company-profile');
       }
     });
     await page.close();
@@ -1794,6 +1800,163 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(confirmModal).toBeVisible();
     await page.locator('[data-testid="modal-confirm-button"]').click();
     await expect(todoItem).not.toBeVisible();
+  });
+
+  test('List Apps supports optional image upload on create/update and falls back to Lucide icon', async ({ page }) => {
+    // 1. Buat aplikasi tanpa gambar -> harus memakai icon Lucide
+    await page.locator('[data-testid="btn-open-add-app"]').click();
+    await expect(page.locator('[data-testid="add-app-modal-card"]')).toBeVisible();
+
+    const timestamp = Date.now();
+    const appWithoutImgName = `Test App Lucide ${timestamp}`;
+    await page.locator('[data-testid="input-app-name"]').fill(appWithoutImgName);
+    await page.locator('[data-testid="input-app-url"]').fill('https://lucide-test.internal');
+    await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi uji coba dengan icon Lucide');
+    await page.locator('[data-testid="quick-icon-rocket"]').click();
+    await page.locator('[data-testid="btn-submit-add-app"]').click();
+    await expect(page.locator('[data-testid="add-app-modal-card"]')).not.toBeVisible();
+
+    // Verifikasi card aplikasi muncul dengan icon Lucide (bukan tag <img>)
+    const cardWithoutImg = page.locator('[data-testid^="app-card-"]', { hasText: appWithoutImgName });
+    await expect(cardWithoutImg).toBeVisible();
+    await expect(cardWithoutImg.locator('img')).not.toBeVisible();
+    await expect(cardWithoutImg.locator('[data-testid^="app-icon-"]')).toBeVisible();
+
+    // 2. Buat aplikasi dengan gambar upload
+    await page.locator('[data-testid="btn-open-add-app"]').click();
+    await expect(page.locator('[data-testid="add-app-modal-card"]')).toBeVisible();
+
+    const appWithImgName = `Test App With Image ${timestamp}`;
+    await page.locator('[data-testid="input-app-name"]').fill(appWithImgName);
+    await page.locator('[data-testid="input-app-url"]').fill('https://image-test.internal');
+    await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi uji coba dengan upload gambar');
+
+    // Upload dummy svg image
+    const dummySvg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="red"/></svg>';
+    await page.locator('[data-testid="input-app-image"]').setInputFiles({
+      name: 'app-icon-test.svg',
+      mimeType: 'image/svg+xml',
+      buffer: Buffer.from(dummySvg),
+    });
+
+    // Verifikasi preview gambar muncul di modal
+    await expect(page.locator('[data-testid="preview-app-image"]')).toBeVisible();
+    await page.locator('[data-testid="btn-submit-add-app"]').click();
+    await expect(page.locator('[data-testid="add-app-modal-card"]')).not.toBeVisible();
+
+    // Verifikasi card aplikasi menampilkan <img> dengan data-testid app-image
+    const cardWithImg = page.locator('[data-testid^="app-card-"]', { hasText: appWithImgName });
+    await expect(cardWithImg).toBeVisible();
+    await expect(cardWithImg.locator('[data-testid^="app-image-"]')).toBeVisible();
+
+    // 3. Edit aplikasi: hapus gambar dan verifikasi kembali menggunakan Lucide icon
+    const editBtn = cardWithImg.locator('[data-testid^="btn-edit-app-"]');
+    await editBtn.click();
+    await expect(page.locator('[data-testid="edit-app-modal"]')).toBeVisible();
+    await expect(page.locator('[data-testid="preview-edit-app-image"]')).toBeVisible();
+
+    // Hapus gambar pada modal edit
+    await page.locator('[data-testid="btn-remove-edit-app-image"]').click();
+    await expect(page.locator('[data-testid="preview-edit-app-image"]')).not.toBeVisible();
+    await page.locator('[data-testid="btn-submit-edit-app"]').click();
+    await expect(page.locator('[data-testid="edit-app-modal"]')).not.toBeVisible();
+
+    // Verifikasi kartu aplikasi kembali menampilkan icon Lucide
+    await expect(cardWithImg.locator('[data-testid^="app-icon-"]')).toBeVisible();
+    await expect(cardWithImg.locator('[data-testid^="app-image-"]')).not.toBeVisible();
+
+    // Cleanup: hapus kedua aplikasi pengujian
+    const deleteBtn1 = cardWithoutImg.locator('[data-testid^="btn-delete-app-"]');
+    await deleteBtn1.click();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(cardWithoutImg).not.toBeVisible();
+
+    const deleteBtn2 = cardWithImg.locator('[data-testid^="btn-delete-app-"]');
+    await deleteBtn2.click();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(cardWithImg).not.toBeVisible();
+  });
+
+  test('Section Settings Modal can reorder sections and toggle section visibility on Home and Company Profile', async ({ page }) => {
+    // 1. Verifikasi tombol Atur Tata Letak muncul di navbar untuk user dengan akses debug
+    const settingsBtn = page.locator('[data-testid="nav-section-settings-btn"]');
+    await expect(settingsBtn).toBeVisible();
+    await settingsBtn.click();
+
+    const modal = page.locator('[data-testid="section-settings-modal"]');
+    await expect(modal).toBeVisible();
+
+    // Verifikasi item-item bagian Home muncul
+    await expect(page.locator('[data-testid="section-item-hero"]')).toBeVisible();
+    await expect(page.locator('[data-testid="section-item-apps-hub"]')).toBeVisible();
+    await expect(page.locator('[data-testid="section-item-todo-list"]')).toBeVisible();
+
+    // 2. Uji sembunyikan (toggle visibility) bagian todo-list
+    const toggleTodoBtn = page.locator('[data-testid="btn-toggle-visible-todo-list"]');
+    await toggleTodoBtn.click();
+
+    // Tutup modal dan verifikasi todo-list tidak muncul di halaman
+    await page.locator('[data-testid="btn-close-section-settings"]').click();
+    await expect(modal).not.toBeVisible();
+    await expect(page.locator('[data-testid="section-wrapper-todo-list"]')).not.toBeVisible();
+
+    // Buka kembali modal dan tampilkan kembali todo-list
+    await settingsBtn.click();
+    await expect(modal).toBeVisible();
+    await toggleTodoBtn.click();
+    await page.locator('[data-testid="btn-close-section-settings"]').click();
+    await expect(modal).not.toBeVisible();
+    await expect(page.locator('[data-testid="section-wrapper-todo-list"]')).toBeVisible();
+
+    // 3. Uji rearrange urutan bagian: pindah apps-hub ke atas hero
+    await settingsBtn.click();
+    await expect(modal).toBeVisible();
+    const moveUpAppsBtn = page.locator('[data-testid="btn-move-up-apps-hub"]');
+    await moveUpAppsBtn.click();
+    await page.locator('[data-testid="btn-close-section-settings"]').click();
+    await expect(modal).not.toBeVisible();
+
+    // Verifikasi urutan elemen di DOM: apps-hub sekarang mendahului hero
+    const wrappers = page.locator('[data-testid="home-page-container"] > div');
+    const firstWrapper = wrappers.first();
+    await expect(firstWrapper).toHaveAttribute('data-testid', 'section-wrapper-apps-hub');
+
+    // 4. Reset urutan ke default
+    await settingsBtn.click();
+    await expect(modal).toBeVisible();
+    await page.locator('[data-testid="btn-reset-sections"]').click();
+    await page.locator('[data-testid="btn-done-section-settings"]').click();
+    await expect(modal).not.toBeVisible();
+
+    // Verifikasi urutan kembali ke default: hero paling atas
+    const resetFirstWrapper = page.locator('[data-testid="home-page-container"] > div').first();
+    await expect(resetFirstWrapper).toHaveAttribute('data-testid', 'section-wrapper-hero');
+
+    // 5. Uji pada tab Company Profile
+    await page.goto('/company-profile');
+    await expect(page.locator('[data-testid="company-profile-container"]')).toBeVisible();
+
+    await settingsBtn.click();
+    await expect(modal).toBeVisible();
+    await page.locator('[data-testid="tab-section-cp"]').click();
+
+    // Sembunyikan bagian vision-mission di Company Profile
+    const toggleVisionBtn = page.locator('[data-testid="btn-toggle-visible-vision-mission"]');
+    await toggleVisionBtn.click();
+    await page.locator('[data-testid="btn-done-section-settings"]').click();
+    await expect(modal).not.toBeVisible();
+    await expect(page.locator('[data-testid="section-wrapper-vision-mission"]')).not.toBeVisible();
+
+    // Kembalikan ke default
+    await settingsBtn.click();
+    await expect(modal).toBeVisible();
+    await page.locator('[data-testid="tab-section-cp"]').click();
+    await page.locator('[data-testid="btn-reset-sections"]').click();
+    await page.locator('[data-testid="btn-done-section-settings"]').click();
+    await expect(page.locator('[data-testid="section-wrapper-vision-mission"]')).toBeVisible();
+
+    // Kembali ke home
+    await page.goto('/');
   });
 });
 

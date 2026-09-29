@@ -5,6 +5,8 @@
   import CustomSelect from '@/components/CustomSelect.svelte';
   import SkeletonModal from '@/components/SkeletonModal.svelte';
   import { alertStore } from '@/stores/alertStore';
+  import AppIcon from '@/components/AppIcon.svelte';
+  import { env } from '@/lib/env';
 
   let {
     isOpen = $bindable(false),
@@ -18,12 +20,15 @@
   let url = $state('');
   let description = $state('');
   let category = $state('Productivity');
-  let icon = $state('🚀');
+  let icon = $state('app-window');
   let selectedColor = $state('yellow');
   let picName = $state('');
   let picWhatsapp = $state('');
   let copyFeedback = $state('');
   let errorMessage = $state('');
+  let uploadedImageUrl = $state<string | null>(null);
+  let isUploadingImage = $state(false);
+  let fileInputRef = $state<HTMLInputElement | null>(null);
 
   const colorOptions = [
     { label: 'Yellow', value: 'yellow', cssVar: 'var(--color-nb-yellow)', bgClass: 'bg-nb-yellow' },
@@ -45,19 +50,34 @@
     'General',
   ];
 
-  const quickIcons = ['🚀', '⚡', '📊', '💼', '🛠️', '🔒', '👥', '💡', '📝', '🌐'];
+  const quickIcons = [
+    { label: 'AppWindow', value: 'app-window' },
+    { label: 'Rocket', value: 'rocket' },
+    { label: 'Zap', value: 'zap' },
+    { label: 'Activity', value: 'activity' },
+    { label: 'Briefcase', value: 'briefcase' },
+    { label: 'Wrench', value: 'wrench' },
+    { label: 'Lock', value: 'lock' },
+    { label: 'Users', value: 'users' },
+    { label: 'Lightbulb', value: 'lightbulb' },
+    { label: 'FileText', value: 'file-text' },
+    { label: 'Globe', value: 'globe' },
+    { label: 'Gamepad', value: 'gamepad' },
+  ];
 
   function resetForm() {
     name = '';
     url = '';
     description = '';
     category = 'Productivity';
-    icon = '🚀';
+    icon = 'app-window';
     selectedColor = 'yellow';
     picName = '';
     picWhatsapp = '';
     errorMessage = '';
     copyFeedback = '';
+    uploadedImageUrl = null;
+    isUploadingImage = false;
   }
 
   function handleClose() {
@@ -77,6 +97,42 @@
     }
   }
 
+  async function handleFileSelect(e: Event) {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (!file) return;
+
+    const allowed = ['jpg', 'jpeg', 'png', 'svg'];
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !allowed.includes(ext)) {
+      alertStore.showError($i18nStore.t('imageModal.errFormat', 'Ekstensi file tidak didukung! Hanya .jpg, .jpeg, .png, dan .svg yang diperbolehkan.'));
+      if (fileInputRef) fileInputRef.value = '';
+      return;
+    }
+
+    const maxMb = env.maxImageSizeMb || 5;
+    if (file.size > maxMb * 1024 * 1024) {
+      alertStore.showError($i18nStore.t('imageModal.errSize', `Ukuran file melebihi batas maksimal ${maxMb} MB!`));
+      if (fileInputRef) fileInputRef.value = '';
+      return;
+    }
+
+    isUploadingImage = true;
+    try {
+      const url = await appStore.uploadAppImage(file);
+      uploadedImageUrl = url;
+    } catch (err: any) {
+      alertStore.showError(err?.message || 'Gagal mengupload gambar');
+    } finally {
+      isUploadingImage = false;
+      if (fileInputRef) fileInputRef.value = '';
+    }
+  }
+
+  function handleRemoveImage() {
+    uploadedImageUrl = null;
+  }
+
   function buildAppItem(): AppItem {
     const chosen = colorOptions.find((c) => c.value === selectedColor);
     const colorVar = chosen ? chosen.cssVar : 'var(--color-nb-yellow)';
@@ -90,11 +146,12 @@
       name: name.trim(),
       description: description.trim(),
       url: url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`,
-      icon: icon.trim() || '⚡',
+      icon: icon.trim() || 'app-window',
       category: category.trim() || 'General',
       color: colorVar,
       picName: picName.trim() || 'Admin PIC',
       picWhatsapp: cleanWa,
+      imageUrl: uploadedImageUrl || null,
     };
   }
 
@@ -128,7 +185,8 @@
     category: "${app.category}",
     color: "${app.color}",
     picName: "${app.picName}",
-    picWhatsapp: "${app.picWhatsapp}"
+    picWhatsapp: "${app.picWhatsapp}",
+    imageUrl: ${app.imageUrl ? `"${app.imageUrl}"` : 'null'}
   },`;
 
     try {
@@ -204,6 +262,56 @@
 
       <!-- Form -->
       <form onsubmit={handleSubmit} class="flex flex-col gap-4 text-xs font-bold">
+        <!-- Optional Image Upload -->
+        <div class="flex flex-col gap-2 p-3 border-2 border-nb-black bg-gray-50 rounded-md">
+          <div class="flex items-center justify-between">
+            <span class="uppercase text-[11px] font-black text-gray-700">Gambar Aplikasi (Opsional)</span>
+            {#if uploadedImageUrl}
+              <button
+                type="button"
+                class="text-[11px] text-red-600 hover:underline font-black cursor-pointer"
+                onclick={handleRemoveImage}
+                data-testid="btn-remove-app-image"
+              >
+                ✕ Hapus Gambar
+              </button>
+            {/if}
+          </div>
+
+          {#if uploadedImageUrl}
+            <div class="flex items-center gap-3">
+              <div class="w-14 h-14 border-2 border-nb-black rounded bg-white overflow-hidden shadow-nb-sm shrink-0">
+                <img src={uploadedImageUrl} alt="Preview" class="w-full h-full object-cover" data-testid="preview-app-image" />
+              </div>
+              <div class="text-[11px] text-gray-600">
+                <p class="font-bold text-green-700">✓ Gambar berhasil diunggah</p>
+                <p>Gambar ini akan ditampilkan pada card aplikasi.</p>
+              </div>
+            </div>
+          {:else}
+            <div class="flex items-center gap-2 flex-wrap">
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.svg"
+                bind:this={fileInputRef}
+                onchange={handleFileSelect}
+                class="hidden"
+                id="add-app-image-input"
+                data-testid="input-app-image"
+              />
+              <label
+                for="add-app-image-input"
+                class="nb-btn bg-white hover:bg-nb-yellow text-xs px-3 py-1.5 border-2 border-nb-black flex items-center gap-1.5 cursor-pointer text-black"
+                data-testid="btn-upload-app-image"
+              >
+                <span>📷</span>
+                <span>{isUploadingImage ? 'Mengunggah...' : 'Pilih Gambar (Maks 5 MB)'}</span>
+              </label>
+              <span class="text-[11px] text-gray-500 font-medium">Jika tidak diisi, akan memakai ikon default Lucide.</span>
+            </div>
+          {/if}
+        </div>
+
         <!-- Nama Aplikasi & Icon -->
         <div class="grid grid-cols-4 gap-3">
           <div class="col-span-3 flex flex-col gap-1">
@@ -220,27 +328,33 @@
 
           <div class="col-span-1 flex flex-col gap-1">
             <label for="app-icon" class="uppercase">{$i18nStore.t('modal.iconLabel')}</label>
-            <input
-              id="app-icon"
-              type="text"
-              class="nb-input p-2.5 text-center text-base"
-              maxlength="4"
-              bind:value={icon}
-              data-testid="input-app-icon"
-            />
+            <div class="flex items-center gap-1">
+              <div class="w-10 h-10 border-2 border-nb-black bg-white flex items-center justify-center shrink-0">
+                <AppIcon name={icon} size={20} />
+              </div>
+              <input
+                id="app-icon"
+                type="text"
+                class="nb-input p-2 text-center text-xs w-full"
+                bind:value={icon}
+                data-testid="input-app-icon"
+              />
+            </div>
           </div>
         </div>
 
-        <!-- Quick Icon Selector -->
+        <!-- Quick Icon Selector (Lucide Icons) -->
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-[11px] text-gray-600 uppercase font-black">{$i18nStore.t('modal.quickPick')}</span>
           {#each quickIcons as qi}
             <button
               type="button"
-              class="w-7 h-7 border-2 border-nb-black bg-white hover:bg-nb-yellow flex items-center justify-center font-bold text-sm text-black"
-              onclick={() => (icon = qi)}
+              class="w-7 h-7 border-2 border-nb-black bg-white hover:bg-nb-yellow flex items-center justify-center font-bold text-sm text-black {icon === qi.value ? 'bg-nb-yellow ring-2 ring-nb-black' : ''}"
+              onclick={() => (icon = qi.value)}
+              title={qi.label}
+              data-testid="quick-icon-{qi.value}"
             >
-              {qi}
+              <AppIcon name={qi.value} size={15} />
             </button>
           {/each}
         </div>

@@ -2,6 +2,7 @@
   import type { AppItem } from '@/data/apps';
   import { i18nStore } from '@/stores/i18nStore';
   import { authStore } from '@/stores/authStore';
+  import AppIcon from '@/components/AppIcon.svelte';
 
   let {
     app,
@@ -43,10 +44,21 @@
       {/if}
 
       <div
-        class="w-12 h-12 border-2 border-nb-black rounded-md shadow-nb-sm flex items-center justify-center"
+        class="w-12 h-12 border-2 border-nb-black rounded-md shadow-nb-sm flex items-center justify-center overflow-hidden"
         style="background: {app.color};"
       >
-        <span class="text-2xl leading-none">{app.icon}</span>
+        {#if app.imageUrl}
+          <img
+            src={app.imageUrl}
+            alt={app.name}
+            class="w-full h-full object-cover"
+            data-testid="app-image-{app.id}"
+          />
+        {:else}
+          <div class="text-nb-black flex items-center justify-center" data-testid="app-icon-{app.id}">
+            <AppIcon name={app.icon} size={24} />
+          </div>
+        {/if}
       </div>
     </div>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
+  import { sectionStore } from '@/stores/sectionStore';
   import CustomSelect from '@/components/CustomSelect.svelte';
   import SkeletonCompanyProfile from '@/components/SkeletonCompanyProfile.svelte';
 
@@ -20,6 +21,12 @@
 
   let selectedServices = $state<string[]>(['arcade']);
 
+  let cpSections = $derived(
+    $sectionStore.sections
+      .filter((s) => s.page === 'company-profile')
+      .sort((a, b) => a.orderIndex - b.orderIndex)
+  );
+
   if (typeof window !== 'undefined') {
     (window as any).__setCompanyProfileLoading = (loading: boolean) => {
       isLoading = loading;
@@ -31,162 +38,172 @@
   <SkeletonCompanyProfile />
 {:else}
 <div class="flex flex-col gap-8 w-full" data-testid="company-profile-container">
-  <!-- Header / Hero Section -->
-  <section id="profile" class="nb-card bg-nb-yellow p-6 sm:p-8 relative overflow-hidden scroll-mt-24">
-    <div class="inline-flex items-center gap-2 bg-white px-3 py-1 border-2 border-nb-black shadow-nb-sm text-xs font-black uppercase mb-4">
-      <span>🏢</span>
-      <span data-testid="cp-badge">{$i18nStore.t('cp.badge')}</span>
-    </div>
+  {#each cpSections as sec (sec.sectionKey)}
+    {#if sec.visible}
+      {#if sec.sectionKey === 'profile'}
+        <!-- Header / Hero Section -->
+        <section id="profile" class="nb-card bg-nb-yellow p-6 sm:p-8 relative overflow-hidden scroll-mt-24" data-testid="section-wrapper-profile">
+          <div class="inline-flex items-center gap-2 bg-white px-3 py-1 border-2 border-nb-black shadow-nb-sm text-xs font-black uppercase mb-4">
+            <span>🏢</span>
+            <span data-testid="cp-badge">{$i18nStore.t('cp.badge')}</span>
+          </div>
 
-    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-nb-black mb-3" data-testid="cp-title">
-      {$i18nStore.t('cp.title')}
-    </h1>
+          <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-nb-black mb-3" data-testid="cp-title">
+            {$i18nStore.t('cp.title')}
+          </h1>
 
-    <p class="text-base sm:text-lg font-bold text-gray-800 max-w-2xl leading-relaxed mb-6" data-testid="cp-hero-desc">
-      {$i18nStore.t('cp.heroDesc')}
-    </p>
+          <p class="text-base sm:text-lg font-bold text-gray-800 max-w-2xl leading-relaxed mb-6" data-testid="cp-hero-desc">
+            {$i18nStore.t('cp.heroDesc')}
+          </p>
 
-    <div class="flex flex-wrap items-center gap-3">
-      <a href="/" class="nb-btn bg-white text-sm px-5 py-2.5" data-testid="cp-back-btn">
-        {$i18nStore.t('cp.backDashboard')}
-      </a>
-      <a
-        href="https://wa.me/6281234567890?text=Halo%20Admin%20CV%20Sukses%20Gemilang,%20saya%20ingin%20bertanya%20seputar%20arena%20game%20center%20dan%20layanan%20Anda."
-        target="_blank"
-        rel="noopener noreferrer"
-        class="nb-btn bg-nb-green text-sm px-5 py-2.5 flex items-center gap-2"
-        data-testid="cp-contact-wa"
-      >
-        <span>💬</span>
-        <span>{$i18nStore.t('cp.contactWa')}</span>
-      </a>
-    </div>
-  </section>
+          <div class="flex flex-wrap items-center gap-3">
+            <a href="/" class="nb-btn bg-white text-sm px-5 py-2.5" data-testid="cp-back-btn">
+              {$i18nStore.t('cp.backDashboard')}
+            </a>
+            <a
+              href="https://wa.me/6281234567890?text=Halo%20Admin%20CV%20Sukses%20Gemilang,%20saya%20ingin%20bertanya%20seputar%20arena%20game%20center%20dan%20layanan%20Anda."
+              target="_blank"
+              rel="noopener noreferrer"
+              class="nb-btn bg-nb-green text-sm px-5 py-2.5 flex items-center gap-2"
+              data-testid="cp-contact-wa"
+            >
+              <span>💬</span>
+              <span>{$i18nStore.t('cp.contactWa')}</span>
+            </a>
+          </div>
+        </section>
 
-  <!-- Numbers / Highlights -->
-  <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="nb-card bg-nb-pink p-4 text-center">
-      <div class="text-3xl sm:text-4xl font-black text-nb-black">100%</div>
-      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">FAMILY FRIENDLY</div>
-    </div>
-    <div class="nb-card bg-nb-blue p-4 text-center">
-      <div class="text-3xl sm:text-4xl font-black text-nb-black">50+</div>
-      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">ARCADE & SIMULATOR</div>
-    </div>
-    <div class="nb-card bg-nb-green p-4 text-center">
-      <div class="text-3xl sm:text-4xl font-black text-nb-black">1000+</div>
-      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">PILIHAN HADIAH</div>
-    </div>
-    <div class="nb-card bg-nb-purple p-4 text-center">
-      <div class="text-3xl sm:text-4xl font-black text-nb-black">24/7</div>
-      <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">{$i18nStore.t('cp.metricSupport')}</div>
-    </div>
-  </section>
+      {:else if sec.sectionKey === 'highlights'}
+        <!-- Numbers / Highlights -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="section-wrapper-highlights">
+          <div class="nb-card bg-nb-pink p-4 text-center">
+            <div class="text-3xl sm:text-4xl font-black text-nb-black">100%</div>
+            <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">FAMILY FRIENDLY</div>
+          </div>
+          <div class="nb-card bg-nb-blue p-4 text-center">
+            <div class="text-3xl sm:text-4xl font-black text-nb-black">50+</div>
+            <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">ARCADE & SIMULATOR</div>
+          </div>
+          <div class="nb-card bg-nb-green p-4 text-center">
+            <div class="text-3xl sm:text-4xl font-black text-nb-black">1000+</div>
+            <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">PILIHAN HADIAH</div>
+          </div>
+          <div class="nb-card bg-nb-purple p-4 text-center">
+            <div class="text-3xl sm:text-4xl font-black text-nb-black">24/7</div>
+            <div class="text-xs sm:text-sm font-extrabold uppercase mt-1">{$i18nStore.t('cp.metricSupport')}</div>
+          </div>
+        </section>
 
-  <!-- Visi & Misi -->
-  <section id="vision-mission" class="grid grid-cols-1 md:grid-cols-2 gap-6 scroll-mt-24">
-    <div class="nb-card bg-white p-6 flex flex-col gap-3">
-      <div class="flex items-center gap-2">
-        <span class="text-2xl">🎯</span>
-        <h2 class="text-xl font-black uppercase tracking-tight" data-testid="cp-vision-title">
-          {$i18nStore.t('cp.visionTitle')}
-        </h2>
-      </div>
-      <p class="text-sm font-bold text-gray-700 leading-relaxed" data-testid="cp-vision-desc">
-        {$i18nStore.t('cp.visionDesc')}
-      </p>
-    </div>
+      {:else if sec.sectionKey === 'vision-mission'}
+        <!-- Visi & Misi -->
+        <section id="vision-mission" class="grid grid-cols-1 md:grid-cols-2 gap-6 scroll-mt-24" data-testid="section-wrapper-vision-mission">
+          <div class="nb-card bg-white p-6 flex flex-col gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🎯</span>
+              <h2 class="text-xl font-black uppercase tracking-tight" data-testid="cp-vision-title">
+                {$i18nStore.t('cp.visionTitle')}
+              </h2>
+            </div>
+            <p class="text-sm font-bold text-gray-700 leading-relaxed" data-testid="cp-vision-desc">
+              {$i18nStore.t('cp.visionDesc')}
+            </p>
+          </div>
 
-    <div class="nb-card bg-white p-6 flex flex-col gap-3">
-      <div class="flex items-center gap-2">
-        <span class="text-2xl">🚀</span>
-        <h2 class="text-xl font-black uppercase tracking-tight" data-testid="cp-mission-title">
-          {$i18nStore.t('cp.missionTitle')}
-        </h2>
-      </div>
-      <ul class="text-sm font-bold text-gray-700 space-y-2 list-disc list-inside">
-        <li>{$i18nStore.t('cp.mission1')}</li>
-        <li>{$i18nStore.t('cp.mission2')}</li>
-        <li>{$i18nStore.t('cp.mission3')}</li>
-      </ul>
-    </div>
-  </section>
+          <div class="nb-card bg-white p-6 flex flex-col gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🚀</span>
+              <h2 class="text-xl font-black uppercase tracking-tight" data-testid="cp-mission-title">
+                {$i18nStore.t('cp.missionTitle')}
+              </h2>
+            </div>
+            <ul class="text-sm font-bold text-gray-700 space-y-2 list-disc list-inside">
+              <li>{$i18nStore.t('cp.mission1')}</li>
+              <li>{$i18nStore.t('cp.mission2')}</li>
+              <li>{$i18nStore.t('cp.mission3')}</li>
+            </ul>
+          </div>
+        </section>
 
-  <!-- Core Services & Tech Stack -->
-  <section id="services" class="nb-card bg-white p-6 sm:p-8 scroll-mt-24">
-    <div class="inline-flex items-center gap-2 bg-nb-blue text-nb-black px-3 py-1 border-2 border-nb-black shadow-nb-sm text-xs font-black uppercase mb-5">
-      <span>🛠️</span>
-      <span>{$i18nStore.t('cp.servicesBadge')}</span>
-    </div>
+      {:else if sec.sectionKey === 'services'}
+        <!-- Core Services & Tech Stack -->
+        <section id="services" class="nb-card bg-white p-6 sm:p-8 scroll-mt-24" data-testid="section-wrapper-services">
+          <div class="inline-flex items-center gap-2 bg-nb-blue text-nb-black px-3 py-1 border-2 border-nb-black shadow-nb-sm text-xs font-black uppercase mb-5">
+            <span>🛠️</span>
+            <span>{$i18nStore.t('cp.servicesBadge')}</span>
+          </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      <div class="border-3 border-nb-black p-4 bg-nb-bg shadow-nb-sm">
-        <div class="text-2xl mb-2">⚡</div>
-        <h3 class="text-base font-black uppercase mb-1">{$i18nStore.t('cp.service1Title')}</h3>
-        <p class="text-xs font-bold text-gray-700">{$i18nStore.t('cp.service1Desc')}</p>
-      </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div class="border-3 border-nb-black p-4 bg-nb-bg shadow-nb-sm">
+              <div class="text-2xl mb-2">⚡</div>
+              <h3 class="text-base font-black uppercase mb-1">{$i18nStore.t('cp.service1Title')}</h3>
+              <p class="text-xs font-bold text-gray-700">{$i18nStore.t('cp.service1Desc')}</p>
+            </div>
 
-      <div class="border-3 border-nb-black p-4 bg-nb-bg shadow-nb-sm">
-        <div class="text-2xl mb-2">🎨</div>
-        <h3 class="text-base font-black uppercase mb-1">{$i18nStore.t('cp.service2Title')}</h3>
-        <p class="text-xs font-bold text-gray-700">{$i18nStore.t('cp.service2Desc')}</p>
-      </div>
+            <div class="border-3 border-nb-black p-4 bg-nb-bg shadow-nb-sm">
+              <div class="text-2xl mb-2">🎨</div>
+              <h3 class="text-base font-black uppercase mb-1">{$i18nStore.t('cp.service2Title')}</h3>
+              <p class="text-xs font-bold text-gray-700">{$i18nStore.t('cp.service2Desc')}</p>
+            </div>
 
-      <div class="border-3 border-nb-black p-4 bg-nb-bg shadow-nb-sm">
-        <div class="text-2xl mb-2">🛡️</div>
-        <h3 class="text-base font-black uppercase mb-1">{$i18nStore.t('cp.service3Title')}</h3>
-        <p class="text-xs font-bold text-gray-700">{$i18nStore.t('cp.service3Desc')}</p>
-      </div>
-    </div>
+            <div class="border-3 border-nb-black p-4 bg-nb-bg shadow-nb-sm">
+              <div class="text-2xl mb-2">🛡️</div>
+              <h3 class="text-base font-black uppercase mb-1">{$i18nStore.t('cp.service3Title')}</h3>
+              <p class="text-xs font-bold text-gray-700">{$i18nStore.t('cp.service3Desc')}</p>
+            </div>
+          </div>
 
-    <!-- Multi-Select Custom Component Demo -->
-    <div class="mt-6 pt-5 border-t-3 border-dashed border-nb-black flex flex-col gap-2" data-testid="cp-service-select-box">
-      <label for="cp-service-select" class="font-black text-xs uppercase text-nb-black flex items-center gap-1.5">
-        <span>✨</span>
-        <span>{$i18nStore.t('cp.servicesSelectLabel')}</span>
-      </label>
-      <CustomSelect
-        id="cp-service-select"
-        options={serviceOptions}
-        bind:value={selectedServices}
-        multiple={true}
-        placeholder={$i18nStore.t('cp.servicesSelectPlaceholder')}
-        searchPlaceholder={$i18nStore.t('cp.servicesSelectSearch')}
-        dataTestId="select-services-multi"
-      />
-    </div>
-  </section>
+          <!-- Multi-Select Custom Component Demo -->
+          <div class="mt-6 pt-5 border-t-3 border-dashed border-nb-black flex flex-col gap-2" data-testid="cp-service-select-box">
+            <label for="cp-service-select" class="font-black text-xs uppercase text-nb-black flex items-center gap-1.5">
+              <span>✨</span>
+              <span>{$i18nStore.t('cp.servicesSelectLabel')}</span>
+            </label>
+            <CustomSelect
+              id="cp-service-select"
+              options={serviceOptions}
+              bind:value={selectedServices}
+              multiple={true}
+              placeholder={$i18nStore.t('cp.servicesSelectPlaceholder')}
+              searchPlaceholder={$i18nStore.t('cp.servicesSelectSearch')}
+              dataTestId="select-services-multi"
+            />
+          </div>
+        </section>
 
-  <!-- PIC & Leadership -->
-  <section id="contact" class="nb-card bg-nb-purple p-6 sm:p-8 scroll-mt-24">
-    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-      <div>
-        <div class="inline-flex items-center gap-2 bg-white px-3 py-1 border-2 border-nb-black shadow-nb-sm text-xs font-black uppercase mb-2">
-          <span>👑</span>
-          <span>{$i18nStore.t('cp.leadBadge')}</span>
-        </div>
-        <h2 class="text-2xl sm:text-3xl font-black uppercase text-nb-black" data-testid="cp-lead-name">
-          {$i18nStore.t('cp.leadName')}
-        </h2>
-        <p class="text-sm font-extrabold text-gray-900 mt-1">
-          {$i18nStore.t('cp.leadRole')}
-        </p>
-        <p class="text-xs font-bold text-gray-800 mt-2 max-w-xl">
-          {$i18nStore.t('cp.leadBio')}
-        </p>
-      </div>
+      {:else if sec.sectionKey === 'contact'}
+        <!-- PIC & Leadership -->
+        <section id="contact" class="nb-card bg-nb-purple p-6 sm:p-8 scroll-mt-24" data-testid="section-wrapper-contact">
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+              <div class="inline-flex items-center gap-2 bg-white px-3 py-1 border-2 border-nb-black shadow-nb-sm text-xs font-black uppercase mb-2">
+                <span>👑</span>
+                <span>{$i18nStore.t('cp.leadBadge')}</span>
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-black uppercase text-nb-black" data-testid="cp-lead-name">
+                {$i18nStore.t('cp.leadName')}
+              </h2>
+              <p class="text-sm font-extrabold text-gray-900 mt-1">
+                {$i18nStore.t('cp.leadRole')}
+              </p>
+              <p class="text-xs font-bold text-gray-800 mt-2 max-w-xl">
+                {$i18nStore.t('cp.leadBio')}
+              </p>
+            </div>
 
-      <a
-        href="https://wa.me/6281234567890?text=Halo%20Tim%20CV%20Sukses%20Gemilang,%20saya%20ingin%20berdiskusi%20terkait%20arena%20game%20center."
-        target="_blank"
-        rel="noopener noreferrer"
-        class="nb-btn bg-nb-green text-sm px-5 py-3 whitespace-nowrap flex items-center gap-2"
-        data-testid="cp-lead-wa-btn"
-      >
-        <span>💬</span>
-        <span>{$i18nStore.t('cp.leadWaBtn')}</span>
-      </a>
-    </div>
-  </section>
+            <a
+              href="https://wa.me/6281234567890?text=Halo%20Tim%20CV%20Sukses%20Gemilang,%20saya%20ingin%20berdiskusi%20terkait%20arena%20game%20center."
+              target="_blank"
+              rel="noopener noreferrer"
+              class="nb-btn bg-nb-green text-sm px-5 py-3 whitespace-nowrap flex items-center gap-2"
+              data-testid="cp-lead-wa-btn"
+            >
+              <span>💬</span>
+              <span>{$i18nStore.t('cp.leadWaBtn')}</span>
+            </a>
+          </div>
+        </section>
+      {/if}
+    {/if}
+  {/each}
 </div>
 {/if}

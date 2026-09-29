@@ -5,10 +5,12 @@
   import { themeStore } from '@/stores/themeStore';
   import { authStore } from '@/stores/authStore';
   import ConfirmModal from '@/components/ConfirmModal.svelte';
+  import SectionSettingsModal from '@/components/SectionSettingsModal.svelte';
 
   const t = $derived((key: string, defaultValue: string = ''): string => $i18nStore.t(key, defaultValue));
 
   let isModalLogoutOpen = $state(false);
+  let isSectionSettingsOpen = $state(false);
   let mobileMenuOpen = $state(false);
   let openDropdown = $state<'home' | 'company' | null>(null);
 
@@ -218,6 +220,20 @@
         <span>{$i18nStore.locale === 'id' ? '🇮🇩 ID' : '🇬🇧 EN'}</span>
       </button>
 
+      <!-- Section Layout Settings Button (Admin/Debug only) -->
+      {#if $authStore.hasDebugAccess}
+        <button
+          type="button"
+          class="nb-btn bg-white hover:bg-nb-yellow text-xs font-black px-2.5 py-2 flex items-center gap-1.5 text-black"
+          onclick={() => (isSectionSettingsOpen = true)}
+          data-testid="nav-section-settings-btn"
+          title="Atur Tata Letak Bagian Halaman"
+        >
+          <span>📐</span>
+          <span class="hidden lg:inline">Tata Letak</span>
+        </button>
+      {/if}
+
       <!-- User Profile / Login Button -->
       {#if $authStore.isAuthenticated && $authStore.user}
         <div class="flex items-center gap-1.5" data-testid="nav-user-section">
@@ -365,6 +381,18 @@
         </button>
       </div>
 
+      {#if $authStore.hasDebugAccess}
+        <button
+          type="button"
+          class="nb-btn bg-white hover:bg-nb-yellow text-xs font-black px-3 py-2 flex items-center justify-center gap-1.5 text-black mt-2"
+          onclick={() => { closeMobileMenu(); isSectionSettingsOpen = true; }}
+          data-testid="mobile-section-settings-btn"
+        >
+          <span>📐</span>
+          <span>Atur Tata Letak</span>
+        </button>
+      {/if}
+
       {#if $authStore.isAuthenticated && $authStore.user}
         <div class="flex items-center justify-between gap-2 mt-2 pt-2 border-t-2 border-dashed border-gray-300">
           <a
@@ -408,3 +436,5 @@
     onConfirm={handleLogout}
     onCancel={() => (isModalLogoutOpen = false)}
   />
+
+  <SectionSettingsModal bind:isOpen={isSectionSettingsOpen} />
