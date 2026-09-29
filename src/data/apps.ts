@@ -8,6 +8,7 @@ export interface AppItem {
   color: string;
   picName: string;
   picWhatsapp: string;
+  imageUrl?: string | null;
 }
 
 export const svelteApps: AppItem[] = [];
