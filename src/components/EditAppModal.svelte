@@ -238,7 +238,7 @@
         <!-- Optional Image Upload -->
         <div class="flex flex-col gap-2 p-3 border-2 border-nb-black bg-gray-50 rounded-md">
           <div class="flex items-center justify-between">
-            <span class="uppercase text-[11px] font-black text-gray-700">Gambar Aplikasi (Opsional)</span>
+            <span class="uppercase text-[11px] font-black text-gray-700">{$i18nStore.t('modal.appImageLabel')}</span>
             {#if uploadedImageUrl}
               <button
                 type="button"
@@ -246,7 +246,7 @@
                 onclick={handleRemoveImage}
                 data-testid="btn-remove-edit-app-image"
               >
-                ✕ Hapus Gambar
+                {$i18nStore.t('modal.removeImage')}
               </button>
             {/if}
           </div>
@@ -257,8 +257,8 @@
                 <img src={uploadedImageUrl} alt="Preview" class="w-full h-full object-cover" data-testid="preview-edit-app-image" />
               </div>
               <div class="text-[11px] text-gray-600">
-                <p class="font-bold text-green-700">✓ Gambar terpasang</p>
-                <p>Klik 'Ganti Gambar' di bawah jika ingin mengubah gambar.</p>
+                <p class="font-bold text-green-700">{$i18nStore.t('modal.imageAttached')}</p>
+                <p>{$i18nStore.t('modal.imageDescEdit')}</p>
                 <div class="mt-1">
                   <input
                     type="file"
@@ -273,7 +273,7 @@
                     for="edit-app-image-input-replace"
                     class="nb-btn bg-white hover:bg-nb-yellow text-[10px] px-2 py-1 border-2 border-nb-black cursor-pointer inline-block text-black"
                   >
-                    <span>🔄 Ganti Gambar</span>
+                    <span>{$i18nStore.t('modal.replaceImage')}</span>
                   </label>
                 </div>
               </div>
@@ -295,9 +295,9 @@
                 data-testid="btn-upload-edit-app-image"
               >
                 <span>📷</span>
-                <span>{isUploadingImage ? 'Mengunggah...' : 'Pilih Gambar (Maks 5 MB)'}</span>
+                <span>{isUploadingImage ? $i18nStore.t('modal.uploading') : $i18nStore.t('modal.chooseImage')}</span>
               </label>
-              <span class="text-[11px] text-gray-500 font-medium">Jika tidak diisi, akan memakai ikon default Lucide.</span>
+              <span class="text-[11px] text-gray-500 font-medium">{$i18nStore.t('modal.imageFallbackNotice')}</span>
             </div>
           {/if}
         </div>

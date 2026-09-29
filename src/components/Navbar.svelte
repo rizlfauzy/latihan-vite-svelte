@@ -227,10 +227,10 @@
           class="nb-btn bg-white hover:bg-nb-yellow text-xs font-black px-2.5 py-2 flex items-center gap-1.5 text-black"
           onclick={() => (isSectionSettingsOpen = true)}
           data-testid="nav-section-settings-btn"
-          title="Atur Tata Letak Bagian Halaman"
+          title={t('nav.layoutTooltip', 'Atur Tata Letak Bagian Halaman')}
         >
           <span>📐</span>
-          <span class="hidden lg:inline">Tata Letak</span>
+          <span class="hidden lg:inline">{t('nav.layout', 'Tata Letak')}</span>
         </button>
       {/if}
 
@@ -389,7 +389,7 @@
           data-testid="mobile-section-settings-btn"
         >
           <span>📐</span>
-          <span>Atur Tata Letak</span>
+          <span>{t('nav.layout', 'Tata Letak')}</span>
         </button>
       {/if}
 

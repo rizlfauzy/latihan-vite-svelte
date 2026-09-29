@@ -110,7 +110,7 @@ const rawStore: StoreApi<SectionStoreState> = createZustandStore<SectionStoreSta
 
   moveSection: async (page: string, sectionKey: string, direction: 'up' | 'down') => {
     if (!authStore.getState().hasDebugAccess) {
-      alertStore.showError(i18nStore.t('auth.unauthorizedApps') || 'Akses ditolak: Hanya role dengan izin debug yang dapat mengubah tata letak!');
+      alertStore.showError(i18nStore.t('section.unauthorized', 'Akses ditolak: Hanya role dengan izin debug yang dapat mengubah tata letak!'));
       return false;
     }
 
@@ -154,13 +154,13 @@ const rawStore: StoreApi<SectionStoreState> = createZustandStore<SectionStoreSta
       }
     }
 
-    alertStore.showSuccess('Tata letak bagian berhasil diperbarui!');
+    alertStore.showSuccess(i18nStore.t('section.reorderSuccess', 'Tata letak bagian berhasil diperbarui!'));
     return true;
   },
 
   toggleVisibility: async (page: string, sectionKey: string) => {
     if (!authStore.getState().hasDebugAccess) {
-      alertStore.showError(i18nStore.t('auth.unauthorizedApps') || 'Akses ditolak: Hanya role dengan izin debug yang dapat mengubah tata letak!');
+      alertStore.showError(i18nStore.t('section.unauthorized', 'Akses ditolak: Hanya role dengan izin debug yang dapat mengubah tata letak!'));
       return false;
     }
 
@@ -186,13 +186,16 @@ const rawStore: StoreApi<SectionStoreState> = createZustandStore<SectionStoreSta
       }
     }
 
-    alertStore.showSuccess(`Bagian "${target.title}" ${newVisibility ? 'ditampilkan' : 'disembunyikan'}!`);
+    const localizedTitle = i18nStore.t(`section.${target.sectionKey}`, target.title);
+    alertStore.showSuccess(
+      i18nStore.t('section.visibilitySuccess', 'Status visibilitas bagian "{title}" berhasil diubah!').replace('{title}', localizedTitle)
+    );
     return true;
   },
 
   reorderSections: async (page: string, newOrderedKeys: string[]) => {
     if (!authStore.getState().hasDebugAccess) {
-      alertStore.showError(i18nStore.t('auth.unauthorizedApps') || 'Akses ditolak: Hanya role dengan izin debug yang dapat mengubah tata letak!');
+      alertStore.showError(i18nStore.t('section.unauthorized', 'Akses ditolak: Hanya role dengan izin debug yang dapat mengubah tata letak!'));
       return false;
     }
 
@@ -225,13 +228,13 @@ const rawStore: StoreApi<SectionStoreState> = createZustandStore<SectionStoreSta
       }
     }
 
-    alertStore.showSuccess('Urutan bagian berhasil disimpan!');
+    alertStore.showSuccess(i18nStore.t('section.reorderSuccess', 'Urutan bagian berhasil disimpan!'));
     return true;
   },
 
   resetSections: async (page: string) => {
     if (!authStore.getState().hasDebugAccess) {
-      alertStore.showError(i18nStore.t('auth.unauthorizedApps') || 'Akses ditolak: Hanya role dengan izin debug yang dapat mereset tata letak!');
+      alertStore.showError(i18nStore.t('section.unauthorized', 'Akses ditolak: Hanya role dengan izin debug yang dapat mereset tata letak!'));
       return false;
     }
 
@@ -255,7 +258,7 @@ const rawStore: StoreApi<SectionStoreState> = createZustandStore<SectionStoreSta
       }
     }
 
-    alertStore.showSuccess('Tata letak berhasil direset ke awal!');
+    alertStore.showSuccess(i18nStore.t('section.resetSuccess', 'Tata letak berhasil direset ke awal!'));
     return true;
   },
 }));

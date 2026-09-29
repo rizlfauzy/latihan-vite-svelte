@@ -510,6 +510,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(page.getByText('TAMBAH APLIKASI')).toBeVisible();
     await expect(page.getByText('CATATAN & TO-DO LIST')).toBeVisible();
     await expect(page.locator('[data-testid="filter-all"]')).toContainText('SEMUA');
+    await expect(page.locator('[data-testid="nav-section-settings-btn"]')).toContainText('Tata Letak');
 
     // Click language switcher to EN
     const langBtn = page.locator('[data-testid="lang-switcher-btn"]');
@@ -521,6 +522,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(page.locator('[data-testid="apps-counter"]')).toContainText('CONNECTED APPS');
     await expect(page.getByText('NOTES & TO-DO LIST')).toBeVisible();
     await expect(page.locator('[data-testid="filter-all"]')).toContainText('ALL');
+    await expect(page.locator('[data-testid="nav-section-settings-btn"]')).toContainText('Layout');
     await expect(langBtn).toContainText('EN');
 
     // Navigate to Company Profile in English
@@ -1886,10 +1888,17 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     const modal = page.locator('[data-testid="section-settings-modal"]');
     await expect(modal).toBeVisible();
 
+    // Verifikasi teks terjemahan bahasa Indonesia di modal
+    await expect(page.locator('#section-settings-title')).toHaveText('ATUR TATA LETAK BAGIAN');
+    await expect(page.locator('[data-testid="tab-section-home"]')).toContainText('Halaman Utama');
+    await expect(page.locator('[data-testid="btn-reset-sections"]')).toContainText('Reset ke Default');
+    await expect(page.locator('[data-testid="btn-done-section-settings"]')).toContainText('Selesai');
+
     // Verifikasi item-item bagian Home muncul
     await expect(page.locator('[data-testid="section-item-hero"]')).toBeVisible();
     await expect(page.locator('[data-testid="section-item-apps-hub"]')).toBeVisible();
     await expect(page.locator('[data-testid="section-item-todo-list"]')).toBeVisible();
+    await expect(page.locator('[data-testid="section-item-todo-list"]')).toContainText('Catatan & To-Do List');
 
     // 2. Uji sembunyikan (toggle visibility) bagian todo-list
     const toggleTodoBtn = page.locator('[data-testid="btn-toggle-visible-todo-list"]');
