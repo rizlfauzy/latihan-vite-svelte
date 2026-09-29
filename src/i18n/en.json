@@ -255,6 +255,47 @@
   "todo.imageAttached": "Image Attached",
   "todo.imagesAttached": "Images Attached",
   "todo.uploadImage": "Upload Image",
-  "todo.viewImage": "View Image"
+  "todo.viewImage": "View Image",
+
+  "nav.layout": "Layout",
+  "nav.layoutTooltip": "Customize Page Sections Layout",
+
+  "layoutModal.title": "CUSTOMIZE SECTION LAYOUT",
+  "layoutModal.subtitle": "Change order and visibility of page sections",
+  "layoutModal.tabHome": "🏠 Home Page",
+  "layoutModal.tabCompany": "🏢 Company Profile",
+  "layoutModal.moveUp": "Move up",
+  "layoutModal.moveDown": "Move down",
+  "layoutModal.show": "Visible",
+  "layoutModal.hide": "Hidden",
+  "layoutModal.toggleHide": "Click to hide",
+  "layoutModal.toggleShow": "Click to show",
+  "layoutModal.reset": "Reset to Default",
+  "layoutModal.done": "Done",
+  "layoutModal.close": "Close modal",
+
+  "section.hero": "Hero Banner",
+  "section.apps-hub": "Apps Hub",
+  "section.todo-list": "Notes & To-Do List",
+  "section.profile": "Header & Hero Profile",
+  "section.highlights": "Company Highlights",
+  "section.vision-mission": "Vision & Mission",
+  "section.services": "Services & Attractions",
+  "section.contact": "Contact & Management",
+  "section.reorderSuccess": "Section layout updated successfully!",
+  "section.visibilitySuccess": "Visibility status of \"{title}\" updated successfully!",
+  "section.resetSuccess": "Layout successfully reset to default!",
+  "section.unauthorized": "Access denied: Only roles with debug permission can customize layout!",
+
+  "modal.appImageLabel": "APPLICATION IMAGE (OPTIONAL)",
+  "modal.removeImage": "✕ Remove Image",
+  "modal.imageUploaded": "✓ Image uploaded successfully",
+  "modal.imageAttached": "✓ Image attached",
+  "modal.imageDescAdd": "This image will be displayed on the application card.",
+  "modal.imageDescEdit": "Click 'Change Image' below to replace the image.",
+  "modal.chooseImage": "Choose Image (Max 5 MB)",
+  "modal.uploading": "Uploading...",
+  "modal.imageFallbackNotice": "If empty, default Lucide icon will be used.",
+  "modal.replaceImage": "🔄 Change Image"
 }
 

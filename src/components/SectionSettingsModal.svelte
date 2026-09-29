@@ -9,6 +9,8 @@
     isOpen: boolean;
   } = $props();
 
+  const t = $derived((key: string, defaultValue: string = ''): string => $i18nStore.t(key, defaultValue));
+
   let activeTab = $state<'home' | 'company-profile'>('home');
 
   let currentSections = $derived(
@@ -16,6 +18,10 @@
       .filter((s) => s.page === activeTab)
       .sort((a, b) => a.orderIndex - b.orderIndex)
   );
+
+  function getSectionTitle(sec: SectionItem): string {
+    return t(`section.${sec.sectionKey}`, sec.title);
+  }
 
   function handleClose() {
     isOpen = false;
@@ -70,16 +76,16 @@
           </div>
           <div>
             <h2 id="section-settings-title" class="text-lg font-black uppercase text-nb-black">
-              Atur Tata Letak Bagian
+              {t('layoutModal.title')}
             </h2>
-            <p class="text-[11px] text-gray-600 font-bold">Ubah posisi dan visibilitas bagian halaman</p>
+            <p class="text-[11px] text-gray-600 font-bold">{t('layoutModal.subtitle')}</p>
           </div>
         </div>
         <button
           type="button"
           class="nb-btn bg-red-500 hover:bg-nb-pink text-xs font-black p-1.5 w-8 h-8 flex items-center justify-center text-nb-black"
           onclick={handleClose}
-          aria-label="Tutup modal"
+          aria-label={t('layoutModal.close')}
           data-testid="btn-close-section-settings"
         >
           <X size={16} />
@@ -94,7 +100,7 @@
           onclick={() => (activeTab = 'home')}
           data-testid="tab-section-home"
         >
-          🏠 Halaman Utama
+          {t('layoutModal.tabHome')}
         </button>
         <button
           type="button"
@@ -102,7 +108,7 @@
           onclick={() => (activeTab = 'company-profile')}
           data-testid="tab-section-cp"
         >
-          🏢 Profil Perusahaan
+          {t('layoutModal.tabCompany')}
         </button>
       </div>
 
@@ -118,7 +124,7 @@
                 {idx + 1}
               </span>
               <div class="flex flex-col">
-                <span class="font-black text-sm text-nb-black">{sec.title}</span>
+                <span class="font-black text-sm text-nb-black">{getSectionTitle(sec)}</span>
                 <span class="text-[10px] text-gray-500 font-mono font-bold">#{sec.sectionKey}</span>
               </div>
             </div>
@@ -130,7 +136,7 @@
                 disabled={idx === 0}
                 class="nb-btn bg-white hover:bg-nb-yellow disabled:opacity-30 disabled:cursor-not-allowed p-1.5 border-2 border-nb-black text-black"
                 onclick={() => handleMove(sec.sectionKey, 'up')}
-                title="Pindah ke atas"
+                title={t('layoutModal.moveUp')}
                 data-testid="btn-move-up-{sec.sectionKey}"
               >
                 <ArrowUp size={14} />
@@ -140,7 +146,7 @@
                 disabled={idx === currentSections.length - 1}
                 class="nb-btn bg-white hover:bg-nb-yellow disabled:opacity-30 disabled:cursor-not-allowed p-1.5 border-2 border-nb-black text-black"
                 onclick={() => handleMove(sec.sectionKey, 'down')}
-                title="Pindah ke bawah"
+                title={t('layoutModal.moveDown')}
                 data-testid="btn-move-down-{sec.sectionKey}"
               >
                 <ArrowDown size={14} />
@@ -151,15 +157,15 @@
                 type="button"
                 class="nb-btn p-1.5 border-2 border-nb-black text-xs font-black flex items-center gap-1 {sec.visible ? 'bg-nb-green text-black' : 'bg-gray-300 text-gray-600'}"
                 onclick={() => handleToggle(sec.sectionKey)}
-                title={sec.visible ? 'Klik untuk sembunyikan' : 'Klik untuk tampilkan'}
+                title={sec.visible ? t('layoutModal.toggleHide') : t('layoutModal.toggleShow')}
                 data-testid="btn-toggle-visible-{sec.sectionKey}"
               >
                 {#if sec.visible}
                   <Eye size={14} />
-                  <span class="hidden sm:inline text-[10px]">Tampil</span>
+                  <span class="hidden sm:inline text-[10px]">{t('layoutModal.show')}</span>
                 {:else}
                   <EyeOff size={14} />
-                  <span class="hidden sm:inline text-[10px]">Sembunyi</span>
+                  <span class="hidden sm:inline text-[10px]">{t('layoutModal.hide')}</span>
                 {/if}
               </button>
             </div>
@@ -176,7 +182,7 @@
           data-testid="btn-reset-sections"
         >
           <RotateCcw size={14} />
-          <span>Reset ke Default</span>
+          <span>{t('layoutModal.reset')}</span>
         </button>
 
         <button
@@ -185,7 +191,7 @@
           onclick={handleClose}
           data-testid="btn-done-section-settings"
         >
-          Selesai
+          {t('layoutModal.done')}
         </button>
       </div>
     </div>

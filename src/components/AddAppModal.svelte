@@ -265,7 +265,7 @@
         <!-- Optional Image Upload -->
         <div class="flex flex-col gap-2 p-3 border-2 border-nb-black bg-gray-50 rounded-md">
           <div class="flex items-center justify-between">
-            <span class="uppercase text-[11px] font-black text-gray-700">Gambar Aplikasi (Opsional)</span>
+            <span class="uppercase text-[11px] font-black text-gray-700">{$i18nStore.t('modal.appImageLabel')}</span>
             {#if uploadedImageUrl}
               <button
                 type="button"
@@ -273,7 +273,7 @@
                 onclick={handleRemoveImage}
                 data-testid="btn-remove-app-image"
               >
-                ✕ Hapus Gambar
+                {$i18nStore.t('modal.removeImage')}
               </button>
             {/if}
           </div>
@@ -284,8 +284,8 @@
                 <img src={uploadedImageUrl} alt="Preview" class="w-full h-full object-cover" data-testid="preview-app-image" />
               </div>
               <div class="text-[11px] text-gray-600">
-                <p class="font-bold text-green-700">✓ Gambar berhasil diunggah</p>
-                <p>Gambar ini akan ditampilkan pada card aplikasi.</p>
+                <p class="font-bold text-green-700">{$i18nStore.t('modal.imageUploaded')}</p>
+                <p>{$i18nStore.t('modal.imageDescAdd')}</p>
               </div>
             </div>
           {:else}
@@ -305,9 +305,9 @@
                 data-testid="btn-upload-app-image"
               >
                 <span>📷</span>
-                <span>{isUploadingImage ? 'Mengunggah...' : 'Pilih Gambar (Maks 5 MB)'}</span>
+                <span>{isUploadingImage ? $i18nStore.t('modal.uploading') : $i18nStore.t('modal.chooseImage')}</span>
               </label>
-              <span class="text-[11px] text-gray-500 font-medium">Jika tidak diisi, akan memakai ikon default Lucide.</span>
+              <span class="text-[11px] text-gray-500 font-medium">{$i18nStore.t('modal.imageFallbackNotice')}</span>
             </div>
           {/if}
         </div>
