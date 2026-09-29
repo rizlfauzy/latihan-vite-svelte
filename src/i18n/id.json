@@ -255,6 +255,47 @@
   "todo.imageAttached": "Gambar Terlampir",
   "todo.imagesAttached": "Gambar Terlampir",
   "todo.uploadImage": "Upload Gambar",
-  "todo.viewImage": "Lihat Gambar"
+  "todo.viewImage": "Lihat Gambar",
+
+  "nav.layout": "Tata Letak",
+  "nav.layoutTooltip": "Atur Tata Letak Bagian Halaman",
+
+  "layoutModal.title": "ATUR TATA LETAK BAGIAN",
+  "layoutModal.subtitle": "Ubah posisi dan visibilitas bagian halaman",
+  "layoutModal.tabHome": "🏠 Halaman Utama",
+  "layoutModal.tabCompany": "🏢 Profil Perusahaan",
+  "layoutModal.moveUp": "Pindah ke atas",
+  "layoutModal.moveDown": "Pindah ke bawah",
+  "layoutModal.show": "Tampil",
+  "layoutModal.hide": "Sembunyi",
+  "layoutModal.toggleHide": "Klik untuk sembunyikan",
+  "layoutModal.toggleShow": "Klik untuk tampilkan",
+  "layoutModal.reset": "Reset ke Default",
+  "layoutModal.done": "Selesai",
+  "layoutModal.close": "Tutup modal",
+
+  "section.hero": "Hero Banner",
+  "section.apps-hub": "Hub Aplikasi",
+  "section.todo-list": "Catatan & To-Do List",
+  "section.profile": "Header & Hero Profil",
+  "section.highlights": "Keunggulan Perusahaan",
+  "section.vision-mission": "Visi & Misi",
+  "section.services": "Wahana & Layanan",
+  "section.contact": "Kontak & Manajemen",
+  "section.reorderSuccess": "Tata letak bagian berhasil diperbarui!",
+  "section.visibilitySuccess": "Status visibilitas bagian \"{title}\" berhasil diubah!",
+  "section.resetSuccess": "Tata letak berhasil direset ke awal!",
+  "section.unauthorized": "Akses ditolak: Hanya role dengan izin debug yang dapat mengubah tata letak!",
+
+  "modal.appImageLabel": "GAMBAR APLIKASI (OPSIONAL)",
+  "modal.removeImage": "✕ Hapus Gambar",
+  "modal.imageUploaded": "✓ Gambar berhasil diunggah",
+  "modal.imageAttached": "✓ Gambar terpasang",
+  "modal.imageDescAdd": "Gambar ini akan ditampilkan pada card aplikasi.",
+  "modal.imageDescEdit": "Klik 'Ganti Gambar' di bawah jika ingin mengubah gambar.",
+  "modal.chooseImage": "Pilih Gambar (Maks 5 MB)",
+  "modal.uploading": "Mengunggah...",
+  "modal.imageFallbackNotice": "Jika tidak diisi, akan memakai ikon default Lucide.",
+  "modal.replaceImage": "🔄 Ganti Gambar"
 }
 
