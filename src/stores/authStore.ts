@@ -143,7 +143,7 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
           console.warn('[authStore] Supabase register_user error', error);
           if (error.message && (error.message.includes('sudah digunakan') || error.message.includes('already exists'))) {
             set({ isLoading: false });
-            alertStore.showError(error.message);
+            // alertStore.showError(error.message);
             return { success: false, message: error.message };
           }
         } else if (Array.isArray(data) && data.length > 0) {
