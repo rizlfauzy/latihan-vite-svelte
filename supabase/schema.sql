@@ -52,10 +52,11 @@ create table if not exists public.todos (
   text text not null,
   done boolean not null default false,
   image_url text,
+  order_index integer not null default 0,
   created_at bigint not null
 );
 
-alter table public.todos add column if not exists image_url text;
+alter table public.todos add column if not exists order_index integer not null default 0;
 
 -- Migrasi jika kolom sebelumnya adalah app_id (snake_case)
 do $$
@@ -74,12 +75,17 @@ create table if not exists public.subtodos (
   todo_id text not null references public.todos(id) on delete cascade,
   text text not null,
   done boolean not null default false,
+  order_index integer not null default 0,
   created_at bigint not null
 );
 
+alter table public.subtodos add column if not exists order_index integer not null default 0;
+
 -- Indexes
 create index if not exists idx_todos_appid on public.todos("appId");
+create index if not exists idx_todos_order_index on public.todos(order_index);
 create index if not exists idx_subtodos_todo_id on public.subtodos(todo_id);
+create index if not exists idx_subtodos_order_index on public.subtodos(order_index);
 create index if not exists idx_users_username on public.users(username);
 
 -- 6. RPC: Autentikasi User (Verifikasi Bcrypt aman di sisi database)

@@ -296,6 +296,41 @@
   "modal.chooseImage": "Pilih Gambar (Maks 5 MB)",
   "modal.uploading": "Mengunggah...",
   "modal.imageFallbackNotice": "Jika tidak diisi, akan memakai ikon default Lucide.",
-  "modal.replaceImage": "🔄 Ganti Gambar"
+  "modal.replaceImage": "🔄 Ganti Gambar",
+
+  "profile.changePassword": "GANTI PASSWORD",
+  "profile.changePasswordModalTitle": "GANTI PASSWORD",
+  "profile.changePasswordModalSubtitle": "Perbarui password akun Anda",
+  "profile.oldPasswordLabel": "PASSWORD LAMA *",
+  "profile.oldPasswordPlaceholder": "Masukkan password saat ini",
+  "profile.newPasswordLabel": "PASSWORD BARU *",
+  "profile.newPasswordPlaceholder": "Minimal 6 karakter",
+
+  "auth.oldPasswordRequired": "Password lama wajib diisi!",
+  "auth.newPasswordRequired": "Password baru wajib diisi!",
+  "auth.newPasswordMinLength": "Password baru minimal 6 karakter!",
+  "auth.oldPasswordWrong": "Password lama tidak sesuai!",
+  "auth.changePasswordSuccess": "Password berhasil diperbarui!",
+  "auth.changePasswordFailed": "Gagal mengubah password",
+  "auth.notLoggedIn": "User belum login",
+
+  "modal.appHeroImageLabel": "HERO BANNER APLIKASI (OPSIONAL)",
+  "modal.heroImageDesc": "Gambar banner bagian atas card aplikasi.",
+  "modal.heroImageFallbackNotice": "Jika tidak diisi, akan memakai gambar hero default.",
+  "modal.dragDropHint": "atau drag & drop file ke sini",
+
+  "grid.dragHandleTooltip": "Tekan lama card atau drag handle ini untuk mengubah posisi",
+  "grid.reorderSuccess": "Urutan aplikasi berhasil diperbarui!",
+  "todo.dragHandleTooltip": "Tekan lama catatan atau drag handle ini untuk mengubah posisi",
+  "todo.dragSubtaskTooltip": "Tekan lama sub-task atau drag handle ini untuk mengubah posisi atau memindahkan ke catatan lain",
+  "todo.reorderSuccess": "Urutan catatan berhasil diperbarui!",
+  "todo.reorderSubtaskSuccess": "Urutan sub-task berhasil diperbarui!",
+  "todo.moveSubtaskSuccess": "Sub-task berhasil dipindahkan ke catatan lain!",
+  "todo.dropSubtaskHere": "Lepaskan sub-task di sini...",
+  "todo.convertTodoToSubtaskSuccess": "Catatan berhasil diubah menjadi sub-task!",
+  "todo.cannotConvertWithSubtasks": "Catatan yang memiliki sub-task tidak dapat diubah menjadi sub-task!",
+  "todo.dropTodoAsSubtask": "Lepaskan di sini untuk mengubah menjadi sub-task",
+  "todo.convertSubtaskToTodoSuccess": "Sub-task berhasil diubah menjadi catatan mandiri!",
+  "todo.dropSubtaskAsTodo": "Lepaskan di sini untuk mengubah menjadi catatan mandiri"
 }
 

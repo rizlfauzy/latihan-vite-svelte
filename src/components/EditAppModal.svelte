@@ -5,6 +5,7 @@
   import CustomSelect from './CustomSelect.svelte';
   import SkeletonModal from './SkeletonModal.svelte';
   import AppIcon from '@/components/AppIcon.svelte';
+  import DragDropImageInput from '@/components/DragDropImageInput.svelte';
   import { alertStore } from '@/stores/alertStore';
   import { env } from '@/lib/env';
 
@@ -30,6 +31,7 @@
   let picWhatsapp = $state('');
   let errorMessage = $state('');
   let uploadedImageUrl = $state<string | null>(null);
+  let uploadedHeroImageUrl = $state<string | null>(null);
   let isUploadingImage = $state(false);
   let fileInputRef = $state<HTMLInputElement | null>(null);
 
@@ -78,6 +80,7 @@
       picWhatsapp = app.picWhatsapp || '';
       errorMessage = '';
       uploadedImageUrl = app.imageUrl || null;
+      uploadedHeroImageUrl = app.heroImageUrl || null;
       isUploadingImage = false;
 
       // Match color
@@ -102,42 +105,6 @@
     if (e.key === 'Escape' && isOpen) {
       handleClose();
     }
-  }
-
-  async function handleFileSelect(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    const allowed = ['jpg', 'jpeg', 'png', 'svg'];
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!ext || !allowed.includes(ext)) {
-      alertStore.showError($i18nStore.t('imageModal.errFormat', 'Ekstensi file tidak didukung! Hanya .jpg, .jpeg, .png, dan .svg yang diperbolehkan.'));
-      if (fileInputRef) fileInputRef.value = '';
-      return;
-    }
-
-    const maxMb = env.maxImageSizeMb || 5;
-    if (file.size > maxMb * 1024 * 1024) {
-      alertStore.showError($i18nStore.t('imageModal.errSize', `Ukuran file melebihi batas maksimal ${maxMb} MB!`));
-      if (fileInputRef) fileInputRef.value = '';
-      return;
-    }
-
-    isUploadingImage = true;
-    try {
-      const url = await appStore.uploadAppImage(file);
-      uploadedImageUrl = url;
-    } catch (err: any) {
-      alertStore.showError(err?.message || 'Gagal mengupload gambar');
-    } finally {
-      isUploadingImage = false;
-      if (fileInputRef) fileInputRef.value = '';
-    }
-  }
-
-  function handleRemoveImage() {
-    uploadedImageUrl = null;
   }
 
   async function handleSubmit(e: SubmitEvent) {
@@ -179,6 +146,7 @@
       picName: picName.trim(),
       picWhatsapp: cleanedWa,
       imageUrl: uploadedImageUrl || null,
+      heroImageUrl: uploadedHeroImageUrl || null,
     };
 
     await appStore.editApp(updatedApp);
@@ -235,72 +203,35 @@
 
       <!-- Form Body -->
       <form onsubmit={handleSubmit} class="flex flex-col gap-4 text-nb-black text-xs font-bold">
-        <!-- Optional Image Upload -->
-        <div class="flex flex-col gap-2 p-3 border-2 border-nb-black bg-gray-50 rounded-md">
-          <div class="flex items-center justify-between">
-            <span class="uppercase text-[11px] font-black text-gray-700">{$i18nStore.t('modal.appImageLabel')}</span>
-            {#if uploadedImageUrl}
-              <button
-                type="button"
-                class="text-[11px] text-red-600 hover:underline font-black cursor-pointer"
-                onclick={handleRemoveImage}
-                data-testid="btn-remove-edit-app-image"
-              >
-                {$i18nStore.t('modal.removeImage')}
-              </button>
-            {/if}
-          </div>
+        <!-- Optional Hero Banner Image Upload -->
+        <DragDropImageInput
+          label={$i18nStore.t('modal.appHeroImageLabel', 'HERO BANNER APLIKASI (OPSIONAL)')}
+          description={$i18nStore.t('modal.heroImageDesc', 'Gambar banner bagian atas card aplikasi.')}
+          imageUrl={uploadedHeroImageUrl}
+          allowedExtensions={['jpg', 'jpeg', 'png']}
+          aspectRatio="banner"
+          subfolder="hero"
+          inputId="edit-app-hero-image-input"
+          testIdPrefix="edit-app-hero-image"
+          fallbackNotice={$i18nStore.t('modal.heroImageFallbackNotice', 'Jika tidak diisi, akan memakai gambar hero default.')}
+          onUpload={(url) => (uploadedHeroImageUrl = url)}
+          onRemove={() => (uploadedHeroImageUrl = null)}
+        />
 
-          {#if uploadedImageUrl}
-            <div class="flex items-center gap-3">
-              <div class="w-14 h-14 border-2 border-nb-black rounded bg-white overflow-hidden shadow-nb-sm shrink-0">
-                <img src={uploadedImageUrl} alt="Preview" class="w-full h-full object-cover" data-testid="preview-edit-app-image" />
-              </div>
-              <div class="text-[11px] text-gray-600">
-                <p class="font-bold text-green-700">{$i18nStore.t('modal.imageAttached')}</p>
-                <p>{$i18nStore.t('modal.imageDescEdit')}</p>
-                <div class="mt-1">
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.svg"
-                    bind:this={fileInputRef}
-                    onchange={handleFileSelect}
-                    class="hidden"
-                    id="edit-app-image-input-replace"
-                    data-testid="input-edit-app-image-replace"
-                  />
-                  <label
-                    for="edit-app-image-input-replace"
-                    class="nb-btn bg-white hover:bg-nb-yellow text-[10px] px-2 py-1 border-2 border-nb-black cursor-pointer inline-block text-black"
-                  >
-                    <span>{$i18nStore.t('modal.replaceImage')}</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          {:else}
-            <div class="flex items-center gap-2 flex-wrap">
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png,.svg"
-                bind:this={fileInputRef}
-                onchange={handleFileSelect}
-                class="hidden"
-                id="edit-app-image-input"
-                data-testid="input-edit-app-image"
-              />
-              <label
-                for="edit-app-image-input"
-                class="nb-btn bg-white hover:bg-nb-yellow text-xs px-3 py-1.5 border-2 border-nb-black flex items-center gap-1.5 cursor-pointer text-black"
-                data-testid="btn-upload-edit-app-image"
-              >
-                <span>📷</span>
-                <span>{isUploadingImage ? $i18nStore.t('modal.uploading') : $i18nStore.t('modal.chooseImage')}</span>
-              </label>
-              <span class="text-[11px] text-gray-500 font-medium">{$i18nStore.t('modal.imageFallbackNotice')}</span>
-            </div>
-          {/if}
-        </div>
+        <!-- Optional Icon Image Upload -->
+        <DragDropImageInput
+          label={$i18nStore.t('modal.appImageLabel', 'GAMBAR ICON APLIKASI (OPSIONAL)')}
+          description={$i18nStore.t('modal.imageDescEdit', 'Klik ganti gambar di bawah jika ingin mengubah icon.')}
+          imageUrl={uploadedImageUrl}
+          allowedExtensions={['jpg', 'jpeg', 'png', 'svg']}
+          aspectRatio="square"
+          subfolder="icons"
+          inputId="edit-app-image-input"
+          testIdPrefix="edit-app-image"
+          fallbackNotice={$i18nStore.t('modal.imageFallbackNotice', 'Jika tidak diisi, akan memakai ikon default Lucide.')}
+          onUpload={(url) => (uploadedImageUrl = url)}
+          onRemove={() => (uploadedImageUrl = null)}
+        />
 
         <!-- App Name -->
         <div class="flex flex-col gap-1.5">
