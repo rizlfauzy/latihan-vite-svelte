@@ -29,6 +29,7 @@ export interface AuthStoreState {
   register: (name: string, username: string, password: string) => Promise<{ success: boolean; message?: string }>;
   deleteTestUser: (username: string) => Promise<boolean>;
   cleanupTestUsers: () => Promise<number>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   setUserSession: (user: User, role: Role) => void;
 }
@@ -328,6 +329,58 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
     return deletedCount;
   },
 
+  changePassword: async (oldPassword: string, newPassword: string): Promise<{ success: boolean; message?: string }> => {
+    const currentUser = get().user;
+    if (!currentUser) {
+      return { success: false, message: i18nStore.t('auth.notLoggedIn', 'User belum login') };
+    }
+
+    if (!oldPassword.trim()) {
+      return { success: false, message: i18nStore.t('auth.oldPasswordRequired', 'Password lama wajib diisi!') };
+    }
+
+    if (!newPassword.trim() || newPassword.length < 6) {
+      return { success: false, message: i18nStore.t('auth.newPasswordMinLength', 'Password baru minimal 6 karakter!') };
+    }
+
+    set({ isLoading: true });
+    try {
+      if (isSupabaseEnabled && supabase) {
+        const { data, error } = await supabase.rpc('change_user_password', {
+          p_username: currentUser.username,
+          p_old_password: oldPassword,
+          p_new_password: newPassword,
+        });
+
+        if (error) {
+          set({ isLoading: false });
+          return { success: false, message: error.message };
+        }
+      } else {
+        const raw = localStorage.getItem(REGISTERED_USERS_KEY) || '[]';
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const userIdx = list.findIndex((u: any) => u.username?.toLowerCase() === currentUser.username.toLowerCase());
+          if (userIdx !== -1) {
+            if (list[userIdx].password && list[userIdx].password !== oldPassword) {
+              set({ isLoading: false });
+              return { success: false, message: i18nStore.t('auth.oldPasswordWrong', 'Password lama tidak sesuai!') };
+            }
+            list[userIdx].password = newPassword;
+            localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(list));
+          }
+        }
+      }
+
+      set({ isLoading: false });
+      alertStore.showSuccess(i18nStore.t('auth.changePasswordSuccess', 'Password berhasil diperbarui!'));
+      return { success: true };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return { success: false, message: err?.message || 'Gagal mengubah password' };
+    }
+  },
+
   logout: () => {
     set({
       user: null,
@@ -347,6 +400,7 @@ export const authStore = {
   register: (name: string, username: string, password: string) => rawAuthStore.getState().register(name, username, password),
   deleteTestUser: (username: string) => rawAuthStore.getState().deleteTestUser(username),
   cleanupTestUsers: () => rawAuthStore.getState().cleanupTestUsers(),
+  changePassword: (oldPassword: string, newPassword: string) => rawAuthStore.getState().changePassword(oldPassword, newPassword),
   logout: () => rawAuthStore.getState().logout(),
   setUserSession: (user: User, role: Role) => rawAuthStore.getState().setUserSession(user, role),
   subscribe(run: (state: AuthStoreState) => void) {

@@ -6,6 +6,7 @@
   import SkeletonModal from '@/components/SkeletonModal.svelte';
   import { alertStore } from '@/stores/alertStore';
   import AppIcon from '@/components/AppIcon.svelte';
+  import DragDropImageInput from '@/components/DragDropImageInput.svelte';
   import { env } from '@/lib/env';
 
   let {
@@ -27,6 +28,7 @@
   let copyFeedback = $state('');
   let errorMessage = $state('');
   let uploadedImageUrl = $state<string | null>(null);
+  let uploadedHeroImageUrl = $state<string | null>(null);
   let isUploadingImage = $state(false);
   let fileInputRef = $state<HTMLInputElement | null>(null);
 
@@ -77,6 +79,7 @@
     errorMessage = '';
     copyFeedback = '';
     uploadedImageUrl = null;
+    uploadedHeroImageUrl = null;
     isUploadingImage = false;
   }
 
@@ -95,42 +98,6 @@
     if (e.key === 'Escape' && isOpen) {
       handleClose();
     }
-  }
-
-  async function handleFileSelect(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (!file) return;
-
-    const allowed = ['jpg', 'jpeg', 'png', 'svg'];
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!ext || !allowed.includes(ext)) {
-      alertStore.showError($i18nStore.t('imageModal.errFormat', 'Ekstensi file tidak didukung! Hanya .jpg, .jpeg, .png, dan .svg yang diperbolehkan.'));
-      if (fileInputRef) fileInputRef.value = '';
-      return;
-    }
-
-    const maxMb = env.maxImageSizeMb || 5;
-    if (file.size > maxMb * 1024 * 1024) {
-      alertStore.showError($i18nStore.t('imageModal.errSize', `Ukuran file melebihi batas maksimal ${maxMb} MB!`));
-      if (fileInputRef) fileInputRef.value = '';
-      return;
-    }
-
-    isUploadingImage = true;
-    try {
-      const url = await appStore.uploadAppImage(file);
-      uploadedImageUrl = url;
-    } catch (err: any) {
-      alertStore.showError(err?.message || 'Gagal mengupload gambar');
-    } finally {
-      isUploadingImage = false;
-      if (fileInputRef) fileInputRef.value = '';
-    }
-  }
-
-  function handleRemoveImage() {
-    uploadedImageUrl = null;
   }
 
   function buildAppItem(): AppItem {
@@ -152,6 +119,7 @@
       picName: picName.trim() || 'Admin PIC',
       picWhatsapp: cleanWa,
       imageUrl: uploadedImageUrl || null,
+      heroImageUrl: uploadedHeroImageUrl || null,
     };
   }
 
@@ -262,55 +230,35 @@
 
       <!-- Form -->
       <form onsubmit={handleSubmit} class="flex flex-col gap-4 text-xs font-bold">
-        <!-- Optional Image Upload -->
-        <div class="flex flex-col gap-2 p-3 border-2 border-nb-black bg-gray-50 rounded-md">
-          <div class="flex items-center justify-between">
-            <span class="uppercase text-[11px] font-black text-gray-700">{$i18nStore.t('modal.appImageLabel')}</span>
-            {#if uploadedImageUrl}
-              <button
-                type="button"
-                class="text-[11px] text-red-600 hover:underline font-black cursor-pointer"
-                onclick={handleRemoveImage}
-                data-testid="btn-remove-app-image"
-              >
-                {$i18nStore.t('modal.removeImage')}
-              </button>
-            {/if}
-          </div>
+        <!-- Optional Hero Banner Image Upload -->
+        <DragDropImageInput
+          label={$i18nStore.t('modal.appHeroImageLabel', 'HERO BANNER APLIKASI (OPSIONAL)')}
+          description={$i18nStore.t('modal.heroImageDesc', 'Gambar banner bagian atas card aplikasi.')}
+          imageUrl={uploadedHeroImageUrl}
+          allowedExtensions={['jpg', 'jpeg', 'png']}
+          aspectRatio="banner"
+          subfolder="hero"
+          inputId="add-app-hero-image-input"
+          testIdPrefix="app-hero-image"
+          fallbackNotice={$i18nStore.t('modal.heroImageFallbackNotice', 'Jika tidak diisi, akan memakai gambar hero default.')}
+          onUpload={(url) => (uploadedHeroImageUrl = url)}
+          onRemove={() => (uploadedHeroImageUrl = null)}
+        />
 
-          {#if uploadedImageUrl}
-            <div class="flex items-center gap-3">
-              <div class="w-14 h-14 border-2 border-nb-black rounded bg-white overflow-hidden shadow-nb-sm shrink-0">
-                <img src={uploadedImageUrl} alt="Preview" class="w-full h-full object-cover" data-testid="preview-app-image" />
-              </div>
-              <div class="text-[11px] text-gray-600">
-                <p class="font-bold text-green-700">{$i18nStore.t('modal.imageUploaded')}</p>
-                <p>{$i18nStore.t('modal.imageDescAdd')}</p>
-              </div>
-            </div>
-          {:else}
-            <div class="flex items-center gap-2 flex-wrap">
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png,.svg"
-                bind:this={fileInputRef}
-                onchange={handleFileSelect}
-                class="hidden"
-                id="add-app-image-input"
-                data-testid="input-app-image"
-              />
-              <label
-                for="add-app-image-input"
-                class="nb-btn bg-white hover:bg-nb-yellow text-xs px-3 py-1.5 border-2 border-nb-black flex items-center gap-1.5 cursor-pointer text-black"
-                data-testid="btn-upload-app-image"
-              >
-                <span>📷</span>
-                <span>{isUploadingImage ? $i18nStore.t('modal.uploading') : $i18nStore.t('modal.chooseImage')}</span>
-              </label>
-              <span class="text-[11px] text-gray-500 font-medium">{$i18nStore.t('modal.imageFallbackNotice')}</span>
-            </div>
-          {/if}
-        </div>
+        <!-- Optional Icon Image Upload -->
+        <DragDropImageInput
+          label={$i18nStore.t('modal.appImageLabel', 'GAMBAR ICON APLIKASI (OPSIONAL)')}
+          description={$i18nStore.t('modal.imageDescAdd', 'Gambar ini akan ditampilkan pada kotak icon aplikasi.')}
+          imageUrl={uploadedImageUrl}
+          allowedExtensions={['jpg', 'jpeg', 'png', 'svg']}
+          aspectRatio="square"
+          subfolder="icons"
+          inputId="add-app-image-input"
+          testIdPrefix="app-image"
+          fallbackNotice={$i18nStore.t('modal.imageFallbackNotice', 'Jika tidak diisi, akan memakai ikon default Lucide.')}
+          onUpload={(url) => (uploadedImageUrl = url)}
+          onRemove={() => (uploadedImageUrl = null)}
+        />
 
         <!-- Nama Aplikasi & Icon -->
         <div class="grid grid-cols-4 gap-3">

@@ -1,6 +1,6 @@
 # ⚡ Apps Hub — CV Sukses Gemilang
 
-> **Portal Aplikasi & Dashboard Operasional Terpadu** untuk **CV Sukses Gemilang** (Pusat Hiburan Keluarga & Game Center Arcade). Dilengkapi manajemen aplikasi terhubung ke database cloud Supabase, sistem autentikasi & Role-Based Access Control (RBAC), halaman registrasi mandiri (`/register` dengan role otomatis `VIEWER` & `is_debug: false`), fitur **Upload & Preview Banyak Gambar (Multi-Image) To-Do List** (drag-and-drop, validasi 5 MB via env variable/ekstensi via `throwAlert`, click-to-preview galeri thumbnail, dan *cascade deletion* di Supabase Storage), fitur *WhatsApp PIC Preview Modal* dengan integrasi to-do list pending dan konteks lampiran gambar, tabel relasional mandiri untuk subtask (*subtodos*), fitur aksi massal (*Select All & Bulk Delete* bagi user dengan hak akses debug), relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), fitur *Check All* pada To-Do list, komponen dropdown interaktif kustom (*CustomSelect*), sistem navigasi SPA, sticky navbar, catatan tugas bertingkat (*sub-tasks*), sistem notifikasi toast, Progressive Web App (PWA) dengan Service Worker caching, dukungan Dark Mode, lokalisasi dwibahasa (ID & EN), rangkaian pengujian otomatis E2E Playwright (40 skenario), serta pipeline CI/CD terotomatisasi dengan migrasi database.
+> **Portal Aplikasi & Dashboard Operasional Terpadu** untuk **CV Sukses Gemilang** (Pusat Hiburan Keluarga & Game Center Arcade). Dilengkapi manajemen aplikasi terhubung ke database cloud Supabase, sistem autentikasi & Role-Based Access Control (RBAC), halaman registrasi mandiri (`/register` dengan role otomatis `VIEWER` & `is_debug: false`), fitur **Ganti Password di Halaman Profile**, fitur **Hero Banner Image pada Card List Apps** (dengan gambar default Neo Brutalism & upload kustom `.jpg`, `.jpeg`, `.png`), fitur **Upload Gambar Icon & Hero Drag-and-Drop dengan Instant Preview**, fitur **Drag-and-Drop Rearrange Posisi Apps** (long-press di mode admin), fitur **Upload & Preview Banyak Gambar (Multi-Image) To-Do List** (drag-and-drop, validasi 5 MB via env variable/ekstensi via `throwAlert`, click-to-preview galeri thumbnail, dan *cascade deletion* di Supabase Storage), fitur *WhatsApp PIC Preview Modal*, tabel relasional mandiri untuk subtask (*subtodos*), fitur aksi massal (*Select All & Bulk Delete* bagi user dengan hak akses debug), relasi tugas To-Do dengan modul aplikasi (*app association & cascading deletion*), fitur *Check All* pada To-Do list, komponen dropdown interaktif kustom (*CustomSelect*), sistem navigasi SPA, sticky navbar, catatan tugas bertingkat (*sub-tasks*), sistem notifikasi toast, Progressive Web App (PWA) dengan Service Worker caching, dukungan Dark Mode, lokalisasi dwibahasa (ID & EN), rangkaian pengujian otomatis E2E Playwright (45 skenario), serta pipeline CI/CD terotomatisasi dengan migrasi database.
 
 ![Svelte 5](https://img.shields.io/badge/Svelte-5.x_Runes-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)
@@ -9,7 +9,7 @@
 ![Storage](https://img.shields.io/badge/Storage-Supabase_Storage-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![RBAC](https://img.shields.io/badge/Auth-RBAC_Ready-blueviolet?style=for-the-badge)
 ![GitLab CI](https://img.shields.io/badge/CI%2FCD-GitLab_Pipeline-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-40_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-45_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
 ![i18n](https://img.shields.io/badge/i18n-EN_%26_ID-1d76db?style=for-the-badge)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -20,12 +20,27 @@
 ## 🎨 Fitur Utama
 
 - 🚀 **Enterprise App Hub Grid**: Menampilkan modul aplikasi operasional game center dalam tata letak kartu responsif dengan hard-shadow dan border tegas khas Neo Brutalism.
+- 🖼️ **Hero Banner Image pada Card List Apps**:
+  - Banner visual berukuran penuh di bagian atas setiap kartu aplikasi.
+  - Tampilan fallback gambar default bergaya Neo Brutalism (`default-app-hero.svg`) jika banner kustom belum diunggah.
+  - Upload gambar hero khusus format `.jpg`, `.jpeg`, dan `.png`.
+- 🔀 **Drag-and-Drop Rearrange Posisi Apps (Mode Admin)**:
+  - User admin dapat menata ulang posisi urutan aplikasi secara visual dengan drag-and-drop.
+  - Diaktifkan melalui **long press** (tekan lama > 150ms) pada kartu atau via tombol drag handle (`GripVertical`).
+  - Posisi tersinkronisasi otomatis ke cloud database Supabase (`order_index`).
+- 📷 **Drag-and-Drop Image Input dengan Instant Preview**:
+  - Komponen upload reusable `DragDropImageInput.svelte` untuk hero banner dan icon aplikasi.
+  - Drag and drop file explorer OS dengan hover feedback taktil dan preview thumbnail instan sebelum disimpan.
+- 🔑 **Ganti Password di Halaman Profile**:
+  - Modal pop-up `ChangePasswordModal.svelte` di rute `/profile` untuk memperbarui password akun.
+  - Dilengkapi input password lama & password baru dengan tombol toggle visibilitas (show/hide password).
+  - Verifikasi keamanan password lama dan hashing Bcrypt melalui RPC Supabase `change_user_password`.
 - 🔐 **Autentikasi & Registrasi Mandiri (RBAC)**:
   - **Akses Publik Bebas**: Pengunjung dan staf umum dapat mengakses portal tanpa kewajiban login.
   - **Halaman Login Khusus**: Tersedia di rute `/login` dengan toggle show/hide password untuk otentikasi akun.
   - **Halaman Registrasi Baru (`/register`)**: Tautan ke halaman registrasi hanya tersedia di halaman login. Form mencakup kolom `name`, `username`, dan `password` dengan fitur show/hide password.
   - **Penugasan Role Otomatis**: Setiap pengguna baru yang mendaftar otomatis diberikan peran `VIEWER` dengan flag `is_debug: false`.
-  - **Proteksi Akses Mutasi**: Aksi Tambah, Edit, Hapus, dan Hapus Massal pada modul aplikasi hanya diizinkan untuk pengguna dengan role yang memiliki flag `is_debug: true`.
+  - **Proteksi Akses Mutasi**: Aksi Tambah, Edit, Hapus, Hapus Massal, dan Reorder pada modul aplikasi hanya diizinkan untuk pengguna dengan role yang memiliki flag `is_debug: true`.
 - 🖼️ **Upload & Preview Banyak Gambar (Multi-Image) To-Do List (Supabase Storage)**:
   - **Dukungan Multi-Gambar**: Pengguna dapat melampirkan lebih dari satu gambar pada setiap catatan To-Do (galeri thumbnail, seleksi aktif, dan penghapusan per berkas/semua).
   - **Modal Interaktif (`ImageUploadModal`)**: Mendukung *Drag and Drop* banyak gambar sekaligus dan seleksi berkas dari file explorer.
@@ -44,9 +59,14 @@
 - 🌙 **Dark Mode & Theming**: Dukungan peralihan tema terang dan gelap dengan kontras tinggi yang tersimpan di `localStorage`.
 - 📱 **Progressive Web App (PWA)**: Dilengkapi Service Worker caching (`sw.js`) dan App Manifest (`manifest.json`) agar dapat diinstal di perangkat desktop maupun mobile.
 - 🏢 **Profil Perusahaan (CV Sukses Gemilang)**: Halaman company profile interaktif (`/company-profile`) yang memaparkan visi, layanan wahana game center (Arcade & VR, Redemption & Prize Center, Event & Tournament Hall), serta konsultasi WhatsApp.
+- ↕️ **Drag-and-Drop Rearrange To-Do & Sub-Tasks (Mode Admin)**:
+  - Menyusun ulang urutan catatan To-Do via drag handle (`GripVertical`) atau long-press (150ms).
+  - Menyusun ulang sub-task dalam catatan yang sama secara interaktif.
+  - Memindahkan sub-task lintas catatan To-Do (*cross-parent move*) dengan pembaruan otomatis kolom `order_index` dan relasi `todo_id` di Supabase.
+  - Mengonversi catatan To-Do menjadi sub-task dengan menyeretnya ke area sub-task catatan lain (dilengkapi validasi pencegahan jika to-do sudah memiliki sub-task).
 - 🔔 **Global Toast Alert System**: Komponen notifikasi mengambang di sudut kanan atas dengan status *success*, *error*, dan *info*.
 - 🌐 **Sistem Multibahasa Modular (i18n)**: Dukungan penuh Bahasa Indonesia (`id`) dan Bahasa Inggris (`en`) yang tersimpan rapi dalam file JSON modular ([`src/i18n/id.json`](src/i18n/id.json) & [`src/i18n/en.json`](src/i18n/en.json)).
-- 🎭 **Automated E2E Testing**: Suite pengujian komprehensif Playwright dengan 40 skenario test end-to-end yang memvalidasi seluruh alur kerja sistem.
+- 🎭 **Automated E2E Testing**: Suite pengujian komprehensif Playwright dengan 48 skenario test end-to-end yang memvalidasi seluruh alur kerja sistem.
 
 ---
 
@@ -64,7 +84,7 @@
 | **Routing** | `sv-router` | Client-side Single Page Application (SPA) routing |
 | **Styling** | Tailwind CSS v4 | Utility-first CSS dengan custom theme tokens Neo Brutalism |
 | **Localization** | JSON-based i18n | Kamus kata modular dwibahasa di `src/i18n/*.json` |
-| **Testing** | Playwright | E2E browser automation & UI regression test suite (40 tests) |
+| **Testing** | Playwright | E2E browser automation & UI regression test suite (49 tests) |
 | **CI/CD** | GitLab CI | Pipeline otomasi: Test, Build, Supabase Migration, dan Deploy ke VPS |
 | **PWA** | Service Worker | Offline caching dan instalasi web app |
 | **Container** | Docker + Nginx | Multi-stage builder & production web server |
@@ -254,7 +274,7 @@ Setiap *commit* atau *merge* ke branch `main` akan memicu pipeline GitLab CI den
 │   │   └── 20260923000002_seed_defaults.sql
 │   └── schema.sql               # Konsolidasi skema database & RPC
 ├── tests/
-│   └── hub.spec.ts              # Playwright E2E automated test suite (36 tests)
+│   └── hub.spec.ts              # Playwright E2E automated test suite (49 tests)
 ├── .gitlab-ci.yml               # Konfigurasi GitLab CI/CD Pipeline
 ├── Dockerfile                   # Multi-stage production container build
 ├── docker-compose.yml           # Docker Compose orchestrator

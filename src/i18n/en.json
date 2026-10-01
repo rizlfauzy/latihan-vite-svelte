@@ -296,6 +296,41 @@
   "modal.chooseImage": "Choose Image (Max 5 MB)",
   "modal.uploading": "Uploading...",
   "modal.imageFallbackNotice": "If empty, default Lucide icon will be used.",
-  "modal.replaceImage": "🔄 Change Image"
+  "modal.replaceImage": "🔄 Change Image",
+
+  "profile.changePassword": "CHANGE PASSWORD",
+  "profile.changePasswordModalTitle": "CHANGE PASSWORD",
+  "profile.changePasswordModalSubtitle": "Update your account password",
+  "profile.oldPasswordLabel": "CURRENT PASSWORD *",
+  "profile.oldPasswordPlaceholder": "Enter current password",
+  "profile.newPasswordLabel": "NEW PASSWORD *",
+  "profile.newPasswordPlaceholder": "Minimum 6 characters",
+
+  "auth.oldPasswordRequired": "Current password is required!",
+  "auth.newPasswordRequired": "New password is required!",
+  "auth.newPasswordMinLength": "New password must be at least 6 characters!",
+  "auth.oldPasswordWrong": "Current password is incorrect!",
+  "auth.changePasswordSuccess": "Password updated successfully!",
+  "auth.changePasswordFailed": "Failed to change password",
+  "auth.notLoggedIn": "User not logged in",
+
+  "modal.appHeroImageLabel": "APPLICATION HERO BANNER (OPTIONAL)",
+  "modal.heroImageDesc": "Banner image displayed at the top of the app card.",
+  "modal.heroImageFallbackNotice": "If empty, default hero image will be used.",
+  "modal.dragDropHint": "or drag & drop file here",
+
+  "grid.dragHandleTooltip": "Long press card or drag this handle to reorder",
+  "grid.reorderSuccess": "Application order updated successfully!",
+  "todo.dragHandleTooltip": "Long press note or drag this handle to reorder",
+  "todo.dragSubtaskTooltip": "Long press sub-task or drag this handle to reorder or move to another note",
+  "todo.reorderSuccess": "Note order updated successfully!",
+  "todo.reorderSubtaskSuccess": "Sub-task order updated successfully!",
+  "todo.moveSubtaskSuccess": "Sub-task moved to another note successfully!",
+  "todo.dropSubtaskHere": "Drop sub-task here...",
+  "todo.convertTodoToSubtaskSuccess": "Note converted to sub-task successfully!",
+  "todo.cannotConvertWithSubtasks": "Notes with sub-tasks cannot be converted to sub-tasks!",
+  "todo.dropTodoAsSubtask": "Drop here to convert to sub-task",
+  "todo.convertSubtaskToTodoSuccess": "Sub-task converted to independent note successfully!",
+  "todo.dropSubtaskAsTodo": "Drop here to convert to independent note"
 }
 

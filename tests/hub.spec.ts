@@ -20,7 +20,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
     await page.evaluate(() => {
       window.localStorage.clear();
       const defaultRole = { id: 1, name: 'SUPERADMIN', is_debug: true };
@@ -1818,10 +1819,10 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="btn-submit-add-app"]').click();
     await expect(page.locator('[data-testid="add-app-modal-card"]')).not.toBeVisible();
 
-    // Verifikasi card aplikasi muncul dengan icon Lucide (bukan tag <img>)
+    // Verifikasi card aplikasi muncul dengan icon Lucide (bukan upload image icon)
     const cardWithoutImg = page.locator('[data-testid^="app-card-"]', { hasText: appWithoutImgName });
     await expect(cardWithoutImg).toBeVisible();
-    await expect(cardWithoutImg.locator('img')).not.toBeVisible();
+    await expect(cardWithoutImg.locator('[data-testid^="app-image-"]')).not.toBeVisible();
     await expect(cardWithoutImg.locator('[data-testid^="app-icon-"]')).toBeVisible();
 
     // 2. Buat aplikasi dengan gambar upload
@@ -1880,6 +1881,12 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
   });
 
   test('Section Settings Modal can reorder sections and toggle section visibility on Home and Company Profile', async ({ page }) => {
+    // Pastikan kedua halaman mulai dari setting default
+    await page.evaluate(async () => {
+      await (window as any).__sectionStore?.resetSections?.('home');
+      await (window as any).__sectionStore?.resetSections?.('company-profile');
+    });
+
     // 1. Verifikasi tombol Atur Tata Letak muncul di navbar untuk user dengan akses debug
     const settingsBtn = page.locator('[data-testid="nav-section-settings-btn"]');
     await expect(settingsBtn).toBeVisible();
@@ -1966,6 +1973,472 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     // Kembali ke home
     await page.goto('/');
+  });
+
+  test('Profile page allows changing password with validation and visibility toggle for old and new passwords', async ({ page }) => {
+    const timestamp = Date.now();
+    const testUsername = `testpw_${timestamp}`;
+    const initialPassword = 'InitialPassword123!';
+    const newPassword = 'NewSecretPassword123!';
+
+    // 1. Buat test user baru melalui authStore.register (otomatis login)
+    await page.evaluate(async ({ uname, pass }) => {
+      await (window as any).__authStore?.register?.('Test Password User', uname, pass);
+    }, { uname: testUsername, pass: initialPassword });
+
+    // 2. Buka halaman profile
+    await page.goto('/profile');
+    await expect(page.locator('[data-testid="profile-page"]')).toBeVisible();
+    await expect(page.locator('[data-testid="user-display-username"]')).toContainText(testUsername);
+
+    // 3. Buka modal ganti password
+    const changePwBtn = page.locator('[data-testid="btn-change-password"]');
+    await expect(changePwBtn).toBeVisible();
+    await changePwBtn.click();
+
+    const pwModal = page.locator('[data-testid="change-password-modal"]');
+    await expect(pwModal).toBeVisible();
+
+    // 4. Test toggle visibilitas password lama dan baru
+    const oldPwInput = page.locator('[data-testid="input-old-password"]');
+    const newPwInput = page.locator('[data-testid="input-new-password"]');
+    const toggleOldBtn = page.locator('[data-testid="btn-toggle-old-password"]');
+    const toggleNewBtn = page.locator('[data-testid="btn-toggle-new-password"]');
+
+    await expect(oldPwInput).toHaveAttribute('type', 'password');
+    await toggleOldBtn.click();
+    await expect(oldPwInput).toHaveAttribute('type', 'text');
+    await toggleOldBtn.click();
+    await expect(oldPwInput).toHaveAttribute('type', 'password');
+
+    await expect(newPwInput).toHaveAttribute('type', 'password');
+    await toggleNewBtn.click();
+    await expect(newPwInput).toHaveAttribute('type', 'text');
+    await toggleNewBtn.click();
+    await expect(newPwInput).toHaveAttribute('type', 'password');
+
+    // 5. Test validasi jika password lama salah
+    await oldPwInput.fill('WrongPassword123!');
+    await newPwInput.fill(newPassword);
+    await page.locator('[data-testid="btn-submit-change-password"]').click();
+
+    const errorBanner = page.locator('[data-testid="change-password-error"]');
+    await expect(errorBanner).toBeVisible();
+
+    // 6. Test jika password lama benar dan password baru valid
+    await oldPwInput.fill(initialPassword);
+    await newPwInput.fill(newPassword);
+    await page.locator('[data-testid="btn-submit-change-password"]').click();
+
+    // Modal harus tertutup dan muncul toast sukses
+    await expect(pwModal).not.toBeVisible();
+    await expect(page.locator('[data-testid="alert-toast"]')).toBeVisible();
+
+    // 7. Cleanup: hapus test user yang dibuat
+    await page.evaluate(async (uname) => {
+      await (window as any).__authStore?.deleteTestUser?.(uname);
+    }, testUsername);
+  });
+
+  test('List Apps supports hero banner image upload with strict extension validation and displays default hero banner when empty', async ({ page }) => {
+    // 1. Buat aplikasi baru dengan hero banner
+    await page.goto('/');
+    await page.locator('[data-testid="btn-open-add-app"]').click();
+    await expect(page.locator('[data-testid="add-app-modal-card"]')).toBeVisible();
+
+    // Verifikasi kedua area dropzone ada di modal (hero banner & icon)
+    await expect(page.locator('[data-testid="dropzone-app-hero-image"]')).toBeVisible();
+    await expect(page.locator('[data-testid="dropzone-app-image"]')).toBeVisible();
+
+    const timestamp = Date.now();
+    const appName = `Test Hero App ${timestamp}`;
+    await page.locator('[data-testid="input-app-name"]').fill(appName);
+    await page.locator('[data-testid="input-app-url"]').fill('https://hero-test.internal');
+    await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi dengan cover hero banner kustom');
+
+    // Upload dummy png file ke input hero banner
+    const dummyPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    await page.locator('[data-testid="input-app-hero-image"]').setInputFiles({
+      name: 'test-hero.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(dummyPngBase64, 'base64'),
+    });
+
+    // Preview hero banner harus muncul
+    await expect(page.locator('[data-testid="preview-app-hero-image"]')).toBeVisible();
+
+    // Submit form
+    await page.locator('[data-testid="btn-submit-add-app"]').click();
+    await expect(page.locator('[data-testid="add-app-modal-card"]')).not.toBeVisible();
+
+    // 2. Verifikasi card aplikasi di grid menampilkan hero banner
+    const createdCard = page.locator('[data-testid^="app-card-"]', { hasText: appName });
+    await expect(createdCard).toBeVisible();
+    const heroImg = createdCard.locator('[data-testid^="app-hero-image-"]');
+    await expect(heroImg).toBeVisible();
+
+    // 3. Verifikasi edit aplikasi: hero banner bisa dihapus
+    const editBtn = createdCard.locator('[data-testid^="btn-edit-app-"]');
+    await editBtn.click();
+    await expect(page.locator('[data-testid="edit-app-modal"]')).toBeVisible();
+    await expect(page.locator('[data-testid="preview-edit-app-hero-image"]')).toBeVisible();
+
+    // Hapus hero image dari edit modal
+    await page.locator('[data-testid="btn-remove-edit-app-hero-image"]').click();
+    await expect(page.locator('[data-testid="preview-edit-app-hero-image"]')).not.toBeVisible();
+
+    await page.locator('[data-testid="btn-submit-edit-app"]').click();
+    await expect(page.locator('[data-testid="edit-app-modal"]')).not.toBeVisible();
+
+    // 4. Verifikasi bahwa setelah hero image dihapus, card kembali memakai default hero image
+    await expect(heroImg).toBeVisible();
+    const heroSrc = await heroImg.getAttribute('src');
+    expect(heroSrc).toBeTruthy();
+
+    // 5. Cleanup aplikasi
+    const deleteBtn = createdCard.locator('[data-testid^="btn-delete-app-"]');
+    await deleteBtn.click();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+    await expect(createdCard).not.toBeVisible();
+  });
+
+  test('App Card in admin mode can be dragged after long press to rearrange apps list', async ({ page }) => {
+    // Buat dua test apps jika diperlukan untuk memastikan minimal ada 2 card
+    const timestamp = Date.now();
+    const appA = `Test App Order A ${timestamp}`;
+    const appB = `Test App Order B ${timestamp}`;
+
+    // Helper membuat app
+    async function createTestApp(name: string) {
+      await page.locator('[data-testid="btn-open-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-card"]')).toBeVisible();
+      await page.locator('[data-testid="input-app-name"]').fill(name);
+      await page.locator('[data-testid="input-app-url"]').fill('https://order.internal');
+      await page.locator('[data-testid="input-app-desc"]').fill('Aplikasi untuk pengetesan urutan');
+      await page.locator('[data-testid="btn-submit-add-app"]').click();
+      await expect(page.locator('[data-testid="add-app-modal-card"]')).not.toBeVisible();
+      await expect(page.locator('[data-testid^="app-card-"]', { hasText: name })).toBeVisible();
+    }
+
+    await createTestApp(appA);
+    await createTestApp(appB);
+
+    const cardA = page.locator('[data-testid^="app-card-"]', { hasText: appA });
+    const cardB = page.locator('[data-testid^="app-card-"]', { hasText: appB });
+
+    // 1. Verifikasi drag handle muncul di mode admin
+    await expect(cardA.locator('[data-testid^="drag-handle-"]')).toBeVisible();
+
+    // 2. Simulasikan long-press pada card A untuk mengaktifkan drag mode
+    await cardA.dispatchEvent('pointerdown', { buttons: 1 });
+    await page.waitForTimeout(250); // Tunggu long-press timer > 150ms
+    await expect(cardA).toHaveAttribute('data-drag-ready', 'true');
+    await cardA.dispatchEvent('pointerup');
+
+    // 3. Lakukan rearrange urutan via appStore.reorderApps
+    await page.evaluate(async () => {
+      const store = (window as any).__appStore;
+      const apps = store?.getState?.()?.apps || [];
+      if (apps.length >= 2) {
+        // Swap first two apps
+        const ids = apps.map((a: any) => a.id);
+        const temp = ids[0];
+        ids[0] = ids[1];
+        ids[1] = temp;
+        await store.reorderApps(ids);
+      }
+    });
+
+    // Verifikasi toast sukses rearrange muncul
+    await expect(page.locator('[data-testid="alert-toast"]').filter({ hasText: 'Urutan aplikasi' })).toBeVisible();
+
+    // 4. Cleanup kedua test apps
+    await page.evaluate(async (names) => {
+      const store = (window as any).__appStore;
+      const apps = store?.getState?.()?.apps || [];
+      for (const a of apps) {
+        if (names.includes(a.name)) {
+          await store.deleteApp(a.id);
+        }
+      }
+    }, [appA, appB]);
+  });
+
+  test('Todo item in admin mode can be dragged after long press or via drag handle to rearrange order', async ({ page }) => {
+    const timestamp = Date.now();
+    const todoA = `Test Todo Order A ${timestamp}`;
+    const todoB = `Test Todo Order B ${timestamp}`;
+
+    // 1. Tambah dua todo baru
+    await page.locator('[data-testid="todo-input"]').fill(todoA);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${todoA}`)).toBeVisible();
+
+    await page.locator('[data-testid="todo-input"]').fill(todoB);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${todoB}`)).toBeVisible();
+
+    const itemA = page.locator('[data-testid^="todo-item-"]', { hasText: todoA });
+    const itemB = page.locator('[data-testid^="todo-item-"]', { hasText: todoB });
+
+    // 2. Verifikasi drag handle muncul di mode admin
+    await expect(itemA.locator('[data-testid^="drag-handle-todo-"]')).toBeVisible();
+    await expect(itemB.locator('[data-testid^="drag-handle-todo-"]')).toBeVisible();
+
+    // 3. Simulasikan long-press pada todo A untuk mengaktifkan drag mode
+    await itemA.dispatchEvent('pointerdown', { buttons: 1 });
+    await page.waitForTimeout(250); // Tunggu long-press timer > 150ms
+    await expect(itemA).toHaveAttribute('data-drag-ready', 'true');
+    await itemA.dispatchEvent('pointerup');
+
+    // 4. Lakukan rearrange urutan via todoStore.reorderTodos
+    await page.evaluate(async (texts) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      const foundA = todos.find((t: any) => t.text === texts[0]);
+      const foundB = todos.find((t: any) => t.text === texts[1]);
+      if (foundA && foundB) {
+        // Balik urutan: A dulu baru B
+        await store.reorderTodos([foundA.id, foundB.id]);
+      }
+    }, [todoA, todoB]);
+
+    // Verifikasi alert toast sukses muncul
+    await expect(page.locator('[data-testid="alert-toast"]').filter({ hasText: 'Urutan catatan' })).toBeVisible();
+
+    // 5. Cleanup kedua test todos
+    await page.evaluate(async (texts) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      for (const t of todos) {
+        if (texts.includes(t.text)) {
+          await store.deleteTodo(t.id);
+        }
+      }
+    }, [todoA, todoB]);
+  });
+
+  test('Sub-tasks can be rearranged via drag and drop and moved to another todo', async ({ page }) => {
+    const timestamp = Date.now();
+    const parentA = `Parent Todo A ${timestamp}`;
+    const parentB = `Parent Todo B ${timestamp}`;
+    const sub1 = `Sub 1 Alpha ${timestamp}`;
+    const sub2 = `Sub 2 Beta ${timestamp}`;
+
+    // 1. Tambah dua parent todo
+    await page.locator('[data-testid="todo-input"]').fill(parentA);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${parentA}`)).toBeVisible();
+
+    await page.locator('[data-testid="todo-input"]').fill(parentB);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${parentB}`)).toBeVisible();
+
+    const itemA = page.locator('[data-testid^="todo-item-"]', { hasText: parentA });
+    const itemB = page.locator('[data-testid^="todo-item-"]', { hasText: parentB });
+
+    // 2. Tambah dua subtask di parent A
+    await itemA.locator('[data-testid^="input-subtask-"]').fill(sub1);
+    await itemA.locator('[data-testid^="button-add-subtask-"]').click();
+    await expect(itemA.locator(`text=${sub1}`)).toBeVisible();
+
+    await itemA.locator('[data-testid^="input-subtask-"]').fill(sub2);
+    await itemA.locator('[data-testid^="button-add-subtask-"]').click();
+    await expect(itemA.locator(`text=${sub2}`)).toBeVisible();
+
+    const subItem1 = itemA.locator('[data-testid^="subtask-item-"]', { hasText: sub1 });
+    const subItem2 = itemA.locator('[data-testid^="subtask-item-"]', { hasText: sub2 });
+
+    // 3. Verifikasi drag handle subtask muncul di mode admin
+    await expect(subItem1.locator('[data-testid^="drag-handle-subtask-"]')).toBeVisible();
+
+    // 4. Test long-press pada subtask
+    await subItem1.dispatchEvent('pointerdown', { buttons: 1 });
+    await page.waitForTimeout(250);
+    await expect(subItem1).toHaveAttribute('data-drag-ready', 'true');
+    await subItem1.dispatchEvent('pointerup');
+
+    // 5. Reorder subtask dalam parent A via todoStore.reorderSubTasks
+    await page.evaluate(async (params) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      const foundA = todos.find((t: any) => t.text === params.parent);
+      if (foundA && foundA.subTasks?.length >= 2) {
+        const s1 = foundA.subTasks.find((s: any) => s.text === params.s1);
+        const s2 = foundA.subTasks.find((s: any) => s.text === params.s2);
+        if (s1 && s2) {
+          await store.reorderSubTasks(foundA.id, [s2.id, s1.id]);
+        }
+      }
+    }, { parent: parentA, s1: sub1, s2: sub2 });
+
+    await expect(page.locator('[data-testid="alert-toast"]').filter({ hasText: 'Urutan sub-task' })).toBeVisible();
+
+    // 6. Move subtask dari parent A ke parent B via todoStore.moveSubTaskToParent
+    await page.evaluate(async (params) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      const foundA = todos.find((t: any) => t.text === params.parentA);
+      const foundB = todos.find((t: any) => t.text === params.parentB);
+      if (foundA && foundB) {
+        const s1 = foundA.subTasks?.find((s: any) => s.text === params.s1);
+        if (s1) {
+          await store.moveSubTaskToParent(s1.id, foundA.id, foundB.id, 0);
+        }
+      }
+    }, { parentA, parentB, s1: sub1 });
+
+    await expect(page.locator('[data-testid="alert-toast"]').filter({ hasText: 'Sub-task berhasil dipindahkan' })).toBeVisible();
+
+    // Verifikasi sub1 sekarang berada di dalam parent B
+    await expect(itemB.locator(`text=${sub1}`)).toBeVisible();
+    await expect(itemA.locator(`text=${sub1}`)).not.toBeVisible();
+
+    // 7. Cleanup test data
+    await page.evaluate(async (parents) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      for (const t of todos) {
+        if (parents.includes(t.text)) {
+          await store.deleteTodo(t.id);
+        }
+      }
+    }, [parentA, parentB]);
+  });
+
+  test('Task can be converted to a sub-task of another task via drag and drop', async ({ page }) => {
+    const timestamp = Date.now();
+    const targetParent = `Target Todo Parent ${timestamp}`;
+    const simpleTask = `Simple Task Convert ${timestamp}`;
+    const parentWithSubs = `Task With Subs ${timestamp}`;
+    const childSub = `Child Sub ${timestamp}`;
+
+    // 1. Tambah target parent dan task sederhana
+    await page.locator('[data-testid="todo-input"]').fill(targetParent);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${targetParent}`)).toBeVisible();
+
+    await page.locator('[data-testid="todo-input"]').fill(simpleTask);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${simpleTask}`)).toBeVisible();
+
+    const targetParentItem = page.locator('[data-testid^="todo-item-"]', { hasText: targetParent });
+    const simpleTaskId = await page.evaluate((title) => {
+      const todos = (window as any).__todoStore?.getState?.()?.todos || [];
+      return todos.find((t: any) => t.text === title)?.id;
+    }, simpleTask);
+
+    // 2. Verifikasi konversi task sederhana menjadi sub-task target parent
+    await page.evaluate(async (params) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      const source = todos.find((t: any) => t.text === params.simple);
+      const target = todos.find((t: any) => t.text === params.target);
+      if (source && target) {
+        await store.convertTodoToSubTask(source.id, target.id);
+      }
+    }, { simple: simpleTask, target: targetParent });
+
+    // Verifikasi alert toast sukses muncul
+    await expect(page.locator('[data-testid="alert-toast"]').filter({ hasText: 'Catatan berhasil diubah menjadi sub-task' })).toBeVisible();
+
+    // Verifikasi card todo simpleTask sebelumnya sudah dihapus (tidak lagi di top-level)
+    await expect(page.locator(`[data-testid="todo-item-${simpleTaskId}"]`)).not.toBeVisible();
+
+    // Verifikasi simpleTask sekarang muncul sebagai sub-task di dalam targetParent
+    await expect(targetParentItem.locator('[data-testid^="subtask-item-"]', { hasText: simpleTask })).toBeVisible();
+
+    // 3. Validasi: Task yang memiliki sub-task tidak boleh dapat dikonversi
+    await page.locator('[data-testid="todo-input"]').fill(parentWithSubs);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${parentWithSubs}`)).toBeVisible();
+
+    const parentWithSubsItem = page.locator('[data-testid^="todo-item-"]', { hasText: parentWithSubs });
+    await parentWithSubsItem.locator('[data-testid^="input-subtask-"]').fill(childSub);
+    await parentWithSubsItem.locator('[data-testid^="button-add-subtask-"]').click();
+    await expect(parentWithSubsItem.locator(`text=${childSub}`)).toBeVisible();
+
+    // Coba konversi parentWithSubs yang punya anak ke targetParent
+    await page.evaluate(async (params) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      const source = todos.find((t: any) => t.text === params.withSubs);
+      const target = todos.find((t: any) => t.text === params.target);
+      if (source && target) {
+        await store.convertTodoToSubTask(source.id, target.id);
+      }
+    }, { withSubs: parentWithSubs, target: targetParent });
+
+    // Verifikasi alert toast error muncul
+    await expect(page.locator('[data-testid="alert-toast"]').filter({ hasText: 'tidak dapat diubah' })).toBeVisible();
+
+    // Verifikasi parentWithSubs tetap ada sebagai top-level todo
+    await expect(parentWithSubsItem).toBeVisible();
+
+    // 4. Cleanup test data
+    await page.evaluate(async (titles) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      for (const t of todos) {
+        if (titles.includes(t.text)) {
+          await store.deleteTodo(t.id);
+        }
+      }
+    }, [targetParent, simpleTask, parentWithSubs]);
+  });
+
+  test('Sub-task can be converted to an independent task by dragging it out of parent task', async ({ page }) => {
+    const timestamp = Date.now();
+    const parentTask = `Parent With Sub To Detach ${timestamp}`;
+    const subTaskTitle = `Subtask Independent Target ${timestamp}`;
+
+    // 1. Tambah task parent
+    await page.locator('[data-testid="todo-input"]').fill(parentTask);
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.locator(`text=${parentTask}`)).toBeVisible();
+
+    const parentItem = page.locator('[data-testid^="todo-item-"]', { hasText: parentTask });
+
+    // 2. Tambah sub-task ke parent
+    await parentItem.locator('[data-testid^="input-subtask-"]').fill(subTaskTitle);
+    await parentItem.locator('[data-testid^="button-add-subtask-"]').click();
+    await expect(parentItem.locator(`text=${subTaskTitle}`)).toBeVisible();
+
+    // Pastikan item subtask ada di dalam parent
+    const subtaskLocator = parentItem.locator('[data-testid^="subtask-item-"]', { hasText: subTaskTitle });
+    await expect(subtaskLocator).toBeVisible();
+
+    // 3. Konversi sub-task menjadi task mandiri (top-level todo)
+    await page.evaluate(async (params) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      const parent = todos.find((t: any) => t.text === params.parent);
+      const sub = (parent?.subTasks || []).find((s: any) => s.text === params.sub);
+      if (parent && sub) {
+        await store.convertSubTaskToTodo(sub.id, parent.id, 0);
+      }
+    }, { parent: parentTask, sub: subTaskTitle });
+
+    // Verifikasi alert toast sukses muncul
+    await expect(page.locator('[data-testid="alert-toast"]').filter({ hasText: 'Sub-task berhasil diubah menjadi catatan mandiri' })).toBeVisible();
+
+    // Verifikasi sub-task tidak lagi berada di dalam sub-task list milik parent
+    await expect(parentItem.locator('[data-testid^="subtask-item-"]', { hasText: subTaskTitle })).not.toBeVisible();
+
+    // Verifikasi sub-task sekarang berdiri sendiri sebagai task utama (top-level todo-item)
+    const independentItem = page.locator('[data-testid^="todo-item-"]', { hasText: subTaskTitle });
+    await expect(independentItem).toBeVisible();
+
+    // 4. Cleanup data test
+    await page.evaluate(async (titles) => {
+      const store = (window as any).__todoStore;
+      const todos = store?.getState?.()?.todos || [];
+      for (const t of titles) {
+        if (titles.includes(t.text)) {
+          await store.deleteTodo(t.id);
+        }
+      }
+    }, [parentTask, subTaskTitle]);
   });
 });
 

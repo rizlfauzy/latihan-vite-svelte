@@ -61,21 +61,37 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 - **Integrasi Tugas Pending & Konteks Gambar**: Draf pesan otomatis merangkum dan menyertakan catatan To-Do yang berstatus belum selesai (*not done*) untuk aplikasi terkait. Jika task pending memiliki lampiran gambar, link gambar disematkan langsung pada baris task (`Lampiran gambar: [URL]`) dan tautan pratinjau gambar ditampilkan di modal.
 - **Editable Message**: Pengguna dapat mengedit pesan secara langsung di textarea sebelum mengklik tautan kirim ke WhatsApp (`wa.me`).
 
-### 2. Autentikasi, Registrasi & Role-Based Access Control (RBAC)
+### 2. Autentikasi, Registrasi, Ganti Password & Role-Based Access Control (RBAC)
 - **Halaman Login Dedicated**: Rute khusus di `/login` dengan toggle show/hide password untuk otentikasi pengguna.
 - **Halaman Registrasi Baru (`/register`)**:
   - Tombol akses ke halaman registrasi ditempatkan khusus di halaman Login.
   - Form mencakup input `name` (nama lengkap), `username`, dan `password` dengan fitur *show/hide password* yang konsisten.
   - Setiap pendaftar baru otomatis diberikan role `VIEWER` dengan hak akses `is_debug: false`.
-- **Verifikasi Kredensial & Pendaftaran Aman**: Otentikasi dan pendaftaran menggunakan RPC Supabase (`authenticate_user` dan `register_user`) dengan hashing Bcrypt (`pgcrypto`).
-- **Proteksi Fitur Aplikasi**: Tombol Tambah Aplikasi, Edit, Hapus, dan Hapus Massal (*Bulk Action*) hanya muncul dan dapat dieksekusi jika pengguna yang login memiliki role dengan flag `is_debug: true`.
+- **Fitur Ganti Password di Menu Profile (`/profile`)**:
+  - Tersedia tombol "Ganti Password" di halaman profile pengguna terotentikasi.
+  - Memunculkan modal Neo Brutalism (`ChangePasswordModal`) dengan input password lama dan password baru, masing-masing dilengkapi toggle show/hide password.
+  - Verifikasi dan update password dilakukan via RPC Supabase `change_user_password` menggunakan hashing Bcrypt (`pgcrypto`).
+- **Verifikasi Kredensial & Pendaftaran Aman**: Otentikasi dan pendaftaran menggunakan RPC Supabase (`authenticate_user`, `register_user`, dan `change_user_password`) dengan hashing Bcrypt (`pgcrypto`).
+- **Proteksi Fitur Aplikasi**: Tombol Tambah Aplikasi, Edit, Hapus, Hapus Massal (*Bulk Action*), dan Rearrange posisi hanya muncul dan dapat dieksekusi jika pengguna yang login memiliki role dengan flag `is_debug: true`.
 - **Navigasi Dinamis**: Navbar menampilkan tombol "Masuk" untuk tamu, atau profil pengguna beserta tombol "Keluar" (*Logout*) saat pengguna telah terotentikasi.
 
-### 3. Manajemen Aplikasi (CRUD) & Cloud Database Sync
-- **Add Application**: Modal pendaftaran modul aplikasi baru dengan validasi data lengkap.
-- **Edit Application**: Modal pembaruan metadata aplikasi (nama, URL, kategori, PIC, WhatsApp).
-- **Delete Application**: Modal konfirmasi hapus bergaya Neo Brutalism yang juga mengeksekusi *cascading deletion* terhadap to-do list yang terafiliasi dengan aplikasi tersebut.
-- **Bulk Delete & Select All**: Fitur "Pilih Semua" dan checkbox pada tiap kartu aplikasi saat sesi pengguna memiliki akses debug, memungkinkan penghapusan massal aplikasi terpilih beserta *cascading deletion* otomatis ke daftar To-Do.
+### 3. Manajemen Aplikasi (CRUD), Hero Image, Drag-Drop Upload & Rearrange Posisi
+- **Add Application & Edit Application**: Modal pembuatan dan pembaruan metadata aplikasi yang dilengkapi upload banner hero dan icon aplikasi.
+- **Hero Banner Image pada Card List Apps**:
+  - Kolom `hero_image_url` pada tabel `apps` di database Supabase.
+  - Card aplikasi menampilkan banner hero berukuran penuh di bagian atas card. Jika belum ada hero image yang diunggah, sistem otomatis menampilkan banner visual default Neo Brutalism (`default-app-hero.svg`).
+  - Form Add & Edit mendukung upload hero image dengan validasi format ketat khusus `.jpg`, `.jpeg`, dan `.png`.
+- **Drag-and-Drop Image Upload dengan Instant Preview**:
+  - Komponen bersama `DragDropImageInput.svelte` diimplementasikan untuk area upload hero banner maupun icon aplikasi.
+  - Mendukung penyeretan file langsung dari file explorer OS (drag-and-drop dropzone) serta pemilihan manual dengan feedback hover taktil.
+  - Menampilkan thumbnail preview secara instan begitu file dipilih atau di-drop.
+  - Icon aplikasi mendukung format `.jpg`, `.jpeg`, `.png`, dan `.svg` dengan fallback otomatis ke icon Lucide.
+- **Drag-and-Drop Rearrange Posisi Apps (Mode Admin)**:
+  - Kolom `order_index` pada tabel database `apps` untuk menyimpan posisi urutan.
+  - Saat login sebagai admin/debug mode, pengguna dapat menata ulang urutan kartu aplikasi dengan drag-and-drop.
+  - Dilengkapi mekanisme **long press** (tekan lama > 150ms) pada kartu untuk mengaktifkan drag mode tanpa mengganggu interaksi klik biasa, serta tombol drag handle (`GripVertical`) khusus admin.
+  - Urutan baru otomatis disinkronkan ke Supabase melalui `appStore.reorderApps`.
+- **Delete Application & Bulk Delete**: Modal konfirmasi hapus yang mengeksekusi *cascading deletion* terhadap to-do list serta membersihkan aset gambar dari Supabase Storage (`app-images`).
 - **Supabase Cloud Persistence**: Tersinkronisasi dua arah dengan tabel `apps` di Supabase, dengan graceful fallback saat jaringan offline.
 
 ### 4. To-Do List Harian dengan Asosiasi Aplikasi & Relasi Subtodos
@@ -121,6 +137,14 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 - Kamus modular di `src/i18n/id.json` dan `src/i18n/en.json`.
 - Switcher instan di Navbar dengan penyimpanan preferensi pengguna di `localStorage`.
 
+### 12. Drag-and-Drop Reorder To-Do List & Sub-Tasks
+- **Penataan Ulang To-Do Items**: Pengguna dengan hak akses admin (`is_debug: true`) dapat menyusun ulang urutan catatan to-do secara interaktif melalui tombol drag handle (`GripVertical`) atau dengan menahan/menekan lama (*long-press* 150ms) baris to-do.
+- **Penataan Ulang Sub-Tasks**: Subtask di dalam suatu catatan to-do dapat disusun ulang urutannya secara fleksibel menggunakan drag handle.
+- **Pemindahan Sub-Tasks Antar-Catatan (Cross-Parent Move)**: Subtask dapat diseret (*drag*) dari satu to-do dan dijatuhkan (*drop*) ke daftar subtask catatan to-do lain, secara otomatis memperbarui relasi foreign key `todo_id` dan `order_index` pada tabel database `subtodos`.
+- **Konversi Task Menjadi Sub-Task (Task to Sub-Task Conversion)**: Catatan to-do utama dapat diseret (*drag*) dan dijatuhkan (*drop*) ke area sub-task catatan to-do lain untuk mengubahnya menjadi sub-task. Catatan to-do yang memiliki sub-task di dalamnya divalidasi dan dicegah dari konversi untuk mencegah kehilangan data atau *nested sub-task* yang tidak didukung.
+- **Konversi Sub-Task Menjadi Task Mandiri (Sub-Task to Independent Task Conversion)**: Sub-task dapat diseret (*drag*) keluar dari kontainer parent-nya dan dijatuhkan (*drop*) ke area to-do list utama atau kartu to-do lain untuk mengubahnya menjadi catatan to-do utama yang mandiri. Data status dan teks sub-task dipertahankan dan record di tabel `subtodos` dihapus secara otomatis.
+- **Persistensi Cloud & Lokal**: Setiap perubahan urutan disinkronkan ke Supabase via batch update kolom `order_index` serta disimpan ke `localStorage`.
+
 ---
 
 ## 🛠️ Architecture & Tech Stack
@@ -137,7 +161,7 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 | **Routing** | `sv-router` | Client-side SPA routing (`/`, `/company-profile`, `/login`, `/register`) |
 | **Styling** | Tailwind CSS v4 | Custom design tokens Neo Brutalism & Dark Mode |
 | **PWA** | Service Worker + Manifest | Instalasi aplikasi offline & asset caching |
-| **Testing** | Playwright | End-to-end automated testing suite (40 test scenarios) dengan auto-cleanup |
+| **Testing** | Playwright | End-to-end automated testing suite (49 test scenarios) dengan auto-cleanup |
 | **CI/CD Pipeline** | GitLab CI | Pipeline terotomatisasi: Test -> Build -> Migrate -> Deploy (VPS Rsync) |
 | **Container** | Docker + Nginx Alpine | Multi-stage production container build (opsional/alternatif deployment) |
 
@@ -254,7 +278,7 @@ Pipeline integrasi dan deployment berkelanjutan dijalankan melalui GitLab CI pad
 │   │   └── 20260924000001_add_viewer_role_and_registration.sql
 │   └── schema.sql               # Konsolidasi skema database & RPC
 ├── tests/
-│   └── hub.spec.ts              # Playwright E2E automated test suite (39 tests)
+│   └── hub.spec.ts              # Playwright E2E automated test suite (49 tests)
 ├── .gitlab-ci.yml               # Konfigurasi GitLab CI/CD Pipeline
 ├── Dockerfile                   # Multi-stage production container build
 ├── docker-compose.yml           # Docker Compose orchestrator
@@ -283,6 +307,13 @@ Pipeline integrasi dan deployment berkelanjutan dijalankan melalui GitLab CI pad
 - [x] Dark Mode toggle tersimpan di `localStorage` dan terintegrasi dengan skema warna Neo Brutalism.
 - [x] PWA terdaftar dengan Service Worker aktif dan caching aset.
 - [x] Sistem translasi dwibahasa (ID & EN) tersimpan dalam file JSON terpisah dan bekerja instan di seluruh elemen UI.
-- [x] Seluruh 39 skenario automated E2E test cases Playwright lulus pengujian (`bun run test`).
+- [x] Fitur Ganti Password di halaman profile dengan verifikasi password lama via RPC Supabase `change_user_password`.
+- [x] Banner Hero Image pada card aplikasi dengan gambar default Neo Brutalism dan upload khusus `.jpg`, `.jpeg`, `.png`.
+- [x] Fitur penataan ulang (rearrange) urutan kartu aplikasi dengan drag-and-drop dan long-press di mode admin.
+- [x] Fitur penataan ulang (rearrange) urutan catatan To-Do dengan drag-and-drop dan long-press di mode admin.
+- [x] Fitur penataan ulang (rearrange) sub-task dan pemindahan sub-task lintas catatan (cross-parent move) via drag-and-drop.
+- [x] Fitur konversi catatan To-Do menjadi sub-task dengan drag-and-drop ke area sub-task catatan lain beserta proteksi validasi.
+- [x] Fitur konversi sub-task menjadi catatan To-Do mandiri dengan drag-and-drop keluar dari kontainer parent ke list utama.
+- [x] Seluruh 49 skenario automated E2E test cases Playwright lulus pengujian (`bun run test`) dengan auto-cleanup data test.
 - [x] Svelte check dan TypeScript compiler bersih dari error maupun warning (`bun run check`).
 - [x] Production build berhasil dibuat tanpa kendala (`bun run build`).

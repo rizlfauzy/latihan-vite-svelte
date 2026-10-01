@@ -3,6 +3,7 @@
   import { router } from '@/router';
   import { i18nStore } from '@/stores/i18nStore';
   import ConfirmModal from '@/components/ConfirmModal.svelte';
+  import ChangePasswordModal from '@/components/ChangePasswordModal.svelte';
 
   const t = $derived((key: string, defaultValue: string = ''): string => $i18nStore.t(key, defaultValue));
 
@@ -10,6 +11,7 @@
   let currentRole = $derived($authStore.role);
 
   let isModalLogoutOpen = $state(false);
+  let isChangePasswordOpen = $state(false);
 
   function handleLogout() {
     isModalLogoutOpen = false;
@@ -71,7 +73,15 @@
         {/if}
       </div>
 
-      <div class="flex items-center justify-center gap-3 pt-4 border-t-2 border-dashed border-gray-300">
+      <div class="flex items-center justify-center gap-3 pt-4 border-t-2 border-dashed border-gray-300 flex-wrap">
+        <button
+          type="button"
+          class="nb-btn bg-white hover:bg-nb-yellow text-xs font-black px-4 py-2 text-black cursor-pointer shadow-nb-sm border-2 border-nb-black"
+          onclick={() => (isChangePasswordOpen = true)}
+          data-testid="btn-change-password"
+        >
+          🔑 {t('profile.changePassword', 'Ganti Password')}
+        </button>
         <button
           type="button"
           class="nb-btn bg-nb-yellow text-xs font-black px-4 py-2 text-black cursor-pointer shadow-nb-sm"
@@ -92,6 +102,10 @@
     </div>
   </div>
 </div>
+
+<ChangePasswordModal
+  bind:isOpen={isChangePasswordOpen}
+/>
 
 <ConfirmModal
   bind:isOpen={isModalLogoutOpen}

@@ -95,6 +95,56 @@
       isBulkDeleteConfirmOpen = false;
     }
   }
+
+  let draggedApp = $state<AppItem | null>(null);
+  let dragOverAppId = $state<string | null>(null);
+
+  function handleDragStart(app: AppItem, e: DragEvent) {
+    draggedApp = app;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', app.id);
+    }
+  }
+
+  function handleDragOver(app: AppItem, e: DragEvent) {
+    e.preventDefault();
+    if (draggedApp && draggedApp.id !== app.id) {
+      dragOverAppId = app.id;
+    }
+  }
+
+  function handleDragLeave(app: AppItem, e: DragEvent) {
+    if (dragOverAppId === app.id) {
+      dragOverAppId = null;
+    }
+  }
+
+  async function handleDrop(targetApp: AppItem, e: DragEvent) {
+    e.preventDefault();
+    const source = draggedApp;
+    draggedApp = null;
+    dragOverAppId = null;
+
+    if (!source || source.id === targetApp.id) return;
+
+    const currentList = [...allApps];
+    const sourceIndex = currentList.findIndex((a) => a.id === source.id);
+    const targetIndex = currentList.findIndex((a) => a.id === targetApp.id);
+
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    currentList.splice(sourceIndex, 1);
+    currentList.splice(targetIndex, 0, source);
+
+    const newOrderedIds = currentList.map((a) => a.id);
+    await appStore.reorderApps(newOrderedIds);
+  }
+
+  function handleDragEnd() {
+    draggedApp = null;
+    dragOverAppId = null;
+  }
 </script>
 
 <section class="w-full" data-testid="app-grid-section">
@@ -242,10 +292,17 @@
         <AppCard
           {app}
           isSelected={selectedAppIds.includes(app.id)}
+          isDraggingThis={draggedApp?.id === app.id}
+          isDragOverThis={dragOverAppId === app.id}
           onToggleSelect={toggleSelectApp}
           onEdit={(a) => (appToEdit = a)}
           onDelete={(a) => (appToDelete = a)}
           onContactPic={(a) => (appForWhatsApp = a)}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onDragEnd={handleDragEnd}
         />
       {/each}
     </div>

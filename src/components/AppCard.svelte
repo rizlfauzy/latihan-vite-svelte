@@ -3,34 +3,124 @@
   import { i18nStore } from '@/stores/i18nStore';
   import { authStore } from '@/stores/authStore';
   import AppIcon from '@/components/AppIcon.svelte';
+  import defaultHeroImage from '@/assets/default-app-hero.svg';
+  import { GripVertical } from '@lucide/svelte';
 
   let {
     app,
     isSelected = false,
+    isDraggingThis = false,
+    isDragOverThis = false,
     onToggleSelect,
     onEdit,
     onDelete,
     onContactPic,
+    onDragStart,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    onDragEnd,
   }: {
     app: AppItem;
     isSelected?: boolean;
+    isDraggingThis?: boolean;
+    isDragOverThis?: boolean;
     onToggleSelect?: (app: AppItem) => void;
     onEdit?: (app: AppItem) => void;
     onDelete?: (app: AppItem) => void;
     onContactPic?: (app: AppItem) => void;
+    onDragStart?: (app: AppItem, e: DragEvent) => void;
+    onDragOver?: (app: AppItem, e: DragEvent) => void;
+    onDragLeave?: (app: AppItem, e: DragEvent) => void;
+    onDrop?: (app: AppItem, e: DragEvent) => void;
+    onDragEnd?: (app: AppItem, e: DragEvent) => void;
   } = $props();
 
   let canManageApps = $derived($authStore.hasDebugAccess);
-  const t = $derived((key: string, defaultValue: string = ''): string => $i18nStore.t(key, defaultValue))
+  const t = $derived((key: string, defaultValue: string = ''): string => $i18nStore.t(key, defaultValue));
+
+  let isDragReady = $state(false);
+  let longPressTimer: any = null;
+
+  function handlePointerDown(e: PointerEvent) {
+    if (!canManageApps) return;
+    if ((e.target as HTMLElement).closest('button, input, a, label')) return;
+
+    // Tekan lama 150ms untuk mengaktifkan drag mode
+    longPressTimer = setTimeout(() => {
+      isDragReady = true;
+    }, 150);
+  }
+
+  function handlePointerUp() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
+
+  function handleDragStartInternal(e: DragEvent) {
+    if (!canManageApps) {
+      e.preventDefault();
+      return;
+    }
+    onDragStart?.(app, e);
+  }
+
+  function handleDragEndInternal(e: DragEvent) {
+    isDragReady = false;
+    onDragEnd?.(app, e);
+  }
 </script>
 
 <div
-  class="nb-card nb-card-interactive group flex flex-col justify-between gap-4 bg-nb-surface text-nb-black relative {isSelected ? 'ring-3 ring-nb-black bg-yellow-50 dark:bg-yellow-950/20' : ''}"
+  role="article"
+  class="nb-card nb-card-interactive group flex flex-col justify-between gap-3 bg-nb-surface text-nb-black relative transition-all
+    {isSelected ? 'ring-3 ring-nb-black bg-yellow-50 dark:bg-yellow-950/20' : ''}
+    {isDragReady ? 'ring-4 ring-nb-yellow shadow-nb-lg scale-[1.01] cursor-grab active:cursor-grabbing' : ''}
+    {isDraggingThis ? 'opacity-40 border-dashed scale-95' : ''}
+    {isDragOverThis ? 'border-nb-blue ring-4 ring-nb-blue bg-blue-50' : ''}"
+  draggable={canManageApps && isDragReady}
+  onpointerdown={handlePointerDown}
+  onpointerup={handlePointerUp}
+  onpointercancel={handlePointerUp}
+  ondragstart={handleDragStartInternal}
+  ondragend={handleDragEndInternal}
+  ondragover={(e) => { e.preventDefault(); onDragOver?.(app, e); }}
+  ondragleave={(e) => { onDragLeave?.(app, e); }}
+  ondrop={(e) => { e.preventDefault(); onDrop?.(app, e); }}
   data-testid="app-card-{app.id}"
+  data-drag-ready={isDragReady ? 'true' : 'false'}
 >
+  <!-- Hero Banner Image -->
+  <div
+    class="w-full h-32 border-2 border-nb-black rounded-md overflow-hidden bg-gray-100 relative shadow-nb-xs shrink-0"
+    data-testid="app-hero-{app.id}"
+  >
+    <img
+      src={app.heroImageUrl || defaultHeroImage}
+      alt={`${app.name} Hero`}
+      class="w-full h-full object-cover"
+      data-testid="app-hero-image-{app.id}"
+      loading="lazy"
+    />
+  </div>
+
   <div class="flex items-center justify-between gap-2.5">
     <div class="flex items-center gap-2.5">
       {#if canManageApps}
+        <!-- Drag Handle Icon for Admin Mode -->
+        <button
+          type="button"
+          class="cursor-grab active:cursor-grabbing p-1 text-gray-500 hover:text-black transition-colors"
+          title={t('grid.dragHandleTooltip', 'Tekan lama card atau drag handle ini untuk mengubah posisi')}
+          onpointerdown={() => (isDragReady = true)}
+          data-testid="drag-handle-{app.id}"
+          aria-label={`Drag to rearrange ${app.name}`}
+        >
+          <GripVertical size={16} />
+        </button>
+
         <label class="cursor-pointer flex items-center justify-center m-0" title="Pilih aplikasi">
           <input
             type="checkbox"
@@ -44,7 +134,7 @@
       {/if}
 
       <div
-        class="w-12 h-12 border-2 border-nb-black rounded-md shadow-nb-sm flex items-center justify-center overflow-hidden"
+        class="w-12 h-12 border-2 border-nb-black rounded-md shadow-nb-sm flex items-center justify-center overflow-hidden shrink-0"
         style="background: {app.color};"
       >
         {#if app.imageUrl}
@@ -91,9 +181,9 @@
     </div>
   </div>
 
-  <div class="flex flex-col gap-2 grow">
-    <h3 class="text-xl font-extrabold m-0">{app.name}</h3>
-    <p class="text-sm text-gray-600 font-medium leading-relaxed m-0">{app.description}</p>
+  <div class="flex flex-col gap-1.5 grow">
+    <h3 class="text-lg sm:text-xl font-extrabold m-0 text-nb-black">{app.name}</h3>
+    <p class="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed m-0">{app.description}</p>
   </div>
 
   <!-- PIC & WhatsApp Contact Info -->

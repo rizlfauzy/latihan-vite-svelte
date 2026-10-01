@@ -4,12 +4,15 @@
   import ImageUploadModal from './ImageUploadModal.svelte';
   import { alertStore } from '@/stores/alertStore';
   import { i18nStore } from '@/stores/i18nStore';
+  import { authStore } from '@/stores/authStore';
   import { appStore } from '@/stores/appStore';
   import { todoStore, type Todo, type SubTask } from '@/stores/todoStore';
   import CustomSelect from './CustomSelect.svelte';
   import { Warning } from '@/exceptions/CustomError';
+  import { GripVertical } from '@lucide/svelte';
 
-  const t = $derived((key: string, defaultValue?: string):string => $i18nStore.t(key, defaultValue));
+  const t = $derived((key: string, defaultValue?: string): string => $i18nStore.t(key, defaultValue));
+  let canManage = $derived($authStore.hasDebugAccess);
 
   type DeleteTarget =
     | { type: 'todo'; id: string; text: string }
@@ -260,6 +263,299 @@
   function deleteSubTask(todoId: string, subTaskId: string) {
     todoStore.deleteSubTask(todoId, subTaskId);
   }
+
+  // --- Drag and Drop Logic for Todos ---
+  let draggedTodo = $state<Todo | null>(null);
+  let dragOverTodoId = $state<string | null>(null);
+  let isTodoDragReady = $state<Record<string, boolean>>({});
+  let todoLongPressTimer: any = null;
+
+  function handleTodoPointerDown(id: string, e: PointerEvent) {
+    if (!canManage) return;
+    if ((e.target as HTMLElement).closest('button, input, textarea, a, label')) return;
+    todoLongPressTimer = setTimeout(() => {
+      isTodoDragReady[id] = true;
+    }, 150);
+  }
+
+  function handleTodoPointerUp() {
+    if (todoLongPressTimer) {
+      clearTimeout(todoLongPressTimer);
+      todoLongPressTimer = null;
+    }
+  }
+
+  function handleTodoDragStart(todo: Todo, e: DragEvent) {
+    if (!canManage) {
+      e.preventDefault();
+      return;
+    }
+    draggedTodo = todo;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('application/json', JSON.stringify({ type: 'todo', id: todo.id }));
+    }
+  }
+
+  function handleTodoDragOver(todo: Todo, e: DragEvent) {
+    if (draggedTodo && draggedTodo.id !== todo.id) {
+      e.preventDefault();
+      dragOverTodoId = todo.id;
+    } else if (draggedSubTask) {
+      e.preventDefault();
+      dragOverTodoId = todo.id;
+    }
+  }
+
+  function handleTodoDragLeave(todo: Todo, e: DragEvent) {
+    if (dragOverTodoId === todo.id) {
+      dragOverTodoId = null;
+    }
+  }
+
+  async function handleTodoDrop(targetTodo: Todo, e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (draggedSubTask) {
+      const source = draggedSubTask;
+      draggedSubTask = null;
+      dragOverTodoId = null;
+      dragOverSubTaskId = null;
+      dragOverSubTodoContainerId = null;
+      isSubDragReady = {};
+
+      const currentList = [...todos];
+      const targetIndex = currentList.findIndex((t) => t.id === targetTodo.id);
+      const newIndex = targetIndex !== -1 ? targetIndex : 0;
+
+      await todoStore.convertSubTaskToTodo(source.sub.id, source.sourceTodoId, newIndex);
+      return;
+    }
+
+    const source = draggedTodo;
+    draggedTodo = null;
+    dragOverTodoId = null;
+    isTodoDragReady = {};
+
+    if (!source || source.id === targetTodo.id) return;
+
+    const currentList = [...todos];
+    const sourceIndex = currentList.findIndex((t) => t.id === source.id);
+    const targetIndex = currentList.findIndex((t) => t.id === targetTodo.id);
+
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    currentList.splice(sourceIndex, 1);
+    currentList.splice(targetIndex, 0, source);
+
+    const newOrderedIds = currentList.map((t) => t.id);
+    await todoStore.reorderTodos(newOrderedIds);
+  }
+
+  function handleListDragOver(e: DragEvent) {
+    if (draggedSubTask) {
+      e.preventDefault();
+    }
+  }
+
+  async function handleListDrop(e: DragEvent) {
+    if (!draggedSubTask) return;
+    e.preventDefault();
+    const source = draggedSubTask;
+    draggedSubTask = null;
+    dragOverTodoId = null;
+    dragOverSubTaskId = null;
+    dragOverSubTodoContainerId = null;
+    isSubDragReady = {};
+
+    await todoStore.convertSubTaskToTodo(source.sub.id, source.sourceTodoId);
+  }
+
+  function handleTodoDragEnd() {
+    draggedTodo = null;
+    dragOverTodoId = null;
+    dragOverSubTaskId = null;
+    dragOverSubTodoContainerId = null;
+    isTodoDragReady = {};
+  }
+
+  // --- Drag and Drop Logic for Sub-Tasks ---
+  let draggedSubTask = $state<{ sub: SubTask; sourceTodoId: string } | null>(null);
+  let dragOverSubTaskId = $state<string | null>(null);
+  let dragOverSubTodoContainerId = $state<string | null>(null);
+  let isSubDragReady = $state<Record<string, boolean>>({});
+  let subLongPressTimer: any = null;
+
+  function handleSubPointerDown(id: string, e: PointerEvent) {
+    if (!canManage) return;
+    if ((e.target as HTMLElement).closest('button, input, textarea, a, label')) return;
+    subLongPressTimer = setTimeout(() => {
+      isSubDragReady[id] = true;
+    }, 150);
+  }
+
+  function handleSubPointerUp() {
+    if (subLongPressTimer) {
+      clearTimeout(subLongPressTimer);
+      subLongPressTimer = null;
+    }
+  }
+
+  function handleSubDragStart(sub: SubTask, sourceTodoId: string, e: DragEvent) {
+    if (!canManage) {
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
+    draggedSubTask = { sub, sourceTodoId };
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('application/json', JSON.stringify({ type: 'subtask', id: sub.id, sourceTodoId }));
+    }
+  }
+
+  function handleSubDragOver(targetSub: SubTask, targetTodoId: string, e: DragEvent) {
+    if (draggedSubTask && draggedSubTask.sub.id !== targetSub.id) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragOverSubTaskId = targetSub.id;
+      dragOverTodoId = null;
+    } else if (draggedTodo && draggedTodo.id !== targetTodoId) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragOverSubTaskId = targetSub.id;
+    }
+  }
+
+  function handleSubDragLeave(targetSub: SubTask, e: DragEvent) {
+    if (dragOverSubTaskId === targetSub.id) {
+      dragOverSubTaskId = null;
+    }
+  }
+
+  async function handleSubDrop(targetSub: SubTask, targetTodoId: string, e: DragEvent) {
+    if (!draggedSubTask && !draggedTodo) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (draggedTodo) {
+      const source = draggedTodo;
+      draggedTodo = null;
+      dragOverTodoId = null;
+      dragOverSubTaskId = null;
+      dragOverSubTodoContainerId = null;
+      isTodoDragReady = {};
+
+      if (source.id === targetTodoId) return;
+
+      const targetTodo = todos.find((t) => t.id === targetTodoId);
+      const targetSubs = targetTodo?.subTasks || [];
+      const targetIdx = targetSubs.findIndex((s) => s.id === targetSub.id);
+      const newIndex = targetIdx !== -1 ? targetIdx : targetSubs.length;
+
+      await todoStore.convertTodoToSubTask(source.id, targetTodoId, newIndex);
+      expandedTodoIds[targetTodoId] = true;
+      return;
+    }
+
+    const source = draggedSubTask;
+    draggedSubTask = null;
+    dragOverSubTaskId = null;
+    dragOverSubTodoContainerId = null;
+    isSubDragReady = {};
+
+    if (!source || source.sub.id === targetSub.id) return;
+
+    if (source.sourceTodoId === targetTodoId) {
+      const parentTodo = todos.find((t) => t.id === targetTodoId);
+      if (!parentTodo || !parentTodo.subTasks) return;
+      const subList = [...parentTodo.subTasks];
+      const sourceIdx = subList.findIndex((s) => s.id === source.sub.id);
+      const targetIdx = subList.findIndex((s) => s.id === targetSub.id);
+      if (sourceIdx === -1 || targetIdx === -1) return;
+
+      subList.splice(sourceIdx, 1);
+      subList.splice(targetIdx, 0, source.sub);
+      await todoStore.reorderSubTasks(targetTodoId, subList.map((s) => s.id));
+    } else {
+      const targetTodo = todos.find((t) => t.id === targetTodoId);
+      const targetSubs = targetTodo?.subTasks || [];
+      const targetIdx = targetSubs.findIndex((s) => s.id === targetSub.id);
+      const newIndex = targetIdx !== -1 ? targetIdx : targetSubs.length;
+
+      await todoStore.moveSubTaskToParent(source.sub.id, source.sourceTodoId, targetTodoId, newIndex);
+      expandedTodoIds[targetTodoId] = true;
+    }
+  }
+
+  function handleSubContainerDragOver(targetTodoId: string, e: DragEvent) {
+    if (draggedSubTask) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragOverSubTodoContainerId = targetTodoId;
+      dragOverTodoId = null;
+    } else if (draggedTodo && draggedTodo.id !== targetTodoId) {
+      e.preventDefault();
+      e.stopPropagation();
+      dragOverSubTodoContainerId = targetTodoId;
+    }
+  }
+
+  function handleSubContainerDragLeave(targetTodoId: string, e: DragEvent) {
+    if (dragOverSubTodoContainerId === targetTodoId) {
+      dragOverSubTodoContainerId = null;
+    }
+  }
+
+  async function handleSubContainerDrop(targetTodoId: string, e: DragEvent) {
+    if (!draggedSubTask && !draggedTodo) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (draggedTodo) {
+      const source = draggedTodo;
+      draggedTodo = null;
+      dragOverTodoId = null;
+      dragOverSubTaskId = null;
+      dragOverSubTodoContainerId = null;
+      isTodoDragReady = {};
+
+      if (source.id === targetTodoId) return;
+
+      const targetTodo = todos.find((t) => t.id === targetTodoId);
+      const targetSubs = targetTodo?.subTasks || [];
+      await todoStore.convertTodoToSubTask(source.id, targetTodoId, targetSubs.length);
+      expandedTodoIds[targetTodoId] = true;
+      return;
+    }
+
+    const source = draggedSubTask;
+    draggedSubTask = null;
+    dragOverTodoId = null;
+    dragOverSubTaskId = null;
+    dragOverSubTodoContainerId = null;
+    isSubDragReady = {};
+
+    if (!source) return;
+
+    if (source.sourceTodoId === targetTodoId) {
+      return;
+    }
+
+    const targetTodo = todos.find((t) => t.id === targetTodoId);
+    const targetSubs = targetTodo?.subTasks || [];
+    await todoStore.moveSubTaskToParent(source.sub.id, source.sourceTodoId, targetTodoId, targetSubs.length);
+    expandedTodoIds[targetTodoId] = true;
+  }
+
+  function handleSubDragEnd() {
+    draggedSubTask = null;
+    dragOverTodoId = null;
+    dragOverSubTaskId = null;
+    dragOverSubTodoContainerId = null;
+    isSubDragReady = {};
+  }
 </script>
 
 <section class="w-full">
@@ -465,7 +761,11 @@
     </div>
 
     <!-- List Items -->
-    <ul class="list-none flex flex-col gap-4 p-0 m-0">
+    <ul
+      class="list-none flex flex-col gap-4 p-0 m-0"
+      ondragover={handleListDragOver}
+      ondrop={handleListDrop}
+    >
       {#if isLoading}
         <div class="flex flex-col gap-3" data-testid="todos-skeleton-list">
           <SkeletonTodo />
@@ -489,21 +789,59 @@
           <li
             class="flex flex-col border-2 border-nb-black rounded-md shadow-nb-sm overflow-hidden transition-all duration-100 {todo.done
               ? 'bg-gray-100 opacity-80'
-              : 'bg-white'}"
+              : 'bg-white'}
+              {isTodoDragReady[todo.id] ? 'ring-4 ring-nb-yellow shadow-nb-lg scale-[1.01] cursor-grab active:cursor-grabbing' : ''}
+              {draggedTodo?.id === todo.id ? 'opacity-40 border-dashed scale-95' : ''}
+              {dragOverTodoId === todo.id ? (draggedSubTask ? 'border-nb-green ring-4 ring-nb-green bg-green-50' : 'border-nb-blue ring-4 ring-nb-blue bg-blue-50') : ''}"
+            draggable={canManage && Boolean(isTodoDragReady[todo.id])}
+            onpointerdown={(e) => handleTodoPointerDown(todo.id, e)}
+            onpointerup={handleTodoPointerUp}
+            onpointercancel={handleTodoPointerUp}
+            ondragstart={(e) => handleTodoDragStart(todo, e)}
+            ondragover={(e) => handleTodoDragOver(todo, e)}
+            ondragleave={(e) => handleTodoDragLeave(todo, e)}
+            ondrop={(e) => handleTodoDrop(todo, e)}
+            ondragend={handleTodoDragEnd}
             data-testid={`todo-item-${todo.id}`}
+            data-drag-ready={isTodoDragReady[todo.id] ? 'true' : 'false'}
           >
+            <!-- Hint saat Sub-Task di-drag ke atas Todo item -->
+            {#if draggedSubTask && dragOverTodoId === todo.id}
+              <div class="p-1.5 border-b-2 border-nb-green bg-green-100 text-center" data-testid="drop-subtask-to-todo-hint">
+                <p class="text-xs text-green-900 font-bold m-0 flex items-center justify-center gap-1">
+                  <span>🚀</span> {t('todo.dropSubtaskAsTodo', 'Lepaskan di sini untuk mengubah menjadi catatan mandiri')}
+                </p>
+              </div>
+            {/if}
+
             <!-- Parent Todo Row -->
             <div class="flex items-center justify-between gap-3 p-3.5 sm:px-4.5 bg-gray-50 border-b-2 border-nb-black">
-              <!-- Expand / Collapse Button -->
-              <button
-                type="button"
-                class="w-7 h-7 shrink-0 border-2 border-nb-black bg-white rounded flex items-center justify-center font-bold text-xs cursor-pointer shadow-nb-xs hover:bg-nb-yellow transition-colors"
-                onclick={() => toggleExpand(todo.id)}
-                title={isExpanded ? 'Tutup sub-tasks' : 'Buka sub-tasks'}
-                aria-label={isExpanded ? 'Tutup sub-tasks' : 'Buka sub-tasks'}
-              >
-                {isExpanded ? '▼' : '▶'}
-              </button>
+              <div class="flex items-center gap-1.5 shrink-0">
+                {#if canManage}
+                  <button
+                    type="button"
+                    class="cursor-grab active:cursor-grabbing p-1 text-gray-500 hover:text-black transition-colors"
+                    title={t('todo.dragHandleTooltip', 'Tekan lama catatan atau drag handle ini untuk mengubah posisi')}
+                    onpointerdown={() => (isTodoDragReady[todo.id] = true)}
+                    data-testid={`drag-handle-todo-${todo.id}`}
+                    aria-label={`Drag to rearrange todo ${todo.text}`}
+                  >
+                    <GripVertical size={16} />
+                  </button>
+                {/if}
+
+                <!-- Expand / Collapse Button -->
+                <button
+                  type="button"
+                  class="w-7 h-7 shrink-0 border-2 border-nb-black bg-white rounded flex items-center justify-center font-bold text-xs cursor-pointer shadow-nb-xs hover:bg-nb-yellow transition-colors"
+                  onclick={() => toggleExpand(todo.id)}
+                  ondragover={() => { if ((draggedTodo && draggedTodo.id !== todo.id) || draggedSubTask) expandedTodoIds[todo.id] = true; }}
+                  title={isExpanded ? 'Tutup sub-tasks' : 'Buka sub-tasks'}
+                  aria-label={isExpanded ? 'Tutup sub-tasks' : 'Buka sub-tasks'}
+                >
+                  {isExpanded ? '▼' : '▶'}
+                </button>
+              </div>
 
               <!-- Checkbox & Text -->
               <label class="flex items-center gap-3 cursor-pointer grow select-none">
@@ -595,31 +933,76 @@
 
             <!-- Sub-tasks Section (Expandable) -->
             {#if isExpanded}
-              <div class="p-3 sm:px-5 bg-[#faf8f5] flex flex-col gap-2.5 border-t border-dashed border-gray-300">
+              <div
+                role="region"
+                aria-label={t('todo.subtasksTitle', 'Sub-tasks')}
+                class="p-3 sm:px-5 bg-[#faf8f5] flex flex-col gap-2.5 border-t border-dashed border-gray-300 transition-colors {dragOverSubTodoContainerId === todo.id ? 'bg-green-50 ring-2 ring-nb-green' : ''} {draggedTodo && draggedTodo.id !== todo.id ? 'border-2 border-dashed border-nb-green bg-green-50/20' : ''}"
+                ondragover={(e) => handleSubContainerDragOver(todo.id, e)}
+                ondragleave={(e) => handleSubContainerDragLeave(todo.id, e)}
+                ondrop={(e) => handleSubContainerDrop(todo.id, e)}
+                data-testid={`subtasks-container-${todo.id}`}
+              >
+                <!-- Indicator Drop Todo ke Sub-task -->
+                {#if draggedTodo && draggedTodo.id !== todo.id}
+                  <div class="p-1.5 border border-dashed border-nb-green bg-green-100 rounded text-center">
+                    <p class="text-xs text-green-900 font-bold m-0 flex items-center justify-center gap-1">
+                      <span>✨</span> {t('todo.dropTodoAsSubtask', 'Lepaskan di sini untuk mengubah menjadi sub-task')}
+                    </p>
+                  </div>
+                {/if}
+
                 <!-- Sub-tasks List -->
                 {#if subList.length > 0}
                   <ul class="list-none flex flex-col gap-2 p-0 m-0 pl-4 sm:pl-6 border-l-3 border-nb-yellow">
                     {#each subList as sub (sub.id)}
                       <li
-                        class="flex items-center justify-between gap-3 p-2 px-3 bg-white border border-nb-black rounded shadow-nb-xs {sub.done ? 'opacity-70 bg-gray-50' : ''}"
+                        class="flex items-center justify-between gap-3 p-2 px-3 bg-white border border-nb-black rounded shadow-nb-xs transition-all {sub.done ? 'opacity-70 bg-gray-50' : ''}
+                          {isSubDragReady[sub.id] ? 'ring-2 ring-nb-yellow scale-[1.01] cursor-grab active:cursor-grabbing' : ''}
+                          {draggedSubTask?.sub.id === sub.id ? 'opacity-40 border-dashed scale-95' : ''}
+                          {dragOverSubTaskId === sub.id ? 'border-nb-blue ring-2 ring-nb-blue bg-blue-50' : ''}"
+                        draggable={canManage && Boolean(isSubDragReady[sub.id])}
+                        onpointerdown={(e) => handleSubPointerDown(sub.id, e)}
+                        onpointerup={handleSubPointerUp}
+                        onpointercancel={handleSubPointerUp}
+                        ondragstart={(e) => handleSubDragStart(sub, todo.id, e)}
+                        ondragover={(e) => handleSubDragOver(sub, todo.id, e)}
+                        ondragleave={(e) => handleSubDragLeave(sub, e)}
+                        ondrop={(e) => handleSubDrop(sub, todo.id, e)}
+                        ondragend={handleSubDragEnd}
                         data-testid={`subtask-item-${sub.id}`}
+                        data-drag-ready={isSubDragReady[sub.id] ? 'true' : 'false'}
                       >
-                        <label class="flex items-center gap-2.5 cursor-pointer grow select-none">
-                          <input
-                            type="checkbox"
-                            checked={sub.done}
-                            onchange={() => toggleSubTask(todo.id, sub.id)}
-                            class="w-4.5 h-4.5 border-2 border-nb-black rounded bg-white cursor-pointer accent-nb-green"
-                            data-testid={`checkbox-subtask-${sub.id}`}
-                          />
-                          <span
-                            class="text-sm font-semibold leading-tight wrap-break-word whitespace-pre-wrap {sub.done
-                              ? 'line-through text-gray-500'
-                              : 'text-nb-black'}"
-                          >
-                            {sub.text}
-                          </span>
-                        </label>
+                        <div class="flex items-center gap-1.5 grow">
+                          {#if canManage}
+                            <button
+                              type="button"
+                              class="cursor-grab active:cursor-grabbing p-0.5 text-gray-500 hover:text-black transition-colors shrink-0"
+                              title={t('todo.dragSubtaskTooltip', 'Tekan lama sub-task atau drag handle ini untuk mengubah posisi atau memindahkan ke catatan lain')}
+                              onpointerdown={() => (isSubDragReady[sub.id] = true)}
+                              data-testid={`drag-handle-subtask-${sub.id}`}
+                              aria-label={`Drag to rearrange subtask ${sub.text}`}
+                            >
+                              <GripVertical size={14} />
+                            </button>
+                          {/if}
+
+                          <label class="flex items-center gap-2.5 cursor-pointer grow select-none">
+                            <input
+                              type="checkbox"
+                              checked={sub.done}
+                              onchange={() => toggleSubTask(todo.id, sub.id)}
+                              class="w-4.5 h-4.5 border-2 border-nb-black rounded bg-white cursor-pointer accent-nb-green shrink-0"
+                              data-testid={`checkbox-subtask-${sub.id}`}
+                            />
+                            <span
+                              class="text-sm font-semibold leading-tight wrap-break-word whitespace-pre-wrap {sub.done
+                                ? 'line-through text-gray-500'
+                                : 'text-nb-black'}"
+                            >
+                              {sub.text}
+                            </span>
+                          </label>
+                        </div>
 
                         <button
                           type="button"
@@ -635,9 +1018,17 @@
                     {/each}
                   </ul>
                 {:else}
-                  <p class="text-xs text-gray-500 font-semibold italic pl-4 sm:pl-6 m-0">
-                    {t('todo.subtasksEmpty')}
-                  </p>
+                  <div
+                    class="p-2 border-2 border-dashed border-gray-300 rounded text-center {draggedSubTask || (draggedTodo && draggedTodo.id !== todo.id) ? 'border-nb-blue bg-blue-50/50' : ''}"
+                  >
+                    <p class="text-xs text-gray-500 font-semibold italic m-0">
+                      {draggedTodo && draggedTodo.id !== todo.id
+                        ? t('todo.dropTodoAsSubtask', 'Lepaskan di sini untuk mengubah menjadi sub-task')
+                        : (draggedSubTask
+                          ? t('todo.dropSubtaskHere', 'Lepaskan sub-task di sini...')
+                          : t('todo.subtasksEmpty'))}
+                    </p>
+                  </div>
                 {/if}
 
                 <!-- Add Sub-task Input Form -->
@@ -665,6 +1056,18 @@
             {/if}
           </li>
         {/each}
+        {#if draggedSubTask}
+          <li
+            class="p-3 border-2 border-dashed border-nb-green bg-green-50 rounded-md text-center cursor-pointer transition-all animate-pulse"
+            ondragover={(e) => { e.preventDefault(); }}
+            ondrop={handleListDrop}
+            data-testid="subtask-to-todo-dropzone"
+          >
+            <p class="text-sm text-green-900 font-extrabold m-0 flex items-center justify-center gap-2">
+              <span>🚀</span> {t('todo.dropSubtaskAsTodo', 'Lepaskan di sini untuk mengubah menjadi catatan mandiri')}
+            </p>
+          </li>
+        {/if}
       {/if}
     </ul>
   </div>

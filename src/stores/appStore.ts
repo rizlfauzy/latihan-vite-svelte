@@ -40,9 +40,10 @@ export interface AppStoreState {
   editApp: (updatedApp: AppItem) => Promise<boolean>;
   deleteApp: (id: string) => Promise<boolean>;
   deleteApps: (ids: string[]) => Promise<boolean>;
+  reorderApps: (newOrderedIds: string[]) => Promise<boolean>;
   resetApps: () => Promise<void>;
   fetchApps: () => Promise<void>;
-  uploadAppImage: (file: File) => Promise<string>;
+  uploadAppImage: (file: File, options?: { allowedExtensions?: string[]; subfolder?: string }) => Promise<string>;
   deleteAppImage: (imageUrl: string) => Promise<void>;
 }
 
@@ -58,6 +59,8 @@ function mapRowToApp(row: any): AppItem {
     picName: row.pic_name || row.picName || 'Admin PIC',
     picWhatsapp: row.pic_whatsapp || row.picWhatsapp || '6281234567890',
     imageUrl: row.image_url || row.imageUrl || null,
+    heroImageUrl: row.hero_image_url || row.heroImageUrl || null,
+    orderIndex: row.order_index ?? row.orderIndex ?? 0,
   };
 }
 
@@ -73,6 +76,8 @@ function mapAppToRow(app: AppItem) {
     pic_name: app.picName,
     pic_whatsapp: app.picWhatsapp,
     image_url: app.imageUrl || null,
+    hero_image_url: app.heroImageUrl || null,
+    order_index: app.orderIndex ?? 0,
   };
 }
 
@@ -90,6 +95,7 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       const { data, error } = await supabase
         .from('apps')
         .select('*')
+        .order('order_index', { ascending: true })
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -103,11 +109,12 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     }
   },
 
-  uploadAppImage: async (file: File): Promise<string> => {
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'svg'];
+  uploadAppImage: async (file: File, options?: { allowedExtensions?: string[]; subfolder?: string }): Promise<string> => {
+    const allowedExtensions = options?.allowedExtensions || ['jpg', 'jpeg', 'png', 'svg'];
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (!ext || !allowedExtensions.includes(ext)) {
-      throw new Error(t('imageModal.errFormat', 'Ekstensi file tidak didukung! Hanya .jpg, .jpeg, .png, dan .svg yang diperbolehkan.'));
+      const allowedStr = allowedExtensions.join(', ');
+      throw new Error(t('imageModal.errFormat', `Ekstensi file tidak didukung! Hanya .${allowedStr.replace(/,/g, ', .')} yang diperbolehkan.`));
     }
 
     const maxMb = env.maxImageSizeMb || 5;
@@ -118,8 +125,9 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
 
     if (isSupabaseEnabled && supabase) {
       try {
+        const sub = options?.subfolder || 'apps';
         const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
-        const filePath = `apps/${fileName}`;
+        const filePath = `${sub}/${fileName}`;
         const { error } = await supabase.storage
           .from('app-images')
           .upload(filePath, file, {
@@ -164,24 +172,29 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       return false;
     }
 
+    const appWithOrder: AppItem = {
+      ...newApp,
+      orderIndex: newApp.orderIndex ?? get().apps.length,
+    };
+
     // Optimistically update Zustand store & UI
-    const updated = [newApp, ...get().apps.filter((a) => a.id !== newApp.id)];
+    const updated = [...get().apps.filter((a) => a.id !== newApp.id), appWithOrder];
     set({ apps: updated, isLoading: false });
 
     if (isSupabaseEnabled && supabase) {
       try {
-        const { error } = await supabase.from('apps').insert([mapAppToRow(newApp)]);
+        const { error } = await supabase.from('apps').insert([mapAppToRow(appWithOrder)]);
         if (error) throw error;
-        alertStore.showSuccess(`${t('todo.app')} "${newApp.name}" ${t('add.success')}!`);
+        alertStore.showSuccess(`${t('todo.app')} "${appWithOrder.name}" ${t('add.success')}!`);
         return true;
       } catch (err) {
         console.error('[appStore] Failed to insert app into Supabase', err);
-        alertStore.showError(`${t('todo.app')} "${newApp.name}" ${t('add.failed')}!`);
+        alertStore.showError(`${t('todo.app')} "${appWithOrder.name}" ${t('add.failed')}!`);
         return false;
       }
     }
 
-    alertStore.showSuccess(`${t('todo.app')} "${newApp.name}" ${t('add.success')}!`);
+    alertStore.showSuccess(`${t('todo.app')} "${appWithOrder.name}" ${t('add.success')}!`);
     return true;
   },
 
@@ -196,28 +209,38 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       // Hapus gambar lama dari storage jika diganti atau dihapus
       await get().deleteAppImage(currentApp.imageUrl);
     }
+    if (currentApp?.heroImageUrl && currentApp.heroImageUrl !== updatedApp.heroImageUrl) {
+      // Hapus hero image lama dari storage jika diganti atau dihapus
+      await get().deleteAppImage(currentApp.heroImageUrl);
+    }
+
+    // Preserve orderIndex if not set
+    const mergedApp: AppItem = {
+      ...updatedApp,
+      orderIndex: updatedApp.orderIndex ?? currentApp?.orderIndex ?? 0,
+    };
 
     // Optimistically update Zustand store & UI
-    const updated = get().apps.map((a) => (a.id === updatedApp.id ? { ...a, ...updatedApp } : a));
+    const updated = get().apps.map((a) => (a.id === mergedApp.id ? { ...a, ...mergedApp } : a));
     set({ apps: updated });
 
     if (isSupabaseEnabled && supabase) {
       try {
         const { error } = await supabase
           .from('apps')
-          .update(mapAppToRow(updatedApp))
-          .eq('id', updatedApp.id);
+          .update(mapAppToRow(mergedApp))
+          .eq('id', mergedApp.id);
         if (error) throw error;
-        alertStore.showSuccess(`${t('todo.app')} "${updatedApp.name}" ${t('edit.success')}!`);
+        alertStore.showSuccess(`${t('todo.app')} "${mergedApp.name}" ${t('edit.success')}!`);
         return true;
       } catch (err) {
         console.error('[appStore] Failed to update app in Supabase', err);
-        alertStore.showError(`${t('todo.app')} "${updatedApp.name}" ${t('edit.failed')}!`);
+        alertStore.showError(`${t('todo.app')} "${mergedApp.name}" ${t('edit.failed')}!`);
         return false;
       }
     }
 
-    alertStore.showSuccess(`${t('todo.app')} "${updatedApp.name}" ${t('edit.success')}!`);
+    alertStore.showSuccess(`${t('todo.app')} "${mergedApp.name}" ${t('edit.success')}!`);
     return true;
   },
 
@@ -237,6 +260,9 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     // Cascading deletion: remove associated image from storage
     if (targetApp?.imageUrl) {
       await get().deleteAppImage(targetApp.imageUrl);
+    }
+    if (targetApp?.heroImageUrl) {
+      await get().deleteAppImage(targetApp.heroImageUrl);
     }
 
     // Cascading deletion: automatically delete all associated todos
@@ -284,6 +310,9 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       if (app.imageUrl) {
         await get().deleteAppImage(app.imageUrl);
       }
+      if (app.heroImageUrl) {
+        await get().deleteAppImage(app.heroImageUrl);
+      }
     }
 
     // Cascading deletion: automatically delete all associated todos
@@ -307,6 +336,47 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     }
 
     alertStore.showSuccess(`${count} ${t('todo.apps')} ${t('delete.success')}!`);
+    return true;
+  },
+
+  reorderApps: async (newOrderedIds: string[]): Promise<boolean> => {
+    if (!authStore.getState().hasDebugAccess) {
+      alertStore.showError(i18nStore.t('auth.unauthorizedApps', 'Akses ditolak: Hanya role dengan izin debug yang dapat mengubah tata letak!'));
+      return false;
+    }
+
+    const currentApps = get().apps;
+    const reordered: AppItem[] = [];
+
+    newOrderedIds.forEach((id, idx) => {
+      const item = currentApps.find((a) => a.id === id);
+      if (item) {
+        reordered.push({ ...item, orderIndex: idx });
+      }
+    });
+
+    currentApps.forEach((item) => {
+      if (!newOrderedIds.includes(item.id)) {
+        reordered.push({ ...item, orderIndex: reordered.length });
+      }
+    });
+
+    set({ apps: reordered });
+
+    if (isSupabaseEnabled && supabase) {
+      try {
+        for (const item of reordered) {
+          await supabase
+            .from('apps')
+            .update({ order_index: item.orderIndex })
+            .eq('id', item.id);
+        }
+      } catch (err) {
+        console.error('[appStore] Failed to update app order in Supabase', err);
+      }
+    }
+
+    alertStore.showSuccess(i18nStore.t('grid.reorderSuccess', 'Urutan aplikasi berhasil diperbarui!'));
     return true;
   },
 
@@ -337,9 +407,11 @@ export const appStore = {
   editApp: (updatedApp: AppItem) => rawStore.getState().editApp(updatedApp),
   deleteApp: (id: string) => rawStore.getState().deleteApp(id),
   deleteApps: (ids: string[]) => rawStore.getState().deleteApps(ids),
+  reorderApps: (newOrderedIds: string[]) => rawStore.getState().reorderApps(newOrderedIds),
   resetApps: () => rawStore.getState().resetApps(),
   fetchApps: () => rawStore.getState().fetchApps(),
-  uploadAppImage: (file: File) => rawStore.getState().uploadAppImage(file),
+  uploadAppImage: (file: File, options?: { allowedExtensions?: string[]; subfolder?: string }) =>
+    rawStore.getState().uploadAppImage(file, options),
   deleteAppImage: (imageUrl: string) => rawStore.getState().deleteAppImage(imageUrl),
   subscribe(run: (state: AppStoreState) => void) {
     run(rawStore.getState());
