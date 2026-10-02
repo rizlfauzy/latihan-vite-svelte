@@ -1091,7 +1091,7 @@
     isOpen={isImageModalOpen}
     initialImageUrls={imageModalMode === 'new' ? newTodoImageUrls : (activeImageTodo?.imageUrls || (activeImageTodo?.imageUrl ? [activeImageTodo.imageUrl] : []))}
     initialImageUrl={imageModalMode === 'new' ? newTodoImageUrl : (activeImageTodo?.imageUrl || null)}
-    title={imageModalMode === 'new' ? t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR') : `${t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR')}: ${activeImageTodo?.text || ''}`}
+    title={imageModalMode === 'new' ? `<span class="font-black uppercase text-nb-black m-0">${t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR')}:</span>` : `<span class="font-black uppercase text-nb-black m-0">${t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR')}:</span> </br> <span class="font-bold text-gray-500 m-0">${activeImageTodo?.text || ''}</span>`}
     onClose={handleImageModalClose}
     onSave={handleImageModalSave}
     onRemove={handleImageModalRemove}
