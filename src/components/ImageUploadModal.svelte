@@ -207,13 +207,13 @@
     >
       <!-- Modal Header -->
       <div class="flex items-center justify-between gap-3 border-b-2 border-nb-black pb-3">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-2">
           <span class="w-8 h-8 rounded bg-nb-yellow border-2 border-nb-black shadow-nb-xs flex items-center justify-center text-base font-black text-black">
             🖼️
           </span>
           <div>
-            <h2 id="image-modal-title" class="text-base font-black uppercase text-nb-black m-0" data-testid="image-modal-title">
-              {title || t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR')}
+            <h2 id="image-modal-title" class="text-base" data-testid="image-modal-title">
+              {@html title || t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR')}
             </h2>
             <p class="text-xs font-bold text-gray-500 m-0">
               {t('imageModal.formatNotice', `Maksimal ${env.maxImageSizeMb || 5} MB per gambar (Hanya .jpg, .jpeg, .png, dan .svg)`)}
