@@ -21,7 +21,6 @@
   let newPassword = $state("");
   let showOldPassword = $state(false);
   let showNewPassword = $state(false);
-  let errorMessage = $state("");
   let isSubmitting = $state(false);
   let inputOldPassword = $state<HTMLElement | null>(null);
   let inputNewPassword = $state<HTMLElement | null>(null);
@@ -31,7 +30,6 @@
     newPassword = "";
     showOldPassword = false;
     showNewPassword = false;
-    errorMessage = "";
     isSubmitting = false;
   }
 
@@ -55,7 +53,6 @@
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    errorMessage = "";
 
     try {
       if (!oldPassword.trim()) throw new Warning(t("auth.oldPasswordRequired", "Password lama wajib diisi!"));
@@ -112,13 +109,6 @@
           <X size={16} />
         </button>
       </div>
-
-      <!-- Error Message -->
-      {#if errorMessage}
-        <div class="bg-red-100 border-2 border-red-600 text-red-800 p-2.5 text-xs font-bold" data-testid="change-password-error">
-          ⚠️ {errorMessage}
-        </div>
-      {/if}
 
       <!-- Form Body -->
       <form onsubmit={handleSubmit} class="flex flex-col gap-4 text-xs font-bold">
