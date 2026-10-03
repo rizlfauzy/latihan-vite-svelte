@@ -1394,20 +1394,32 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     const loginNavBtn = page.locator('[data-testid="nav-login-btn"]');
     await expect(loginNavBtn).toBeVisible();
 
-    // Verify app management buttons are hidden from public visitor
+    // Verify app management buttons and app drag handles are hidden from public visitor
     const openAddBtn = page.locator('[data-testid="btn-open-add-app"]');
     await expect(openAddBtn).not.toBeVisible();
 
     const selectAllBtn = page.locator('[data-testid="btn-select-all-apps"]');
     await expect(selectAllBtn).not.toBeVisible();
 
-    // Verify visitor can still freely use to-do list
+    const appCards = page.locator('[data-testid^="app-card-"]');
+    if ((await appCards.count()) > 0) {
+      await expect(appCards.first().locator('[data-testid^="drag-handle-"]')).not.toBeVisible();
+    }
+
+    // Verify visitor can still freely use to-do list and drag handles are accessible
     const visitorTask = `Test Public Visitor Task ${Date.now()}`;
     await page.locator('[data-testid="todo-input"]').fill(visitorTask);
     await page.locator('[data-testid="todo-add-button"]').click();
 
     const visitorItem = page.locator('[data-testid^="todo-item-"]', { hasText: visitorTask });
     await expect(visitorItem).toBeVisible();
+
+    // Verify todo drag handle is visible and interactive for visitors
+    const todoDragHandle = visitorItem.locator('[data-testid^="drag-handle-todo-"]');
+    await expect(todoDragHandle).toBeVisible();
+    await todoDragHandle.dispatchEvent('pointerdown');
+    await expect(visitorItem).toHaveAttribute('data-drag-ready', 'true');
+    await visitorItem.dispatchEvent('pointerup');
 
     // Toggle checkbox works for visitors
     await visitorItem.locator('input[type="checkbox"]').check();
@@ -1664,6 +1676,11 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     const modal = page.locator('[data-testid="image-upload-modal"]');
     await expect(modal).toBeVisible();
 
+    // Verifikasi judul modal upload gambar baru terformat (fitur commit d7fe412)
+    const newModalTitle = page.locator('[data-testid="image-modal-title"]');
+    await expect(newModalTitle).toBeVisible();
+    await expect(newModalTitle).toContainText('UPLOAD & PREVIEW GAMBAR:');
+
     const fileInput = page.locator('[data-testid="image-file-input"]');
 
     // 3. Uji validasi ekstensi tidak valid (.pdf)
@@ -1737,10 +1754,13 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     // 9. Pastikan ada aplikasi yang tersedia untuk topik To-Do
     const testApp = await page.evaluate(async () => {
       const store = (window as any).__appStore;
-      let app = store?.getState?.()?.apps?.[0];
+      let app = store?.getState?.()?.apps?.find((a: any) => Boolean(a?.id && a?.picWhatsapp));
       if (!app) {
-        app = await store.addApp({
-          name: `Test App Image WA ${Date.now()}`,
+        const appId = `test-app-wa-${Date.now()}`;
+        const appName = `Test App Image WA ${Date.now()}`;
+        await store.addApp({
+          id: appId,
+          name: appName,
           description: 'Aplikasi testing untuk upload gambar dan WA',
           url: 'https://example.com/test-wa',
           icon: '🖼️',
@@ -1749,6 +1769,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
           picName: 'Test PIC Budi',
           picWhatsapp: '6281234567890',
         });
+        const currentApps = store?.getState?.()?.apps || [];
+        app = currentApps.find((a: any) => a.id === appId) || currentApps[0];
       }
       return app;
     });
@@ -1770,6 +1792,13 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await viewImgBtn.click();
     await expect(page.locator('[data-testid="image-upload-modal"]')).toBeVisible();
     await expect(page.locator('[data-testid="image-preview"]')).toBeVisible();
+
+    // Verifikasi judul modal dan detail task terformat di header modal (fitur commit d7fe412)
+    const viewModalTitle = page.locator('[data-testid="image-modal-title"]');
+    await expect(viewModalTitle).toBeVisible();
+    await expect(viewModalTitle).toContainText('UPLOAD & PREVIEW GAMBAR:');
+    await expect(viewModalTitle).toContainText(testTodoText);
+
     await page.locator('[data-testid="btn-close-image-modal"]').click();
     await expect(page.locator('[data-testid="image-upload-modal"]')).not.toBeVisible();
 
@@ -2022,8 +2051,10 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await newPwInput.fill(newPassword);
     await page.locator('[data-testid="btn-submit-change-password"]').click();
 
-    const errorBanner = page.locator('[data-testid="change-password-error"]');
-    await expect(errorBanner).toBeVisible();
+    // Verifikasi alert warning dari alertStore muncul
+    const warningAlert = page.locator('[data-testid="alert-toast"][data-type="warning"]');
+    await expect(warningAlert).toBeVisible();
+    await expect(warningAlert).toContainText(/tidak sesuai|salah/i);
 
     // 6. Test jika password lama benar dan password baru valid
     await oldPwInput.fill(initialPassword);
@@ -2032,7 +2063,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     // Modal harus tertutup dan muncul toast sukses
     await expect(pwModal).not.toBeVisible();
-    await expect(page.locator('[data-testid="alert-toast"]')).toBeVisible();
+    const successAlert = page.locator('[data-testid="alert-toast"][data-type="success"]');
+    await expect(successAlert).toBeVisible();
 
     // 7. Cleanup: hapus test user yang dibuat
     await page.evaluate(async (uname) => {
@@ -2164,7 +2196,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     }, [appA, appB]);
   });
 
-  test('Todo item in admin mode can be dragged after long press or via drag handle to rearrange order', async ({ page }) => {
+  test('Todo item can be dragged after long press or via drag handle to rearrange order by any user', async ({ page }) => {
     const timestamp = Date.now();
     const todoA = `Test Todo Order A ${timestamp}`;
     const todoB = `Test Todo Order B ${timestamp}`;
@@ -2181,9 +2213,16 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     const itemA = page.locator('[data-testid^="todo-item-"]', { hasText: todoA });
     const itemB = page.locator('[data-testid^="todo-item-"]', { hasText: todoB });
 
-    // 2. Verifikasi drag handle muncul di mode admin
-    await expect(itemA.locator('[data-testid^="drag-handle-todo-"]')).toBeVisible();
-    await expect(itemB.locator('[data-testid^="drag-handle-todo-"]')).toBeVisible();
+    // 2. Verifikasi drag handle muncul pada setiap todo item (dapat diakses oleh semua pengguna)
+    const dragHandleA = itemA.locator('[data-testid^="drag-handle-todo-"]');
+    const dragHandleB = itemB.locator('[data-testid^="drag-handle-todo-"]');
+    await expect(dragHandleA).toBeVisible();
+    await expect(dragHandleB).toBeVisible();
+
+    // Verifikasi aktivasi drag ready via drag handle
+    await dragHandleA.dispatchEvent('pointerdown');
+    await expect(itemA).toHaveAttribute('data-drag-ready', 'true');
+    await itemA.dispatchEvent('pointerup');
 
     // 3. Simulasikan long-press pada todo A untuk mengaktifkan drag mode
     await itemA.dispatchEvent('pointerdown', { buttons: 1 });
@@ -2249,8 +2288,14 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     const subItem1 = itemA.locator('[data-testid^="subtask-item-"]', { hasText: sub1 });
     const subItem2 = itemA.locator('[data-testid^="subtask-item-"]', { hasText: sub2 });
 
-    // 3. Verifikasi drag handle subtask muncul di mode admin
-    await expect(subItem1.locator('[data-testid^="drag-handle-subtask-"]')).toBeVisible();
+    // 3. Verifikasi drag handle subtask muncul pada subtask (dapat diakses oleh semua pengguna)
+    const subDragHandle1 = subItem1.locator('[data-testid^="drag-handle-subtask-"]');
+    await expect(subDragHandle1).toBeVisible();
+
+    // Verifikasi aktivasi drag ready via subtask drag handle
+    await subDragHandle1.dispatchEvent('pointerdown');
+    await expect(subItem1).toHaveAttribute('data-drag-ready', 'true');
+    await subItem1.dispatchEvent('pointerup');
 
     // 4. Test long-press pada subtask
     await subItem1.dispatchEvent('pointerdown', { buttons: 1 });
@@ -2433,7 +2478,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.evaluate(async (titles) => {
       const store = (window as any).__todoStore;
       const todos = store?.getState?.()?.todos || [];
-      for (const t of titles) {
+      for (const t of todos) {
         if (titles.includes(t.text)) {
           await store.deleteTodo(t.id);
         }
