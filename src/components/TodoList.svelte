@@ -271,7 +271,6 @@
   let todoLongPressTimer: any = null;
 
   function handleTodoPointerDown(id: string, e: PointerEvent) {
-    if (!canManage) return;
     if ((e.target as HTMLElement).closest('button, input, textarea, a, label')) return;
     todoLongPressTimer = setTimeout(() => {
       isTodoDragReady[id] = true;
@@ -286,10 +285,6 @@
   }
 
   function handleTodoDragStart(todo: Todo, e: DragEvent) {
-    if (!canManage) {
-      e.preventDefault();
-      return;
-    }
     draggedTodo = todo;
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = 'move';
@@ -388,7 +383,6 @@
   let subLongPressTimer: any = null;
 
   function handleSubPointerDown(id: string, e: PointerEvent) {
-    if (!canManage) return;
     if ((e.target as HTMLElement).closest('button, input, textarea, a, label')) return;
     subLongPressTimer = setTimeout(() => {
       isSubDragReady[id] = true;
@@ -403,10 +397,6 @@
   }
 
   function handleSubDragStart(sub: SubTask, sourceTodoId: string, e: DragEvent) {
-    if (!canManage) {
-      e.preventDefault();
-      return;
-    }
     e.stopPropagation();
     draggedSubTask = { sub, sourceTodoId };
     if (e.dataTransfer) {
@@ -793,7 +783,7 @@
               {isTodoDragReady[todo.id] ? 'ring-4 ring-nb-yellow shadow-nb-lg scale-[1.01] cursor-grab active:cursor-grabbing' : ''}
               {draggedTodo?.id === todo.id ? 'opacity-40 border-dashed scale-95' : ''}
               {dragOverTodoId === todo.id ? (draggedSubTask ? 'border-nb-green ring-4 ring-nb-green bg-green-50' : 'border-nb-blue ring-4 ring-nb-blue bg-blue-50') : ''}"
-            draggable={canManage && Boolean(isTodoDragReady[todo.id])}
+            draggable={Boolean(isTodoDragReady[todo.id])}
             onpointerdown={(e) => handleTodoPointerDown(todo.id, e)}
             onpointerup={handleTodoPointerUp}
             onpointercancel={handleTodoPointerUp}
@@ -817,18 +807,16 @@
             <!-- Parent Todo Row -->
             <div class="flex items-center justify-between gap-3 p-3.5 sm:px-4.5 bg-gray-50 border-b-2 border-nb-black">
               <div class="flex items-center gap-1.5 shrink-0">
-                {#if canManage}
-                  <button
-                    type="button"
-                    class="cursor-grab active:cursor-grabbing p-1 text-gray-500 hover:text-black transition-colors"
-                    title={t('todo.dragHandleTooltip', 'Tekan lama catatan atau drag handle ini untuk mengubah posisi')}
-                    onpointerdown={() => (isTodoDragReady[todo.id] = true)}
-                    data-testid={`drag-handle-todo-${todo.id}`}
-                    aria-label={`Drag to rearrange todo ${todo.text}`}
-                  >
-                    <GripVertical size={16} />
-                  </button>
-                {/if}
+                <button
+                  type="button"
+                  class="cursor-grab active:cursor-grabbing p-1 text-gray-500 hover:text-black transition-colors"
+                  title={t('todo.dragHandleTooltip', 'Tekan lama catatan atau drag handle ini untuk mengubah posisi')}
+                  onpointerdown={() => (isTodoDragReady[todo.id] = true)}
+                  data-testid={`drag-handle-todo-${todo.id}`}
+                  aria-label={`Drag to rearrange todo ${todo.text}`}
+                >
+                  <GripVertical size={16} />
+                </button>
 
                 <!-- Expand / Collapse Button -->
                 <button
@@ -960,7 +948,7 @@
                           {isSubDragReady[sub.id] ? 'ring-2 ring-nb-yellow scale-[1.01] cursor-grab active:cursor-grabbing' : ''}
                           {draggedSubTask?.sub.id === sub.id ? 'opacity-40 border-dashed scale-95' : ''}
                           {dragOverSubTaskId === sub.id ? 'border-nb-blue ring-2 ring-nb-blue bg-blue-50' : ''}"
-                        draggable={canManage && Boolean(isSubDragReady[sub.id])}
+                        draggable={Boolean(isSubDragReady[sub.id])}
                         onpointerdown={(e) => handleSubPointerDown(sub.id, e)}
                         onpointerup={handleSubPointerUp}
                         onpointercancel={handleSubPointerUp}
@@ -973,18 +961,16 @@
                         data-drag-ready={isSubDragReady[sub.id] ? 'true' : 'false'}
                       >
                         <div class="flex items-center gap-1.5 grow">
-                          {#if canManage}
-                            <button
-                              type="button"
-                              class="cursor-grab active:cursor-grabbing p-0.5 text-gray-500 hover:text-black transition-colors shrink-0"
-                              title={t('todo.dragSubtaskTooltip', 'Tekan lama sub-task atau drag handle ini untuk mengubah posisi atau memindahkan ke catatan lain')}
-                              onpointerdown={() => (isSubDragReady[sub.id] = true)}
-                              data-testid={`drag-handle-subtask-${sub.id}`}
-                              aria-label={`Drag to rearrange subtask ${sub.text}`}
-                            >
-                              <GripVertical size={14} />
-                            </button>
-                          {/if}
+                          <button
+                            type="button"
+                            class="cursor-grab active:cursor-grabbing p-0.5 text-gray-500 hover:text-black transition-colors shrink-0"
+                            title={t('todo.dragSubtaskTooltip', 'Tekan lama sub-task atau drag handle ini untuk mengubah posisi atau memindahkan ke catatan lain')}
+                            onpointerdown={() => (isSubDragReady[sub.id] = true)}
+                            data-testid={`drag-handle-subtask-${sub.id}`}
+                            aria-label={`Drag to rearrange subtask ${sub.text}`}
+                          >
+                            <GripVertical size={14} />
+                          </button>
 
                           <label class="flex items-center gap-2.5 cursor-pointer grow select-none">
                             <input
