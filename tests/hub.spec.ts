@@ -2022,8 +2022,10 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await newPwInput.fill(newPassword);
     await page.locator('[data-testid="btn-submit-change-password"]').click();
 
-    const errorBanner = page.locator('[data-testid="change-password-error"]');
-    await expect(errorBanner).toBeVisible();
+    // Verifikasi alert warning dari alertStore muncul
+    const warningAlert = page.locator('[data-testid="alert-toast"][data-type="warning"]');
+    await expect(warningAlert).toBeVisible();
+    await expect(warningAlert).toContainText(/tidak sesuai|salah/i);
 
     // 6. Test jika password lama benar dan password baru valid
     await oldPwInput.fill(initialPassword);
@@ -2032,7 +2034,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     // Modal harus tertutup dan muncul toast sukses
     await expect(pwModal).not.toBeVisible();
-    await expect(page.locator('[data-testid="alert-toast"]')).toBeVisible();
+    const successAlert = page.locator('[data-testid="alert-toast"][data-type="success"]');
+    await expect(successAlert).toBeVisible();
 
     // 7. Cleanup: hapus test user yang dibuat
     await page.evaluate(async (uname) => {
@@ -2433,7 +2436,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.evaluate(async (titles) => {
       const store = (window as any).__todoStore;
       const todos = store?.getState?.()?.todos || [];
-      for (const t of titles) {
+      for (const t of todos) {
         if (titles.includes(t.text)) {
           await store.deleteTodo(t.id);
         }
