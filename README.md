@@ -84,7 +84,7 @@
 | **Routing** | `sv-router` | Client-side Single Page Application (SPA) routing |
 | **Styling** | Tailwind CSS v4 | Utility-first CSS dengan custom theme tokens Neo Brutalism |
 | **Localization** | JSON-based i18n | Kamus kata modular dwibahasa di `src/i18n/*.json` |
-| **Testing** | Playwright | E2E browser automation & UI regression test suite (49 tests) |
+| **Testing** | Playwright | E2E browser automation & UI regression test suite (50 tests) |
 | **CI/CD** | GitLab CI | Pipeline otomasi: Test, Build, Supabase Migration, dan Deploy ke VPS |
 | **PWA** | Service Worker | Offline caching dan instalasi web app |
 | **Container** | Docker + Nginx | Multi-stage builder & production web server |
@@ -274,7 +274,7 @@ Setiap *commit* atau *merge* ke branch `main` akan memicu pipeline GitLab CI den
 │   │   └── 20260923000002_seed_defaults.sql
 │   └── schema.sql               # Konsolidasi skema database & RPC
 ├── tests/
-│   └── hub.spec.ts              # Playwright E2E automated test suite (49 tests)
+│   └── hub.spec.ts              # Playwright E2E automated test suite (50 tests)
 ├── .gitlab-ci.yml               # Konfigurasi GitLab CI/CD Pipeline
 ├── Dockerfile                   # Multi-stage production container build
 ├── docker-compose.yml           # Docker Compose orchestrator

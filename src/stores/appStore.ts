@@ -6,6 +6,7 @@ import { supabase, isSupabaseEnabled } from '@/lib/supabase';
 import { i18nStore } from '@/stores/i18nStore';
 import { authStore } from '@/stores/authStore';
 import { env } from '@/lib/env';
+import { compressImage } from '@/lib/imageCompressor';
 
 export type { AppItem };
 
@@ -123,21 +124,24 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       throw new Error(t('imageModal.errSize', `Ukuran file melebihi batas maksimal ${maxMb} MB!`));
     }
 
+    const fileToUpload = await compressImage(file);
+
     if (isSupabaseEnabled && supabase) {
       try {
         const sub = options?.subfolder || 'apps';
-        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        const uploadExt = fileToUpload.name.split('.').pop()?.toLowerCase() || ext;
+        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${uploadExt}`;
         const filePath = `${sub}/${fileName}`;
         const { error } = await supabase.storage
           .from('app-images')
-          .upload(filePath, file, {
+          .upload(filePath, fileToUpload, {
             cacheControl: '3600',
             upsert: true,
           });
 
         if (error) {
           console.warn('[appStore] Storage upload failed, fallback to Data URL', error);
-          return await fileToDataUrl(file);
+          return await fileToDataUrl(fileToUpload);
         }
 
         const { data: urlData } = supabase.storage
@@ -147,11 +151,11 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
         return urlData.publicUrl;
       } catch (err) {
         console.warn('[appStore] Storage upload exception, fallback to Data URL', err);
-        return await fileToDataUrl(file);
+        return await fileToDataUrl(fileToUpload);
       }
     }
 
-    return await fileToDataUrl(file);
+    return await fileToDataUrl(fileToUpload);
   },
 
   deleteAppImage: async (imageUrl: string) => {
@@ -305,15 +309,17 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     const updated = get().apps.filter((a) => !idSet.has(a.id));
     set({ apps: updated });
 
-    // Cascading deletion: remove associated images from storage
+    // Cascading deletion: remove associated images from storage in parallel
+    const deleteImagePromises: Promise<any>[] = [];
     for (const app of targets) {
       if (app.imageUrl) {
-        await get().deleteAppImage(app.imageUrl);
+        deleteImagePromises.push(get().deleteAppImage(app.imageUrl));
       }
       if (app.heroImageUrl) {
-        await get().deleteAppImage(app.heroImageUrl);
+        deleteImagePromises.push(get().deleteAppImage(app.heroImageUrl));
       }
     }
+    await Promise.all(deleteImagePromises);
 
     // Cascading deletion: automatically delete all associated todos
     try {
@@ -361,16 +367,17 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
       }
     });
 
-    set({ apps: reordered });
-
-    if (isSupabaseEnabled && supabase) {
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
       try {
-        for (const item of reordered) {
-          await supabase
-            .from('apps')
-            .update({ order_index: item.orderIndex })
-            .eq('id', item.id);
-        }
+        await Promise.all(
+          reordered.map((item) =>
+            client
+              .from('apps')
+              .update({ order_index: item.orderIndex })
+              .eq('id', item.id)
+          )
+        );
       } catch (err) {
         console.error('[appStore] Failed to update app order in Supabase', err);
       }
