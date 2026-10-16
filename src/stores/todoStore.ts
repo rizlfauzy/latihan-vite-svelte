@@ -3,6 +3,7 @@ import { supabase, isSupabaseEnabled } from '@/lib/supabase';
 import { i18nStore } from '@/stores/i18nStore';
 import { alertStore } from '@/stores/alertStore';
 import { env } from '@/lib/env';
+import { compressImage } from '@/lib/imageCompressor';
 
 const t = i18nStore.t;
 
@@ -312,20 +313,23 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
       throw new Error(t('imageModal.errSize', `Ukuran file melebihi batas maksimal ${maxMb} MB!`));
     }
 
+    const fileToUpload = await compressImage(file);
+
     if (isSupabaseEnabled && supabase) {
       try {
-        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+        const uploadExt = fileToUpload.name.split('.').pop()?.toLowerCase() || ext;
+        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${uploadExt}`;
         const filePath = `todos/${fileName}`;
         const { data, error } = await supabase.storage
           .from('todo-images')
-          .upload(filePath, file, {
+          .upload(filePath, fileToUpload, {
             cacheControl: '3600',
             upsert: true,
           });
 
         if (error) {
           console.warn('[todoStore] Storage upload failed, fallback to Data URL', error);
-          return await fileToDataUrl(file);
+          return await fileToDataUrl(fileToUpload);
         }
 
         const { data: urlData } = supabase.storage
@@ -335,20 +339,15 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
         return urlData.publicUrl;
       } catch (err) {
         console.warn('[todoStore] Storage upload exception, fallback to Data URL', err);
-        return await fileToDataUrl(file);
+        return await fileToDataUrl(fileToUpload);
       }
     }
 
-    return await fileToDataUrl(file);
+    return await fileToDataUrl(fileToUpload);
   },
 
   uploadTodoImages: async (files: File[]): Promise<string[]> => {
-    const urls: string[] = [];
-    for (const file of files) {
-      const url = await get().uploadTodoImage(file);
-      urls.push(url);
-    }
-    return urls;
+    return await Promise.all(files.map((file) => get().uploadTodoImage(file)));
   },
 
   updateTodoImages: async (id: string, imageUrls: string[]) => {
@@ -683,14 +682,17 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     set({ todos: reordered });
     saveLocalTodos(reordered);
 
-    if (isSupabaseEnabled && supabase) {
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
       try {
-        for (const item of reordered) {
-          await supabase
-            .from('todos')
-            .update({ order_index: item.orderIndex })
-            .eq('id', item.id);
-        }
+        await Promise.all(
+          reordered.map((item) =>
+            client
+              .from('todos')
+              .update({ order_index: item.orderIndex })
+              .eq('id', item.id)
+          )
+        );
       } catch (err) {
         console.error('[todoStore] Failed to update todo order in Supabase', err);
       }
@@ -725,14 +727,17 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     set({ todos: updated });
     saveLocalTodos(updated);
 
-    if (isSupabaseEnabled && supabase) {
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
       try {
-        for (const item of reordered) {
-          await supabase
-            .from('subtodos')
-            .update({ order_index: item.orderIndex })
-            .eq('id', item.id);
-        }
+        await Promise.all(
+          reordered.map((item) =>
+            client
+              .from('subtodos')
+              .update({ order_index: item.orderIndex })
+              .eq('id', item.id)
+          )
+        );
       } catch (err) {
         console.error('[todoStore] Failed to update subtodo order in Supabase', err);
       }
@@ -796,26 +801,28 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     set({ todos: updatedTodos });
     saveLocalTodos(updatedTodos);
 
-    if (isSupabaseEnabled && supabase) {
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
       try {
-        await supabase
+        await client
           .from('subtodos')
           .update({ todo_id: toTodoId, order_index: movedSub.orderIndex })
           .eq('id', subTaskId);
 
-        for (const item of updatedToSubs) {
-          await supabase
-            .from('subtodos')
-            .update({ order_index: item.orderIndex })
-            .eq('id', item.id);
-        }
-
-        for (const item of updatedFromSubs) {
-          await supabase
-            .from('subtodos')
-            .update({ order_index: item.orderIndex })
-            .eq('id', item.id);
-        }
+        await Promise.all([
+          ...updatedToSubs.map((item) =>
+            client
+              .from('subtodos')
+              .update({ order_index: item.orderIndex })
+              .eq('id', item.id)
+          ),
+          ...updatedFromSubs.map((item) =>
+            client
+              .from('subtodos')
+              .update({ order_index: item.orderIndex })
+              .eq('id', item.id)
+          ),
+        ]);
       } catch (err) {
         console.error('[todoStore] Failed to move subtodo in Supabase', err);
       }
@@ -869,9 +876,10 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
 
     await removeImagesForTodos([sourceTodo]);
 
-    if (isSupabaseEnabled && supabase) {
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
       try {
-        const { error: insertErr } = await supabase.from('subtodos').insert([{
+        const { error: insertErr } = await client.from('subtodos').insert([{
           id: newSub.id,
           todo_id: targetParentTodoId,
           text: newSub.text,
@@ -881,17 +889,19 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
         }]);
 
         if (insertErr) {
-          await supabase.from('todos').update({ sub_tasks: updatedTargetSubs }).eq('id', targetParentTodoId);
+          await client.from('todos').update({ sub_tasks: updatedTargetSubs }).eq('id', targetParentTodoId);
         } else {
-          for (const item of updatedTargetSubs) {
-            await supabase
-              .from('subtodos')
-              .update({ order_index: item.orderIndex })
-              .eq('id', item.id);
-          }
+          await Promise.all(
+            updatedTargetSubs.map((item) =>
+              client
+                .from('subtodos')
+                .update({ order_index: item.orderIndex })
+                .eq('id', item.id)
+            )
+          );
         }
 
-        await supabase.from('todos').delete().eq('id', todoId);
+        await client.from('todos').delete().eq('id', todoId);
       } catch (err) {
         console.error('[todoStore] Failed to convert todo to subtask in Supabase', err);
       }
@@ -941,27 +951,32 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     set({ todos: finalTodos });
     saveLocalTodos(finalTodos);
 
-    if (isSupabaseEnabled && supabase) {
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
       try {
-        await supabase.from('subtodos').delete().eq('id', subTaskId);
+        await client.from('subtodos').delete().eq('id', subTaskId);
 
         const payload = mapTodoToRow(newTodo);
-        const { error: insertErr } = await supabase.from('todos').insert([payload]);
+        const { error: insertErr } = await client.from('todos').insert([payload]);
         if (insertErr && insertErr.code === 'PGRST204') {
           const { appId: _, ...fallbackPayload } = payload;
-          await supabase.from('todos').insert([fallbackPayload]);
+          await client.from('todos').insert([fallbackPayload]);
         }
 
-        for (const item of finalTodos) {
-          await supabase.from('todos').update({ order_index: item.orderIndex }).eq('id', item.id);
-        }
+        const updatePromises: PromiseLike<any>[] = finalTodos.map((item) =>
+          client.from('todos').update({ order_index: item.orderIndex }).eq('id', item.id)
+        );
 
         const updatedParent = finalTodos.find((t) => t.id === sourceParentTodoId);
         if (updatedParent && updatedParent.subTasks) {
-          for (const item of updatedParent.subTasks) {
-            await supabase.from('subtodos').update({ order_index: item.orderIndex }).eq('id', item.id);
-          }
+          updatePromises.push(
+            ...updatedParent.subTasks.map((item) =>
+              client.from('subtodos').update({ order_index: item.orderIndex }).eq('id', item.id)
+            )
+          );
         }
+
+        await Promise.all(updatePromises);
       } catch (err) {
         console.error('[todoStore] Failed to convert subtask to todo in Supabase', err);
       }
