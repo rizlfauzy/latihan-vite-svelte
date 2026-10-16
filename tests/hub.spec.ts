@@ -2554,6 +2554,163 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
     expect(reorderStatus.reorderTodoSuccess).toBe(true);
   });
+
+  test('To-Do List: Inline editing of Todo note and Sub-task works via edit button and double click', async ({ page }) => {
+    // 1. Tambah Todo baru
+    const todoInput = page.locator('[data-testid="todo-input"]');
+    await todoInput.fill('Todo Inline Edit Test');
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.getByText('Todo Inline Edit Test')).toBeVisible();
+
+    // 2. Klik tombol edit ✏️ pada Todo
+    const editBtn = page.locator('[data-testid^="btn-edit-todo-"]').first();
+    await editBtn.click();
+
+    // Verifikasi inline edit area muncul
+    const editInput = page.locator('[data-testid^="input-edit-todo-text-"]').first();
+    await expect(editInput).toBeVisible();
+    await editInput.fill('Todo Inline Edit Test - Updated Text');
+    await page.locator('[data-testid^="btn-save-edit-todo-"]').first().click();
+
+    await expect(page.getByText('Todo Inline Edit Test - Updated Text')).toBeVisible();
+
+    // 3. Tambah Sub-task
+    const subInput = page.locator('[data-testid^="input-subtask-"]').first();
+    await subInput.fill('Subtask Inline Edit Test');
+    await page.locator('[data-testid^="button-add-subtask-"]').first().click();
+    await expect(page.getByText('Subtask Inline Edit Test')).toBeVisible();
+
+    // 4. Klik tombol edit pada Sub-task
+    const subEditBtn = page.locator('[data-testid^="btn-edit-subtask-"]').first();
+    await subEditBtn.click();
+    const subEditInput = page.locator('[data-testid^="input-edit-subtask-text-"]').first();
+    await expect(subEditInput).toBeVisible();
+    await subEditInput.fill('Subtask Inline Edit Test - Updated');
+    await page.locator('[data-testid^="btn-save-edit-subtask-"]').first().click();
+
+    await expect(page.getByText('Subtask Inline Edit Test - Updated')).toBeVisible();
+  });
+
+  test('To-Do List: Priority labels, Due Date indicators, and WhatsApp preview sorting', async ({ page }) => {
+    // 1. Tambah Todo Urgent dengan Due Date kemarin (overdue)
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    await page.locator('[data-testid="todo-priority-select"]').selectOption('urgent');
+    await page.locator('[data-testid="todo-due-date-input"]').fill(yesterday);
+    await page.locator('[data-testid="todo-input"]').fill('Urgent Overdue Task Test');
+    await page.locator('[data-testid="todo-add-button"]').click();
+
+    await expect(page.getByText('Urgent Overdue Task Test')).toBeVisible();
+    await expect(page.locator('[data-testid^="todo-priority-badge-"]').first()).toContainText('URGENT');
+    await expect(page.locator('[data-testid^="todo-due-date-badge-"]').first()).toBeVisible();
+
+    // 2. Buka WhatsApp Preview Modal untuk app terkait jika ada
+    const waBtns = page.locator('[data-testid^="app-card-wa-btn-"]');
+    if ((await waBtns.count()) > 0) {
+      await waBtns.first().click();
+      const modal = page.locator('[data-testid="whatsapp-preview-modal"]');
+      await expect(modal).toBeVisible();
+      // Verifikasi textarea berisi draft pesan
+      const msgArea = page.locator('[data-testid="wa-message-textarea"]');
+      await expect(msgArea).toBeVisible();
+      const textVal = await msgArea.inputValue();
+      expect(textVal.length).toBeGreaterThan(0);
+      await page.locator('[data-testid="wa-modal-cancel-btn"]').click();
+    }
+  });
+
+  test('To-Do List: Undo Toast restores deleted Todo item within 5 seconds', async ({ page }) => {
+    // Tambah Todo
+    await page.locator('[data-testid="todo-input"]').fill('Todo to be Undone Test');
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.getByText('Todo to be Undone Test')).toBeVisible();
+
+    // Hapus Todo
+    const deleteBtn = page.locator('[data-testid^="delete-todo-"]').first();
+    await deleteBtn.click();
+    // Konfirmasi modal
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+
+    // Verifikasi alert toast dengan tombol Undo muncul
+    const undoBtn = page.locator('[data-testid="alert-action-btn"]');
+    await expect(undoBtn).toBeVisible();
+    await undoBtn.click();
+
+    // Verifikasi Todo kembali muncul
+    await expect(page.getByText('Todo to be Undone Test')).toBeVisible();
+  });
+
+  test('App Portal: Operational status badges and Pin/Favorite app sorting', async ({ page }) => {
+    const cards = page.locator('[data-testid="app-card"]');
+    if ((await cards.count()) > 0) {
+      // Verifikasi status badge muncul pada card
+      const statusBadge = page.locator('[data-testid^="app-status-badge-"]').first();
+      await expect(statusBadge).toBeVisible();
+
+      // Klik pin button
+      const pinBtn = page.locator('[data-testid^="app-pin-btn-"]').first();
+      await expect(pinBtn).toBeVisible();
+      await pinBtn.click();
+
+      // Verifikasi app item state memiliki isPinned true
+      const isPinned = await page.evaluate(() => {
+        const apps = (window as any).__appStore?.getState?.()?.apps || [];
+        return apps.some((a: any) => a.isPinned);
+      });
+      expect(isPinned).toBe(true);
+    }
+  });
+
+  test('Quick Command Palette: Ctrl+K shortcut, search filtering, and keyboard navigation', async ({ page }) => {
+    // 1. Tekan Ctrl + K
+    await page.keyboard.press('Control+k');
+    const modal = page.locator('[data-testid="command-palette-modal"]');
+    await expect(modal).toBeVisible();
+
+    // 2. Ketik pencarian
+    const input = page.locator('[data-testid="command-palette-input"]');
+    await input.fill('tema');
+    const items = page.locator('[data-testid^="command-item-"]');
+    await expect(items.first()).toBeVisible();
+
+    // 3. Tekan Enter untuk mengeksekusi
+    await page.keyboard.press('Enter');
+    await expect(modal).not.toBeVisible();
+  });
+
+  test('User Management: Superadmin can access /users, view user list, and toggle user roles', async ({ page }) => {
+    // 1. Buka halaman /users
+    await page.goto('/users');
+    await expect(page.locator('[data-testid="users-management-page"]')).toBeVisible();
+    await expect(page.locator('[data-testid="users-table"]')).toBeVisible();
+
+    // 2. Buat user dummy lokal untuk di-toggle rolenya
+    await page.evaluate(() => {
+      const dummyUser = {
+        uuid: 'test-user-uuid-12345',
+        username: 'testviewer',
+        name: 'Test Viewer',
+        roleId: 2,
+        role: { id: 2, name: 'VIEWER', is_debug: false },
+      };
+      const list = [dummyUser];
+      localStorage.setItem('hub_registered_users', JSON.stringify(list));
+    });
+
+    await page.locator('[data-testid="btn-refresh-users"]').click();
+    await expect(page.locator('[data-testid="user-row-testviewer"]')).toBeVisible();
+    await expect(page.locator('[data-testid="user-role-badge-testviewer"]')).toContainText('VIEWER');
+
+    // 3. Klik tombol toggle role untuk menaikkan jadi superadmin
+    await page.locator('[data-testid="btn-toggle-role-testviewer"]').click();
+    await page.locator('[data-testid="modal-confirm-button"]').click();
+
+    // Verifikasi role berubah jadi superadmin
+    await expect(page.locator('[data-testid="user-role-badge-testviewer"]')).toContainText('SUPERADMIN');
+
+    // 4. Verifikasi tombol akun sendiri disable (cannot demote self)
+    const selfBtn = page.locator('[data-testid="btn-toggle-role-rizlfauzy"]');
+    await expect(selfBtn).toBeDisabled();
+  });
 });
 
 

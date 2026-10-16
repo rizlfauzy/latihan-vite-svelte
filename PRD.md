@@ -150,6 +150,26 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 - **Paralelisasi Sinkronisasi Drag-and-Drop (Batch Reorder)**: Penataan ulang urutan aplikasi dan to-do list kini mengeksekusi pembaruan ke Supabase secara paralel menggunakan `Promise.all(...)`, menggantikan mekanisme query sekuensial (N+1 loop) untuk sinkronisasi instan.
 - **Kompresi Gambar Otomatis di Client-Side**: Utilitas `compressImage` berbasis HTML5 Canvas otomatis me-resize dimensi dan mengompresi kualitas berkas gambar (JPG/PNG) di browser sebelum diunggah ke Supabase Storage (`todo-images` dan `app-images`), menghemat kapasitas kuota storage dan mempercepat waktu muat.
 
+### 14. Fitur Lanjutan To-Do List (Inline Editing, Prioritas, Due Date & Undo Toast)
+- **Inline Editing Catatan & Sub-Task**: Kemudahan memperbarui teks catatan atau sub-task secara langsung di tempat (*in-place*) via double click atau tombol edit (✏️), termasuk kemampuan memindahkan asosiasi topik aplikasi (`appId`), prioritas, dan tenggat waktu tanpa harus menghapus dan membuat ulang tugas.
+- **Label Prioritas & Tenggat Waktu (Due Date)**: Pilihan level prioritas (*Urgent*, *High*, *Normal*, *Low*) dan tanggal deadline dengan indikator visual *Neo Brutalism* (termasuk penanda animasi *Overdue* jika tenggat terlewati). Tugas berstatus *Urgent* dan *Overdue* secara otomatis diurutkan di bagian paling atas pada draf pesan WhatsApp PIC.
+- **Undo Toast Alert**: Saat catatan atau sub-task dihapus, atau saat membersihkan tugas selesai (*Clear Completed*), sistem menampilkan toast alert dengan tombol interaktif **Undo / Batalkan** selama 5 detik sebelum perubahan benar-benar permanen di Supabase.
+
+### 15. Fitur Lanjutan Portal Aplikasi (Status Operasional & Pin/Favorite)
+- **Badge Status Operasional Aplikasi**: Indikator status visual operasional pada setiap kartu aplikasi: `🟢 Online`, `🛠️ Maintenance`, dan `🧪 Beta`. Membantu pengguna mengetahui status fungsional aplikasi sebelum mengaksesnya.
+- **Pin / Favorite Aplikasi (⭐)**: Pengguna dapat menyematkan (*pin*) aplikasi favorit agar selalu tampil di urutan teratas grid portal. Kolom `is_pinned` tersimpan secara terkelola pada database Supabase.
+
+### 16. Quick Command Palette (Pintasan Keyboard Ctrl + K)
+- Akses instan ke pencarian cepat aplikasi, navigasi halaman (Beranda, To-Do List, Profil, Manajemen User), serta aksi utilitas (ganti tema gelap/terang, ganti bahasa ID/EN) menggunakan keyboard tanpa sentuhan mouse melalui shortcut global `Ctrl + K` atau `Cmd + K`.
+
+### 17. Kolaborasi Sinkronisasi Realtime (Supabase Realtime Sync)
+- Integrasi *Realtime Channel* Supabase pada tabel `apps`, `todos`, dan `subtodos`. Perubahan status checkbox, penambahan task, maupun perpindahan drag-and-drop oleh satu pengguna langsung terdistribusi dan terupdate otomatis di layar pengguna lain secara instan tanpa perlu refresh halaman.
+
+### 18. Halaman Manajemen Pengguna Khusus Superadmin (`/users`)
+- Rute terproteksi khusus untuk akun dengan hak akses debug (`is_debug: true`).
+- Menampilkan daftar seluruh pengguna terdaftar, username, nama lengkap, dan status role saat ini.
+- Fitur interaktif toggle role untuk menaikkan role dari `VIEWER` menjadi `SUPERADMIN` atau sebaliknya secara instan dari antarmuka, dengan validasi pencegahan penurunan role akun sendiri yang sedang aktif (*cannot demote self*).
+
 ---
 
 ## 🛠️ Architecture & Tech Stack
@@ -163,10 +183,10 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 | **Autentikasi & Enkripsi** | Supabase RPC + Bcrypt | Verifikasi password via `pgcrypto` (`crypt` & `gen_salt`) dengan session token |
 | **Database Migrations** | Supabase CLI | Version-controlled DDL migration scripts di `supabase/migrations/` |
 | **State Management** | Zustand (Vanilla) | Reactive stores (`authStore`, `appStore`, `todoStore`, `alertStore`, `i18nStore`, `themeStore`) |
-| **Routing** | `sv-router` | Client-side SPA routing (`/`, `/company-profile`, `/login`, `/register`) |
+| **Routing** | `sv-router` | Client-side SPA routing (`/`, `/company-profile`, `/login`, `/register`, `/users`) |
 | **Styling** | Tailwind CSS v4 | Custom design tokens Neo Brutalism & Dark Mode |
 | **PWA** | Service Worker + Manifest | Instalasi aplikasi offline & asset caching |
-| **Testing** | Playwright | End-to-end automated testing suite (50 test scenarios) dengan auto-cleanup |
+| **Testing** | Playwright | End-to-end automated testing suite (56 test scenarios) dengan auto-cleanup |
 | **CI/CD Pipeline** | GitLab CI | Pipeline terotomatisasi: Test -> Build -> Migrate -> Deploy (VPS Rsync) |
 | **Container** | Docker + Nginx Alpine | Multi-stage production container build (opsional/alternatif deployment) |
 

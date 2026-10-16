@@ -15,7 +15,16 @@
 
   let canManageApps = $derived($authStore.hasDebugAccess);
   let isLoading = $derived($appStore.isLoading);
-  let allApps = $derived(apps ?? $appStore.apps);
+  let allApps = $derived(
+    [...(apps ?? $appStore.apps)].sort((a, b) => {
+      const pinA = a.isPinned ? 1 : 0;
+      const pinB = b.isPinned ? 1 : 0;
+      if (pinA !== pinB) return pinB - pinA;
+      const ordA = typeof a.orderIndex === 'number' ? a.orderIndex : 0;
+      const ordB = typeof b.orderIndex === 'number' ? b.orderIndex : 0;
+      return ordA - ordB;
+    })
+  );
   let searchQuery = $state('');
   let selectedCategory = $state('ALL');
 
@@ -298,6 +307,7 @@
           onEdit={(a) => (appToEdit = a)}
           onDelete={(a) => (appToDelete = a)}
           onContactPic={(a) => (appForWhatsApp = a)}
+          onTogglePin={(a) => appStore.togglePinApp(a.id)}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}

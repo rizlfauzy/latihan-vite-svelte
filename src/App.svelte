@@ -1,14 +1,24 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { Router } from 'sv-router';
   import Navbar from '@/components/Navbar.svelte';
   import AlertContainer from '@/components/AlertContainer.svelte';
+  import CommandPalette from '@/components/CommandPalette.svelte';
   import { env } from '@/lib/env';
   import { i18nStore } from '@/stores/i18nStore';
+  import { todoStore } from '@/stores/todoStore';
+  import { appStore } from '@/stores/appStore';
 
   const t = $derived((key: string, defaultValue?:string):string => $i18nStore.t(key, defaultValue));
+
+  onMount(() => {
+    todoStore.setupTodoRealtime();
+    appStore.setupAppRealtime();
+  });
 </script>
 
 <AlertContainer />
+<CommandPalette />
 
 {#if env.isDev}
   <aside class="fixed bottom-4 right-4 z-50 pointer-events-none" aria-label="Environment indicator">
