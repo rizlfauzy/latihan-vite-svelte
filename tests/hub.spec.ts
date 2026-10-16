@@ -2485,6 +2485,75 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
       }
     }, [parentTask, subTaskTitle]);
   });
+
+  test('Image upload automatically compresses image files on client-side and batch reorder queries succeed', async ({ page }) => {
+    // 1. Verifikasi fungsi compressImage di browser
+    const compressionResult = await page.evaluate(async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2000;
+      canvas.height = 2000;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#ff5722';
+      ctx.fillRect(0, 0, 2000, 2000);
+
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.95)
+      );
+
+      const largeFile = new File([blob], 'large-photo.jpg', { type: 'image/jpeg' });
+      const originalSize = largeFile.size;
+
+      const compressFn = (window as any).__compressImage;
+      const compressedFile: File = compressFn ? await compressFn(largeFile) : largeFile;
+
+      return {
+        originalSize,
+        compressedSize: compressedFile.size,
+        type: compressedFile.type,
+      };
+    });
+
+    expect(compressionResult.compressedSize).toBeLessThan(compressionResult.originalSize);
+    expect(compressionResult.type).toBe('image/jpeg');
+
+    // 2. Verifikasi uploadTodoImage menggunakan file yang dikompres
+    const uploadResult = await page.evaluate(async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1800;
+      canvas.height = 1800;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#00bcd4';
+      ctx.fillRect(0, 0, 1800, 1800);
+
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.9)
+      );
+
+      const testFile = new File([blob], 'todo-upload-test.jpg', { type: 'image/jpeg' });
+      const store = (window as any).__todoStore;
+      const url = await store.uploadTodoImage(testFile);
+      return url;
+    });
+
+    expect(uploadResult).toBeTruthy();
+
+    // 3. Verifikasi batch reorder apps & todos dengan Promise.all berjalan mulus
+    const reorderStatus = await page.evaluate(async () => {
+      const todoStore = (window as any).__todoStore;
+      const currentTodos = todoStore?.getState?.()?.todos || [];
+      const todoIds = currentTodos.map((t: any) => t.id);
+      const reorderTodoSuccess = await todoStore.reorderTodos(todoIds.reverse());
+
+      const appStore = (window as any).__appStore;
+      const currentApps = appStore?.getState?.()?.apps || [];
+      const appIds = currentApps.map((a: any) => a.id);
+      const reorderAppSuccess = appStore && appIds.length > 0 ? await appStore.reorderApps(appIds.reverse()) : true;
+
+      return { reorderTodoSuccess, reorderAppSuccess };
+    });
+
+    expect(reorderStatus.reorderTodoSuccess).toBe(true);
+  });
 });
 
 

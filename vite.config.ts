@@ -15,4 +15,21 @@ export default defineConfig({
     port: 8888,
     strictPort: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('@supabase') || id.includes('@supabase/supabase-js')) {
+            return 'vendor-supabase';
+          }
+          if (id.includes('@lucide') || id.includes('lucide-svelte')) {
+            return 'vendor-lucide';
+          }
+          if (id.includes('node_modules/svelte/') || id.includes('node_modules/svelte-') || id.includes('node_modules/zustand')) {
+            return 'vendor-framework';
+          }
+        },
+      },
+    },
+  },
 });
