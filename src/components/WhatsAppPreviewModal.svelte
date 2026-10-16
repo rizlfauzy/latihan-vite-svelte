@@ -15,9 +15,24 @@
 
   let messageText = $state('');
 
-  // Cari todos yang belum selesai dengan topik aplikasi yang bersangkutan
+  // Cari todos yang belum selesai dengan topik aplikasi yang bersangkutan, urutkan Urgent/Overdue paling atas
   let pendingTodos = $derived(
-    app ? $todoStore.todos.filter((todo) => todo.appId === app.id && !todo.done) : []
+    app
+      ? [...$todoStore.todos]
+          .filter((todo) => todo.appId === app.id && !todo.done)
+          .sort((a, b) => {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const isOverdue = (t: typeof a) => Boolean(t.dueDate && t.dueDate < todayStr);
+            const weight = (t: typeof a) => {
+              if (t.priority === 'urgent' || isOverdue(t)) return 100;
+              if (t.priority === 'high') return 50;
+              if (t.priority === 'normal') return 20;
+              if (t.priority === 'low') return 10;
+              return 20;
+            };
+            return weight(b) - weight(a);
+          })
+      : []
   );
 
   // Buat default draft saat modal dibuka atau app berubah
@@ -26,9 +41,20 @@
       let draft = `Halo ${app.picName}, saya ingin bertanya dan berkonsultasi mengenai aplikasi "${app.name}" di Portal Aplikasi Perusahaan.`;
 
       if (pendingTodos.length > 0) {
+        const todayStr = new Date().toISOString().slice(0, 10);
         draft += `\n\nBerikut daftar catatan/tugas yang belum selesai:\n` +
           pendingTodos.map((todo, idx) => {
-            let line = `${idx + 1}. ${todo.text}`;
+            const isOverdue = Boolean(todo.dueDate && todo.dueDate < todayStr);
+            let prefix = '';
+            if (todo.priority === 'urgent' && isOverdue) prefix = '[URGENT & OVERDUE] ';
+            else if (todo.priority === 'urgent') prefix = '[URGENT] ';
+            else if (isOverdue) prefix = '[OVERDUE] ';
+            else if (todo.priority === 'high') prefix = '[HIGH] ';
+
+            let line = `${idx + 1}. ${prefix}${todo.text}`;
+            if (todo.dueDate) {
+              line += ` (Deadline: ${todo.dueDate})`;
+            }
             const urls = todo.imageUrls && todo.imageUrls.length > 0
               ? todo.imageUrls
               : (todo.imageUrl ? [todo.imageUrl] : []);

@@ -15,6 +15,8 @@ export interface SubTask {
   orderIndex?: number;
 }
 
+export type TodoPriority = 'urgent' | 'high' | 'normal' | 'low';
+
 export interface Todo {
   id: string;
   appId?: string | null;
@@ -22,6 +24,8 @@ export interface Todo {
   done: boolean;
   createdAt: number;
   orderIndex?: number;
+  priority?: TodoPriority;
+  dueDate?: string | null;
   imageUrl?: string | null;
   imageUrls?: string[];
   subTasks?: SubTask[];
@@ -81,7 +85,12 @@ export interface TodoStoreState {
   todos: Todo[];
   isLoading: boolean;
   fetchTodos: () => Promise<void>;
-  addTodo: (text: string, appId?: string | null, imageUrlOrUrls?: string | string[] | null) => Promise<Todo>;
+  addTodo: (text: string, appId?: string | null, imageUrlOrUrls?: string | string[] | null, priority?: TodoPriority, dueDate?: string | null) => Promise<Todo>;
+  editTodoText: (id: string, text: string, appId?: string | null, priority?: TodoPriority, dueDate?: string | null) => Promise<boolean>;
+  editSubTaskText: (todoId: string, subTaskId: string, text: string) => Promise<boolean>;
+  restoreTodo: (todo: Todo) => Promise<boolean>;
+  restoreTodos: (todos: Todo[]) => Promise<boolean>;
+  restoreSubTask: (todoId: string, subTask: SubTask) => Promise<boolean>;
   updateTodoImage: (id: string, imageUrl: string | null) => Promise<void>;
   updateTodoImages: (id: string, imageUrls: string[]) => Promise<void>;
   uploadTodoImage: (file: File) => Promise<string>;
@@ -134,6 +143,8 @@ function loadLocalTodos(): Todo[] {
               ...item,
               appId: item.appId || item.app_id || null,
               orderIndex: typeof item.orderIndex === 'number' ? item.orderIndex : (typeof item.order_index === 'number' ? item.order_index : idx),
+              priority: item.priority || 'normal',
+              dueDate: item.dueDate || item.due_date || null,
               imageUrl: urls[0] || null,
               imageUrls: urls,
               subTasks,
@@ -205,6 +216,8 @@ function mapRowToTodo(row: any): Todo {
     done: Boolean(row.done),
     createdAt: Number(row.created_at) || Date.now(),
     orderIndex: typeof row.order_index === 'number' ? row.order_index : (typeof row.orderIndex === 'number' ? row.orderIndex : 0),
+    priority: (row.priority as any) || 'normal',
+    dueDate: row.due_date || row.dueDate || null,
     imageUrl: urls[0] || null,
     imageUrls: urls,
     subTasks,
@@ -220,6 +233,8 @@ function mapTodoToRow(todo: Todo) {
     done: todo.done,
     created_at: todo.createdAt,
     order_index: typeof todo.orderIndex === 'number' ? todo.orderIndex : 0,
+    priority: todo.priority || 'normal',
+    due_date: todo.dueDate || null,
     image_url: urls.length > 1 ? JSON.stringify(urls) : (urls[0] || null),
   };
 }
@@ -244,6 +259,103 @@ async function removeImagesForTodos(todos: Todo[]) {
   }
 }
 
+let todoRealtimeChannel: any = null;
+
+function setupTodoRealtime() {
+  if (typeof window === 'undefined' || !isSupabaseEnabled || !supabase || todoRealtimeChannel) return;
+  try {
+    todoRealtimeChannel = supabase
+      .channel('realtime:todos_subtodos')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'todos' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newTodo = mapRowToTodo(payload.new);
+            const currentTodos = rawStore.getState().todos;
+            if (!currentTodos.some((t) => t.id === newTodo.id)) {
+              rawStore.setState({ todos: [newTodo, ...currentTodos] });
+            }
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updated = mapRowToTodo(payload.new);
+            rawStore.setState({
+              todos: rawStore.getState().todos.map((t) =>
+                t.id === updated.id ? { ...t, ...updated, subTasks: t.subTasks } : t
+              ),
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            const oldId = payload.old.id;
+            if (oldId) {
+              rawStore.setState({
+                todos: rawStore.getState().todos.filter((t) => t.id !== oldId),
+              });
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'subtodos' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const s = payload.new;
+            const newSub: SubTask = {
+              id: s.id,
+              text: s.text,
+              done: Boolean(s.done),
+              createdAt: Number(s.created_at) || Date.now(),
+              orderIndex: typeof s.order_index === 'number' ? s.order_index : 0,
+            };
+            rawStore.setState({
+              todos: rawStore.getState().todos.map((t) => {
+                if (t.id === s.todo_id) {
+                  const existingSubs = t.subTasks || [];
+                  if (!existingSubs.some((item) => item.id === newSub.id)) {
+                    return { ...t, subTasks: [...existingSubs, newSub] };
+                  }
+                }
+                return t;
+              }),
+            });
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const s = payload.new;
+            rawStore.setState({
+              todos: rawStore.getState().todos.map((t) => {
+                if (t.id === s.todo_id && t.subTasks) {
+                  return {
+                    ...t,
+                    subTasks: t.subTasks.map((sub) =>
+                      sub.id === s.id
+                        ? {
+                            ...sub,
+                            text: s.text,
+                            done: Boolean(s.done),
+                            orderIndex: typeof s.order_index === 'number' ? s.order_index : sub.orderIndex,
+                          }
+                        : sub
+                    ),
+                  };
+                }
+                return t;
+              }),
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            const oldId = payload.old.id;
+            rawStore.setState({
+              todos: rawStore.getState().todos.map((t) => ({
+                ...t,
+                subTasks: (t.subTasks || []).filter((sub) => sub.id !== oldId),
+              })),
+            });
+          }
+        }
+      )
+      .subscribe();
+  } catch (err) {
+    console.warn('[todoStore] Realtime subscription init error', err);
+  }
+}
+
 const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((set, get) => ({
   todos: loadLocalTodos(),
   isLoading: isSupabaseEnabled,
@@ -252,6 +364,7 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     if (!isSupabaseEnabled || !supabase) return;
     set({ isLoading: true });
     try {
+      setupTodoRealtime();
       // Query todos bersama dengan relasi tabel subtodos
       let { data, error } = await supabase
         .from('todos')
@@ -394,7 +507,7 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     await get().updateTodoImages(id, imageUrl ? [imageUrl] : []);
   },
 
-  addTodo: async (text: string, appId?: string | null, imageUrlOrUrls?: string | string[] | null) => {
+  addTodo: async (text: string, appId?: string | null, imageUrlOrUrls?: string | string[] | null, priority: TodoPriority = 'normal', dueDate?: string | null) => {
     const urls = Array.isArray(imageUrlOrUrls)
       ? imageUrlOrUrls
       : (imageUrlOrUrls ? [imageUrlOrUrls] : []);
@@ -406,6 +519,8 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
       done: false,
       createdAt: Date.now(),
       orderIndex: 0,
+      priority: priority || 'normal',
+      dueDate: dueDate || null,
       imageUrl: urls[0] || null,
       imageUrls: urls,
       subTasks: [],
@@ -419,9 +534,9 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     if (isSupabaseEnabled && supabase) {
       try {
         const payload = mapTodoToRow(newTodo);
-        const { error } = await supabase.from('todos').insert([payload]);
-        if (error && error.code === 'PGRST204') {
-          const { appId: _, ...fallbackPayload } = payload;
+        let { error } = await supabase.from('todos').insert([payload]);
+        if (error && (error.code === 'PGRST204' || error.message?.includes('priority') || error.message?.includes('due_date') || error.message?.includes('appId'))) {
+          const { appId: _, priority: _p, due_date: _d, ...fallbackPayload } = payload;
           await supabase.from('todos').insert([fallbackPayload]);
         }
       } catch (err) {
@@ -430,6 +545,171 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     }
 
     return newTodo;
+  },
+
+  editTodoText: async (id: string, text: string, appId?: string | null, priority?: TodoPriority, dueDate?: string | null): Promise<boolean> => {
+    const cleanText = text.trim();
+    if (!cleanText) return false;
+    const current = get().todos.find((t) => t.id === id);
+    if (!current) return false;
+
+    const updatedTodo: Todo = {
+      ...current,
+      text: cleanText,
+      appId: appId !== undefined ? appId : current.appId,
+      priority: priority !== undefined ? priority : (current.priority || 'normal'),
+      dueDate: dueDate !== undefined ? dueDate : current.dueDate,
+    };
+
+    const newTodos = get().todos.map((t) => (t.id === id ? updatedTodo : t));
+    set({ todos: newTodos });
+    saveLocalTodos(newTodos);
+
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
+      try {
+        let { error } = await client
+          .from('todos')
+          .update({
+            text: updatedTodo.text,
+            appId: updatedTodo.appId,
+            priority: updatedTodo.priority,
+            due_date: updatedTodo.dueDate,
+          })
+          .eq('id', id);
+        if (error && (error.code === 'PGRST204' || error.message?.includes('priority') || error.message?.includes('due_date'))) {
+          await client
+            .from('todos')
+            .update({
+              text: updatedTodo.text,
+              appId: updatedTodo.appId,
+            })
+            .eq('id', id);
+        }
+      } catch (err) {
+        console.error('[todoStore] Failed to update todo text in Supabase', err);
+      }
+    }
+    alertStore.showSuccess(i18nStore.t('todo.editSuccess', 'Catatan berhasil diperbarui!'));
+    return true;
+  },
+
+  editSubTaskText: async (todoId: string, subTaskId: string, text: string): Promise<boolean> => {
+    const cleanText = text.trim();
+    if (!cleanText) return false;
+    const parent = get().todos.find((t) => t.id === todoId);
+    if (!parent) return false;
+
+    const newTodos = get().todos.map((t) => {
+      if (t.id === todoId) {
+        return {
+          ...t,
+          subTasks: (t.subTasks || []).map((sub) => (sub.id === subTaskId ? { ...sub, text: cleanText } : sub)),
+        };
+      }
+      return t;
+    });
+
+    set({ todos: newTodos });
+    saveLocalTodos(newTodos);
+
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
+      try {
+        const { error } = await client
+          .from('subtodos')
+          .update({ text: cleanText })
+          .eq('id', subTaskId);
+        if (error) throw error;
+      } catch (err) {
+        console.error('[todoStore] Failed to update subtask text in Supabase', err);
+      }
+    }
+    alertStore.showSuccess(i18nStore.t('todo.editSubtaskSuccess', 'Sub-task berhasil diperbarui!'));
+    return true;
+  },
+
+  restoreTodo: async (todo: Todo): Promise<boolean> => {
+    const exists = get().todos.some((t) => t.id === todo.id);
+    if (exists) return false;
+
+    const newTodos = [todo, ...get().todos];
+    set({ todos: newTodos });
+    saveLocalTodos(newTodos);
+
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
+      try {
+        await client.from('todos').insert([mapTodoToRow(todo)]);
+        if (todo.subTasks && todo.subTasks.length > 0) {
+          await client.from('subtodos').insert(
+            todo.subTasks.map((s) => ({
+              id: s.id,
+              todo_id: todo.id,
+              text: s.text,
+              done: s.done,
+              created_at: s.createdAt,
+              order_index: s.orderIndex ?? 0,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('[todoStore] Failed to restore todo in Supabase', err);
+      }
+    }
+    alertStore.showSuccess(i18nStore.t('todo.restoreSuccess', 'Catatan berhasil dipulihkan!'));
+    return true;
+  },
+
+  restoreTodos: async (todosToRestore: Todo[]): Promise<boolean> => {
+    if (todosToRestore.length === 0) return false;
+    const currentMap = new Map(get().todos.map((t) => [t.id, t]));
+    todosToRestore.forEach((t) => currentMap.set(t.id, t));
+    const merged = Array.from(currentMap.values());
+    set({ todos: merged });
+    saveLocalTodos(merged);
+
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
+      try {
+        await client.from('todos').upsert(todosToRestore.map(mapTodoToRow));
+      } catch (err) {
+        console.error('[todoStore] Failed to restore todos in Supabase', err);
+      }
+    }
+    alertStore.showSuccess(i18nStore.t('todo.restoreSuccess', 'Catatan berhasil dipulihkan!'));
+    return true;
+  },
+
+  restoreSubTask: async (todoId: string, subTask: SubTask): Promise<boolean> => {
+    const parent = get().todos.find((t) => t.id === todoId);
+    if (!parent) return false;
+    const subs = parent.subTasks || [];
+    if (subs.some((s) => s.id === subTask.id)) return false;
+
+    const newTodos = get().todos.map((t) =>
+      t.id === todoId ? { ...t, subTasks: [...(t.subTasks || []), subTask] } : t
+    );
+    set({ todos: newTodos });
+    saveLocalTodos(newTodos);
+
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
+      try {
+        await client.from('subtodos').insert([{
+          id: subTask.id,
+          todo_id: todoId,
+          text: subTask.text,
+          done: subTask.done,
+          created_at: subTask.createdAt,
+          order_index: subTask.orderIndex ?? 0,
+        }]);
+      } catch (err) {
+        console.error('[todoStore] Failed to restore subtask in Supabase', err);
+      }
+    }
+    alertStore.showSuccess(i18nStore.t('todo.restoreSubtaskSuccess', 'Sub-task berhasil dipulihkan!'));
+    return true;
   },
 
   toggleTodo: async (id: string) => {
@@ -475,6 +755,19 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
       } catch (err) {
         console.error('[todoStore] Failed to delete todo in Supabase', err);
       }
+    }
+
+    if (target) {
+      alertStore.showSuccess(
+        i18nStore.t('todo.deleteSuccess', 'Catatan berhasil dihapus!'),
+        5000,
+        {
+          label: i18nStore.t('todo.undo', 'Undo / Batalkan'),
+          onClick: () => {
+            get().restoreTodo(target);
+          },
+        }
+      );
     }
   },
 
@@ -566,6 +859,19 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     const updated = get().todos.filter((t) => !t.done);
     set({ todos: updated });
     saveLocalTodos(updated);
+
+    if (completedTodos.length > 0) {
+      alertStore.showSuccess(
+        `${completedTodos.length} ${i18nStore.t('todo.completedCleared', 'tugas selesai dibersihkan!')}`,
+        5000,
+        {
+          label: i18nStore.t('todo.undo', 'Undo / Batalkan'),
+          onClick: () => {
+            get().restoreTodos(completedTodos);
+          },
+        }
+      );
+    }
   },
 
   addSubTask: async (todoId: string, text: string) => {
@@ -644,6 +950,7 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     const target = get().todos.find((t) => t.id === todoId);
     if (!target) return;
 
+    const targetSub = (target.subTasks || []).find((s) => s.id === subTaskId);
     const updatedSubs = (target.subTasks || []).filter((s) => s.id !== subTaskId);
 
     const updated = get().todos.map((t) => (t.id === todoId ? { ...t, subTasks: updatedSubs } : t));
@@ -659,6 +966,19 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
       } catch (err) {
         console.error('[todoStore] Failed to delete subtask from subtodos table', err);
       }
+    }
+
+    if (targetSub) {
+      alertStore.showSuccess(
+        i18nStore.t('todo.deleteSubtaskSuccess', 'Sub-task berhasil dihapus!'),
+        5000,
+        {
+          label: i18nStore.t('todo.undo', 'Undo / Batalkan'),
+          onClick: () => {
+            get().restoreSubTask(todoId, targetSub);
+          },
+        }
+      );
     }
   },
 
@@ -993,8 +1313,17 @@ if (typeof window !== 'undefined' && isSupabaseEnabled) {
 
 export const todoStore = {
   ...rawStore,
+  setupTodoRealtime: () => setupTodoRealtime(),
   fetchTodos: () => rawStore.getState().fetchTodos(),
-  addTodo: (text: string, appId?: string | null, imageUrlOrUrls?: string | string[] | null) => rawStore.getState().addTodo(text, appId, imageUrlOrUrls),
+  addTodo: (text: string, appId?: string | null, imageUrlOrUrls?: string | string[] | null, priority?: TodoPriority, dueDate?: string | null) =>
+    rawStore.getState().addTodo(text, appId, imageUrlOrUrls, priority, dueDate),
+  editTodoText: (id: string, text: string, appId?: string | null, priority?: TodoPriority, dueDate?: string | null) =>
+    rawStore.getState().editTodoText(id, text, appId, priority, dueDate),
+  editSubTaskText: (todoId: string, subTaskId: string, text: string) =>
+    rawStore.getState().editSubTaskText(todoId, subTaskId, text),
+  restoreTodo: (todo: Todo) => rawStore.getState().restoreTodo(todo),
+  restoreTodos: (todos: Todo[]) => rawStore.getState().restoreTodos(todos),
+  restoreSubTask: (todoId: string, subTask: SubTask) => rawStore.getState().restoreSubTask(todoId, subTask),
   updateTodoImage: (id: string, imageUrl: string | null) => rawStore.getState().updateTodoImage(id, imageUrl),
   updateTodoImages: (id: string, imageUrls: string[]) => rawStore.getState().updateTodoImages(id, imageUrls),
   uploadTodoImage: (file: File) => rawStore.getState().uploadTodoImage(file),
@@ -1019,6 +1348,8 @@ export const todoStore = {
     return rawStore.subscribe((state) => run(state));
   },
 };
+
+export { setupTodoRealtime };
 
 if (typeof window !== 'undefined') {
   (window as any).__todoStore = todoStore;

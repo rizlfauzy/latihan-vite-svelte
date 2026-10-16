@@ -194,10 +194,33 @@
           </div>
         {/if}
       </div>
+
+      {#if $authStore.hasDebugAccess}
+        <a
+          href="/users"
+          class="nb-btn text-xs sm:text-sm px-3.5 py-2 font-black transition-all {router.isActive('/users') ? 'bg-nb-yellow border-3 text-black' : 'bg-white hover:bg-gray-100'}"
+          data-testid="nav-link-users"
+          onclick={closeDropdowns}
+        >
+          👥 <span class="hidden lg:inline">{t('nav.users', 'Pengguna')}</span>
+        </a>
+      {/if}
     </div>
 
     <!-- Right Actions -->
     <div class="hidden sm:flex items-center gap-2">
+      <!-- Command Palette Button -->
+      <button
+        type="button"
+        class="nb-btn bg-white hover:bg-nb-yellow text-xs font-black px-2.5 py-2 flex items-center gap-1.5 text-black"
+        onclick={() => window.dispatchEvent(new CustomEvent('toggle-command-palette'))}
+        data-testid="nav-command-palette-btn"
+        title="Command Palette (Ctrl + K)"
+      >
+        <span>⌨️</span>
+        <span class="hidden xl:inline">Ctrl + K</span>
+      </button>
+
       <!-- Dark / Light Mode Switcher -->
       <button
         type="button"
@@ -381,7 +404,28 @@
         </button>
       </div>
 
+      <!-- Mobile Command Palette Button -->
+      <button
+        type="button"
+        class="nb-btn bg-white hover:bg-nb-yellow text-xs font-black px-3 py-2 flex items-center justify-center gap-1.5 text-black mt-2"
+        onclick={() => { closeMobileMenu(); window.dispatchEvent(new CustomEvent('toggle-command-palette')); }}
+        data-testid="mobile-command-palette-btn"
+      >
+        <span>⌨️</span>
+        <span>Command Palette (Ctrl + K)</span>
+      </button>
+
       {#if $authStore.hasDebugAccess}
+        <a
+          href="/users"
+          class="nb-btn text-xs font-black px-3 py-2 flex items-center justify-center gap-1.5 transition-all mt-2 {router.isActive('/users') ? 'bg-nb-yellow border-3 text-black' : 'bg-white hover:bg-gray-100 text-black'}"
+          onclick={closeMobileMenu}
+          data-testid="mobile-link-users"
+        >
+          <span>👥</span>
+          <span>{t('nav.users', 'Kelola Pengguna')}</span>
+        </a>
+
         <button
           type="button"
           class="nb-btn bg-white hover:bg-nb-yellow text-xs font-black px-3 py-2 flex items-center justify-center gap-1.5 text-black mt-2"
