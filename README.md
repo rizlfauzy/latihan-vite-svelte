@@ -9,7 +9,7 @@
 ![Storage](https://img.shields.io/badge/Storage-Supabase_Storage-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![RBAC](https://img.shields.io/badge/Auth-RBAC_Ready-blueviolet?style=for-the-badge)
 ![GitLab CI](https://img.shields.io/badge/CI%2FCD-GitLab_Pipeline-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-45_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-56_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
 ![i18n](https://img.shields.io/badge/i18n-EN_%26_ID-1d76db?style=for-the-badge)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -20,6 +20,14 @@
 ## 🎨 Fitur Utama
 
 - 🚀 **Enterprise App Hub Grid**: Menampilkan modul aplikasi operasional game center dalam tata letak kartu responsif dengan hard-shadow dan border tegas khas Neo Brutalism.
+- 🟢 **Badge Status Operasional Aplikasi**: Indikator status visual operasional langsung pada kartu aplikasi: `🟢 Online`, `🛠️ Maintenance`, dan `🧪 Beta`.
+- ⭐ **Pin / Favorite Aplikasi**: Pengguna dapat menyematkan (*pin*) aplikasi yang paling sering digunakan agar selalu berada di urutan teratas grid portal.
+- ⌨️ **Quick Command Palette (Ctrl + K)**: Pintasan keyboard global untuk mencari aplikasi, navigasi halaman cepat, dan eksekusi aksi (ganti tema & bahasa) tanpa mouse.
+- ✏️ **Inline Editing Catatan & Sub-Task**: Kemudahan memperbarui teks catatan atau sub-task secara langsung (*in-place*) via double click atau tombol edit (✏️), termasuk ganti topik aplikasi (`appId`), prioritas, dan tenggat waktu.
+- 🏷️ **Label Prioritas & Tenggat Waktu (Due Date)**: Pilihan prioritas (*Urgent*, *High*, *Normal*, *Low*) dan tanggal deadline. Tugas *Urgent* atau *Overdue* otomatis diprioritaskan di draf pesan WhatsApp PIC.
+- ↩️ **Undo Toast saat Hapus**: Toast alert interaktif dengan tombol *Undo / Batalkan* selama 5 detik sebelum catatan atau sub-task benar-benar terhapus permanen.
+- 👥 **Halaman Manajemen Pengguna (`/users`)**: Menu khusus Superadmin untuk melihat daftar akun terdaftar dan toggle peran (*VIEWER* $\leftrightarrow$ *SUPERADMIN*) dengan proteksi anti-demote diri sendiri.
+- 🔄 **Supabase Realtime Sync**: Sinkronisasi dua arah seketika untuk tabel `apps`, `todos`, dan `subtodos` antar-perangkat tanpa perlu refresh browser.
 - 🖼️ **Hero Banner Image pada Card List Apps**:
   - Banner visual berukuran penuh di bagian atas setiap kartu aplikasi.
   - Tampilan fallback gambar default bergaya Neo Brutalism (`default-app-hero.svg`) jika banner kustom belum diunggah.
@@ -66,7 +74,7 @@
   - Mengonversi catatan To-Do menjadi sub-task dengan menyeretnya ke area sub-task catatan lain (dilengkapi validasi pencegahan jika to-do sudah memiliki sub-task).
 - 🔔 **Global Toast Alert System**: Komponen notifikasi mengambang di sudut kanan atas dengan status *success*, *error*, dan *info*.
 - 🌐 **Sistem Multibahasa Modular (i18n)**: Dukungan penuh Bahasa Indonesia (`id`) dan Bahasa Inggris (`en`) yang tersimpan rapi dalam file JSON modular ([`src/i18n/id.json`](src/i18n/id.json) & [`src/i18n/en.json`](src/i18n/en.json)).
-- 🎭 **Automated E2E Testing**: Suite pengujian komprehensif Playwright dengan 48 skenario test end-to-end yang memvalidasi seluruh alur kerja sistem.
+- 🎭 **Automated E2E Testing**: Suite pengujian komprehensif Playwright dengan 56 skenario test end-to-end yang memvalidasi seluruh alur kerja sistem.
 
 ---
 

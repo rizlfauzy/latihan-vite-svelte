@@ -1,6 +1,11 @@
 import { createStore as createZustandStore, type StoreApi } from 'zustand/vanilla';
 import { Warning, Info, Success } from '@/exceptions/CustomError';
 
+export interface AlertAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface AlertItem {
   id: string;
   type: 'success' | 'error' | 'warning' | 'info' | 'skeleton';
@@ -9,6 +14,7 @@ export interface AlertItem {
   remainingTime?: number;
   lastStartedAt?: number;
   isPaused?: boolean;
+  action?: AlertAction;
 }
 
 export interface AlertStoreState {
@@ -17,10 +23,10 @@ export interface AlertStoreState {
   removeAlert: (id: string) => void;
   pauseAlert: (id: string) => void;
   resumeAlert: (id: string) => void;
-  showSuccess: (message: string, duration?: number) => string;
-  showError: (message: string, duration?: number) => string;
-  showWarning: (message: string, duration?: number) => string;
-  showInfo: (message: string, duration?: number) => string;
+  showSuccess: (message: string, duration?: number, action?: AlertAction) => string;
+  showError: (message: string, duration?: number, action?: AlertAction) => string;
+  showWarning: (message: string, duration?: number, action?: AlertAction) => string;
+  showInfo: (message: string, duration?: number, action?: AlertAction) => string;
   showSkeleton: (duration?: number) => string;
   throwAlert: (e: Error) => string;
   clearAlerts: () => void;
@@ -103,20 +109,20 @@ const rawAlertStore: StoreApi<AlertStoreState> = createZustandStore<AlertStoreSt
     });
   },
 
-  showSuccess: (message: string, duration = 3500) => {
-    return get().addAlert({ type: 'success', message, duration });
+  showSuccess: (message: string, duration = 3500, action?: AlertAction) => {
+    return get().addAlert({ type: 'success', message, duration, action });
   },
 
-  showError: (message: string, duration = 4000) => {
-    return get().addAlert({ type: 'error', message, duration });
+  showError: (message: string, duration = 4000, action?: AlertAction) => {
+    return get().addAlert({ type: 'error', message, duration, action });
   },
 
-  showWarning: (message: string, duration = 3500) => {
-    return get().addAlert({ type: 'warning', message, duration });
+  showWarning: (message: string, duration = 3500, action?: AlertAction) => {
+    return get().addAlert({ type: 'warning', message, duration, action });
   },
 
-  showInfo: (message: string, duration = 3500) => {
-    return get().addAlert({ type: 'info', message, duration });
+  showInfo: (message: string, duration = 3500, action?: AlertAction) => {
+    return get().addAlert({ type: 'info', message, duration, action });
   },
 
   showSkeleton: (duration = 3500) => {
@@ -146,10 +152,10 @@ export const alertStore = {
   removeAlert: (id: string) => rawAlertStore.getState().removeAlert(id),
   pauseAlert: (id: string) => rawAlertStore.getState().pauseAlert(id),
   resumeAlert: (id: string) => rawAlertStore.getState().resumeAlert(id),
-  showSuccess: (message: string, duration?: number) => rawAlertStore.getState().showSuccess(message, duration),
-  showError: (message: string, duration?: number) => rawAlertStore.getState().showError(message, duration),
-  showWarning: (message: string, duration?: number) => rawAlertStore.getState().showWarning(message, duration),
-  showInfo: (message: string, duration?: number) => rawAlertStore.getState().showInfo(message, duration),
+  showSuccess: (message: string, duration?: number, action?: AlertAction) => rawAlertStore.getState().showSuccess(message, duration, action),
+  showError: (message: string, duration?: number, action?: AlertAction) => rawAlertStore.getState().showError(message, duration, action),
+  showWarning: (message: string, duration?: number, action?: AlertAction) => rawAlertStore.getState().showWarning(message, duration, action),
+  showInfo: (message: string, duration?: number, action?: AlertAction) => rawAlertStore.getState().showInfo(message, duration, action),
   showSkeleton: (duration?: number) => rawAlertStore.getState().showSkeleton(duration),
   throwAlert: (e: Error) => rawAlertStore.getState().throwAlert(e),
   clearAlerts: () => rawAlertStore.getState().clearAlerts(),

@@ -30,6 +30,8 @@ export interface AuthStoreState {
   deleteTestUser: (username: string) => Promise<boolean>;
   cleanupTestUsers: () => Promise<number>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
+  fetchAllUsers: () => Promise<User[]>;
+  updateUserRole: (uuid: string, newRoleId: number | string) => Promise<boolean>;
   logout: () => void;
   setUserSession: (user: User, role: Role) => void;
 }
@@ -381,6 +383,121 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
     }
   },
 
+  fetchAllUsers: async (): Promise<User[]> => {
+    if (!get().hasDebugAccess) {
+      alertStore.showError(i18nStore.t('auth.unauthorizedApps', 'Akses ditolak!'));
+      return [];
+    }
+
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const { data, error } = await supabase.rpc('get_users_list');
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return data.map((row: any) => ({
+            uuid: row.uuid,
+            username: row.username,
+            name: row.name,
+            roleId: row.role_id,
+            role: {
+              id: row.role_id,
+              name: row.role_name || (row.role_id === 1 ? 'SUPERADMIN' : 'VIEWER'),
+              is_debug: Boolean(row.is_debug),
+            },
+          }));
+        }
+      } catch (err) {
+        console.warn('[authStore] Failed to fetch users via RPC get_users_list', err);
+      }
+    }
+
+    // Fallback: load local registered users + baseline superadmin
+    const fallbackList: User[] = [
+      {
+        uuid: 'a0000000-0000-0000-0000-000000000001',
+        username: 'rizlfauzy',
+        name: 'Rizal Fauzi',
+        roleId: 1,
+        role: { id: 1, name: 'SUPERADMIN', is_debug: true },
+      },
+    ];
+
+    try {
+      const raw = localStorage.getItem(REGISTERED_USERS_KEY) || '[]';
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((u: any) => {
+          if (!fallbackList.some((item) => item.username.toLowerCase() === u.username.toLowerCase())) {
+            fallbackList.push({
+              uuid: u.uuid || `user-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+              username: u.username,
+              name: u.name,
+              roleId: u.roleId || 2,
+              role: u.role || { id: u.roleId || 2, name: u.roleId === 1 ? 'SUPERADMIN' : 'VIEWER', is_debug: u.roleId === 1 },
+            });
+          }
+        });
+      }
+    } catch {}
+
+    return fallbackList;
+  },
+
+  updateUserRole: async (uuid: string, newRoleId: number | string): Promise<boolean> => {
+    if (!get().hasDebugAccess) {
+      alertStore.showError(i18nStore.t('auth.unauthorizedApps', 'Akses ditolak!'));
+      return false;
+    }
+
+    const currentUser = get().user;
+    if (currentUser?.uuid === uuid && (Number(newRoleId) === 2 || newRoleId === '2')) {
+      alertStore.showError(i18nStore.t('users.cannotDemoteSelf', 'Tidak dapat menurunkan role akun sendiri yang sedang aktif!'));
+      return false;
+    }
+
+    const numRoleId = Number(newRoleId);
+    const isSuperadmin = numRoleId === 1;
+
+    if (isSupabaseEnabled && supabase) {
+      try {
+        const { error } = await supabase.rpc('update_user_role', {
+          p_target_uuid: uuid,
+          p_role_id: numRoleId,
+        });
+        if (error) {
+          await supabase.from('users').update({ role_id: numRoleId }).eq('uuid', uuid);
+        }
+      } catch (err) {
+        console.warn('[authStore] Failed to update user role in Supabase', err);
+      }
+    }
+
+    // Update local storage fallback
+    try {
+      const raw = localStorage.getItem(REGISTERED_USERS_KEY) || '[]';
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        const updated = list.map((u: any) => {
+          if (u.uuid === uuid) {
+            return {
+              ...u,
+              roleId: numRoleId,
+              role: {
+                id: numRoleId,
+                name: isSuperadmin ? 'SUPERADMIN' : 'VIEWER',
+                is_debug: isSuperadmin,
+              },
+            };
+          }
+          return u;
+        });
+        localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updated));
+      }
+    } catch {}
+
+    alertStore.showSuccess(i18nStore.t('users.roleUpdateSuccess', 'Role pengguna berhasil diperbarui!'));
+    return true;
+  },
+
   logout: () => {
     set({
       user: null,
@@ -401,6 +518,8 @@ export const authStore = {
   deleteTestUser: (username: string) => rawAuthStore.getState().deleteTestUser(username),
   cleanupTestUsers: () => rawAuthStore.getState().cleanupTestUsers(),
   changePassword: (oldPassword: string, newPassword: string) => rawAuthStore.getState().changePassword(oldPassword, newPassword),
+  fetchAllUsers: () => rawAuthStore.getState().fetchAllUsers(),
+  updateUserRole: (uuid: string, newRoleId: number | string) => rawAuthStore.getState().updateUserRole(uuid, newRoleId),
   logout: () => rawAuthStore.getState().logout(),
   setUserSession: (user: User, role: Role) => rawAuthStore.getState().setUserSession(user, role),
   subscribe(run: (state: AuthStoreState) => void) {

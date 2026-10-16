@@ -1,3 +1,5 @@
+export type AppStatus = 'online' | 'maintenance' | 'beta';
+
 export interface AppItem {
   id: string;
   name: string;
@@ -11,6 +13,8 @@ export interface AppItem {
   imageUrl?: string | null;
   heroImageUrl?: string | null;
   orderIndex?: number;
+  status?: AppStatus;
+  isPinned?: boolean;
 }
 
 export const svelteApps: AppItem[] = [];

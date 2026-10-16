@@ -34,6 +34,7 @@
   let uploadedHeroImageUrl = $state<string | null>(null);
   let isUploadingImage = $state(false);
   let fileInputRef = $state<HTMLInputElement | null>(null);
+  let status = $state<'online' | 'maintenance' | 'beta'>('online');
 
   const colorOptions = [
     { label: 'Yellow', value: 'yellow', cssVar: 'var(--color-nb-yellow)', bgClass: 'bg-nb-yellow' },
@@ -82,6 +83,7 @@
       uploadedImageUrl = app.imageUrl || null;
       uploadedHeroImageUrl = app.heroImageUrl || null;
       isUploadingImage = false;
+      status = app.status || 'online';
 
       // Match color
       const foundColor = colorOptions.find((c) => c.cssVar === app.color);
@@ -147,6 +149,7 @@
       picWhatsapp: cleanedWa,
       imageUrl: uploadedImageUrl || null,
       heroImageUrl: uploadedHeroImageUrl || null,
+      status,
     };
 
     await appStore.editApp(updatedApp);
@@ -344,6 +347,46 @@
                 ></button>
               {/each}
             </div>
+          </div>
+        </div>
+
+        <!-- Status Operasional Aplikasi -->
+        <div class="flex flex-col gap-1.5">
+          <span class="font-extrabold text-xs uppercase tracking-wide">{$i18nStore.t('modal.appStatusLabel', 'STATUS OPERASIONAL APLIKASI')}</span>
+          <div class="flex items-center gap-2 flex-wrap">
+            <label class="flex items-center gap-1.5 cursor-pointer px-2.5 py-1 border-2 border-nb-black bg-emerald-200 shadow-nb-sm text-[11px] font-black uppercase text-black">
+              <input
+                type="radio"
+                name="edit-app-status"
+                value="online"
+                checked={status === 'online'}
+                onchange={() => (status = 'online')}
+                data-testid="edit-radio-status-online"
+              />
+              <span>🟢 Online</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer px-2.5 py-1 border-2 border-nb-black bg-amber-200 shadow-nb-sm text-[11px] font-black uppercase text-black">
+              <input
+                type="radio"
+                name="edit-app-status"
+                value="maintenance"
+                checked={status === 'maintenance'}
+                onchange={() => (status = 'maintenance')}
+                data-testid="edit-radio-status-maintenance"
+              />
+              <span>🛠️ Maintenance</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer px-2.5 py-1 border-2 border-nb-black bg-purple-200 shadow-nb-sm text-[11px] font-black uppercase text-black">
+              <input
+                type="radio"
+                name="edit-app-status"
+                value="beta"
+                checked={status === 'beta'}
+                onchange={() => (status = 'beta')}
+                data-testid="edit-radio-status-beta"
+              />
+              <span>🧪 Beta</span>
+            </label>
           </div>
         </div>
 
