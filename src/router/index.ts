@@ -4,6 +4,7 @@ import CompanyProfile from '@/pages/company-profile/page.svelte';
 import Login from '@/pages/login/page.svelte';
 import Register from '@/pages/register/page.svelte';
 import Profile from '@/pages/profile/page.svelte';
+import Users from '@/pages/users/page.svelte';
 import ProtectedRoute from '@/middleware/ProtectedRoute.svelte';
 import UnprotectedRoute from '@/middleware/UnprotectedRoute.svelte';
 import { authStore } from '@/stores/authStore';
@@ -64,6 +65,11 @@ export const router = createRouter({
     layout: ProtectedRoute,
     '/': Profile,
     meta: { requiresAuth: true },
+  },
+  '/users': {
+    layout: ProtectedRoute,
+    '/': Users,
+    meta: { requiresAuth: true, requireDebug: true },
   },
   '*': Home,
 });

@@ -42,6 +42,7 @@ export interface AppStoreState {
   deleteApp: (id: string) => Promise<boolean>;
   deleteApps: (ids: string[]) => Promise<boolean>;
   reorderApps: (newOrderedIds: string[]) => Promise<boolean>;
+  togglePinApp: (id: string) => Promise<boolean>;
   resetApps: () => Promise<void>;
   fetchApps: () => Promise<void>;
   uploadAppImage: (file: File, options?: { allowedExtensions?: string[]; subfolder?: string }) => Promise<string>;
@@ -62,6 +63,8 @@ function mapRowToApp(row: any): AppItem {
     imageUrl: row.image_url || row.imageUrl || null,
     heroImageUrl: row.hero_image_url || row.heroImageUrl || null,
     orderIndex: row.order_index ?? row.orderIndex ?? 0,
+    status: row.status || 'online',
+    isPinned: Boolean(row.is_pinned ?? row.isPinned ?? false),
   };
 }
 
@@ -79,11 +82,51 @@ function mapAppToRow(app: AppItem) {
     image_url: app.imageUrl || null,
     hero_image_url: app.heroImageUrl || null,
     order_index: app.orderIndex ?? 0,
+    status: app.status || 'online',
+    is_pinned: Boolean(app.isPinned),
   };
 }
 
 // Default baseline applications for resetting Supabase state
 const defaultBaselineApps: AppItem[] = [];
+
+let appRealtimeChannel: any = null;
+
+function setupAppRealtime() {
+  if (typeof window === 'undefined' || !isSupabaseEnabled || !supabase || appRealtimeChannel) return;
+  try {
+    appRealtimeChannel = supabase
+      .channel('realtime:apps')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'apps' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newApp = mapRowToApp(payload.new);
+            const currentApps = rawStore.getState().apps;
+            if (!currentApps.some((a) => a.id === newApp.id)) {
+              rawStore.setState({ apps: [...currentApps, newApp] });
+            }
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updated = mapRowToApp(payload.new);
+            rawStore.setState({
+              apps: rawStore.getState().apps.map((a) => (a.id === updated.id ? { ...a, ...updated } : a)),
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            const oldId = payload.old.id;
+            if (oldId) {
+              rawStore.setState({
+                apps: rawStore.getState().apps.filter((a) => a.id !== oldId),
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+  } catch (err) {
+    console.warn('[appStore] Failed to initialize realtime apps subscription', err);
+  }
+}
 
 const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set, get) => ({
   apps: [...svelteApps],
@@ -93,6 +136,7 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     if (!isSupabaseEnabled || !supabase) return;
     set({ isLoading: true });
     try {
+      setupAppRealtime();
       const { data, error } = await supabase
         .from('apps')
         .select('*')
@@ -187,7 +231,15 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
 
     if (isSupabaseEnabled && supabase) {
       try {
-        const { error } = await supabase.from('apps').insert([mapAppToRow(appWithOrder)]);
+        const payload = mapAppToRow(appWithOrder);
+        let { error } = await supabase.from('apps').insert([payload]);
+
+        if (error && (error.code === 'PGRST204' || error.message?.includes('status') || error.message?.includes('is_pinned'))) {
+          const { status: _, is_pinned: _p, ...fallbackPayload } = payload;
+          const fallbackRes = await supabase.from('apps').insert([fallbackPayload]);
+          error = fallbackRes.error;
+        }
+
         if (error) throw error;
         alertStore.showSuccess(`${t('todo.app')} "${appWithOrder.name}" ${t('add.success')}!`);
         return true;
@@ -230,10 +282,21 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
 
     if (isSupabaseEnabled && supabase) {
       try {
-        const { error } = await supabase
+        const payload = mapAppToRow(mergedApp);
+        let { error } = await supabase
           .from('apps')
-          .update(mapAppToRow(mergedApp))
+          .update(payload)
           .eq('id', mergedApp.id);
+
+        if (error && (error.code === 'PGRST204' || error.message?.includes('status') || error.message?.includes('is_pinned'))) {
+          const { status: _, is_pinned: _p, ...fallbackPayload } = payload;
+          const fallbackRes = await supabase
+            .from('apps')
+            .update(fallbackPayload)
+            .eq('id', mergedApp.id);
+          error = fallbackRes.error;
+        }
+
         if (error) throw error;
         alertStore.showSuccess(`${t('todo.app')} "${mergedApp.name}" ${t('edit.success')}!`);
         return true;
@@ -387,6 +450,33 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
     return true;
   },
 
+  togglePinApp: async (id: string): Promise<boolean> => {
+    const current = get().apps.find((a) => a.id === id);
+    if (!current) return false;
+    const newIsPinned = !current.isPinned;
+    const updated = get().apps.map((a) => (a.id === id ? { ...a, isPinned: newIsPinned } : a));
+    set({ apps: updated });
+
+    const client = supabase;
+    if (isSupabaseEnabled && client) {
+      try {
+        const { error } = await client
+          .from('apps')
+          .update({ is_pinned: newIsPinned })
+          .eq('id', id);
+        if (error) throw error;
+      } catch (err) {
+        console.error('[appStore] Failed to update is_pinned in Supabase', err);
+      }
+    }
+
+    const msg = newIsPinned
+      ? i18nStore.t('grid.pinnedSuccess', `Aplikasi "${current.name}" disematkan ke atas!`)
+      : i18nStore.t('grid.unpinnedSuccess', `Sematkan aplikasi "${current.name}" dilepas.`);
+    alertStore.showSuccess(msg);
+    return true;
+  },
+
   resetApps: async () => {
     if (isSupabaseEnabled && supabase) {
       try {
@@ -410,11 +500,13 @@ if (typeof window !== 'undefined' && isSupabaseEnabled) {
 // Provide Svelte store contract `subscribe` and direct helper methods
 export const appStore = {
   ...rawStore,
+  setupAppRealtime: () => setupAppRealtime(),
   addApp: (newApp: AppItem) => rawStore.getState().addApp(newApp),
   editApp: (updatedApp: AppItem) => rawStore.getState().editApp(updatedApp),
   deleteApp: (id: string) => rawStore.getState().deleteApp(id),
   deleteApps: (ids: string[]) => rawStore.getState().deleteApps(ids),
   reorderApps: (newOrderedIds: string[]) => rawStore.getState().reorderApps(newOrderedIds),
+  togglePinApp: (id: string) => rawStore.getState().togglePinApp(id),
   resetApps: () => rawStore.getState().resetApps(),
   fetchApps: () => rawStore.getState().fetchApps(),
   uploadAppImage: (file: File, options?: { allowedExtensions?: string[]; subfolder?: string }) =>
@@ -425,6 +517,8 @@ export const appStore = {
     return rawStore.subscribe((state) => run(state));
   },
 };
+
+export { setupAppRealtime };
 
 if (typeof window !== 'undefined') {
   (window as any).__appStore = appStore;

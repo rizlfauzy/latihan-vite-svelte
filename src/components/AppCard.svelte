@@ -15,6 +15,7 @@
     onEdit,
     onDelete,
     onContactPic,
+    onTogglePin,
     onDragStart,
     onDragOver,
     onDragLeave,
@@ -29,6 +30,7 @@
     onEdit?: (app: AppItem) => void;
     onDelete?: (app: AppItem) => void;
     onContactPic?: (app: AppItem) => void;
+    onTogglePin?: (app: AppItem) => void;
     onDragStart?: (app: AppItem, e: DragEvent) => void;
     onDragOver?: (app: AppItem, e: DragEvent) => void;
     onDragLeave?: (app: AppItem, e: DragEvent) => void;
@@ -104,6 +106,47 @@
       data-testid="app-hero-image-{app.id}"
       loading="lazy"
     />
+
+    <!-- Operational Status Badge Overlay -->
+    <div class="absolute top-2 left-2 z-10">
+      {#if app.status === 'maintenance'}
+        <span
+          class="nb-badge bg-amber-300 text-nb-black text-[10px] font-black border-2 border-nb-black shadow-nb-xs flex items-center gap-1"
+          data-testid="app-status-{app.id}"
+        >
+          <span>🛠️</span>
+          <span>{t('grid.statusMaintenance', 'Maintenance')}</span>
+        </span>
+      {:else if app.status === 'beta'}
+        <span
+          class="nb-badge bg-purple-300 text-nb-black text-[10px] font-black border-2 border-nb-black shadow-nb-xs flex items-center gap-1"
+          data-testid="app-status-{app.id}"
+        >
+          <span>🧪</span>
+          <span>{t('grid.statusBeta', 'Beta')}</span>
+        </span>
+      {:else}
+        <span
+          class="nb-badge bg-emerald-300 text-nb-black text-[10px] font-black border-2 border-nb-black shadow-nb-xs flex items-center gap-1"
+          data-testid="app-status-{app.id}"
+        >
+          <span>🟢</span>
+          <span>{t('grid.statusOnline', 'Online')}</span>
+        </span>
+      {/if}
+    </div>
+
+    <!-- Pin / Favorite Button Overlay -->
+    <button
+      type="button"
+      class="absolute top-2 right-2 z-10 w-7 h-7 rounded border-2 border-nb-black shadow-nb-xs flex items-center justify-center text-xs cursor-pointer transition-transform hover:scale-110 {app.isPinned ? 'bg-nb-yellow text-nb-black ring-2 ring-black' : 'bg-white/80 hover:bg-white text-gray-500'}"
+      onclick={(e) => { e.stopPropagation(); onTogglePin?.(app); }}
+      title={app.isPinned ? t('grid.unpin') : t('grid.pin')}
+      data-testid="btn-pin-app-{app.id}"
+      aria-label={app.isPinned ? 'Unpin app' : 'Pin app'}
+    >
+      ⭐
+    </button>
   </div>
 
   <div class="flex items-center justify-between gap-2.5">

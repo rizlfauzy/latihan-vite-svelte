@@ -80,6 +80,22 @@
         </button>
       </div>
 
+      {#if alert.action}
+        <div class="flex items-center justify-end mt-1">
+          <button
+            type="button"
+            class="px-2.5 py-1 text-xs font-black uppercase tracking-wider bg-white text-nb-black border-2 border-nb-black rounded shadow-nb-xs hover:bg-nb-yellow active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-all"
+            data-testid="alert-action-btn"
+            onclick={() => {
+              alert.action?.onClick();
+              alertStore.removeAlert(alert.id);
+            }}
+          >
+            {alert.action.label}
+          </button>
+        </div>
+      {/if}
+
       <!-- Neo Brutalism Countdown Progress Bar with Pause on Hover -->
       <div class="w-full h-1.5 bg-black/20 border-t-2 border-nb-black overflow-hidden -mx-3 -mb-3 sm:-mx-3.5 sm:-mb-3.5 mt-1">
         <div
