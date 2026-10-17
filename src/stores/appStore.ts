@@ -91,6 +91,28 @@ function mapAppToRow(app: AppItem) {
 const defaultBaselineApps: AppItem[] = [];
 
 let appRealtimeChannel: any = null;
+let appBroadcastChannel: BroadcastChannel | null = null;
+
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    appBroadcastChannel = new BroadcastChannel('hub_apps_channel');
+    appBroadcastChannel.onmessage = (event) => {
+      if (event.data?.type === 'SYNC_APPS' && Array.isArray(event.data.apps)) {
+        rawStore.setState({ apps: event.data.apps });
+      }
+    };
+  } catch (err) {
+    console.warn('[appStore] BroadcastChannel error', err);
+  }
+}
+
+export function broadcastApps(apps: AppItem[]) {
+  if (appBroadcastChannel) {
+    try {
+      appBroadcastChannel.postMessage({ type: 'SYNC_APPS', apps });
+    } catch {}
+  }
+}
 
 function setupAppRealtime() {
   if (typeof window === 'undefined' || !isSupabaseEnabled || !supabase || appRealtimeChannel) return;
@@ -105,19 +127,21 @@ function setupAppRealtime() {
             const newApp = mapRowToApp(payload.new);
             const currentApps = rawStore.getState().apps;
             if (!currentApps.some((a) => a.id === newApp.id)) {
-              rawStore.setState({ apps: [...currentApps, newApp] });
+              const updated = [...currentApps, newApp];
+              rawStore.setState({ apps: updated });
+              broadcastApps(updated);
             }
           } else if (payload.eventType === 'UPDATE' && payload.new) {
             const updated = mapRowToApp(payload.new);
-            rawStore.setState({
-              apps: rawStore.getState().apps.map((a) => (a.id === updated.id ? { ...a, ...updated } : a)),
-            });
+            const updatedList = rawStore.getState().apps.map((a) => (a.id === updated.id ? { ...a, ...updated } : a));
+            rawStore.setState({ apps: updatedList });
+            broadcastApps(updatedList);
           } else if (payload.eventType === 'DELETE' && payload.old) {
             const oldId = payload.old.id;
             if (oldId) {
-              rawStore.setState({
-                apps: rawStore.getState().apps.filter((a) => a.id !== oldId),
-              });
+              const updatedList = rawStore.getState().apps.filter((a) => a.id !== oldId);
+              rawStore.setState({ apps: updatedList });
+              broadcastApps(updatedList);
             }
           }
         }
@@ -429,6 +453,9 @@ const rawStore: StoreApi<AppStoreState> = createZustandStore<AppStoreState>((set
         reordered.push({ ...item, orderIndex: reordered.length });
       }
     });
+
+    set({ apps: reordered });
+    broadcastApps(reordered);
 
     const client = supabase;
     if (isSupabaseEnabled && client) {
