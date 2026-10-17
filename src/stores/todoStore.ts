@@ -164,10 +164,65 @@ function loadLocalTodos(): Todo[] {
   return defaultTodos;
 }
 
+export function sortTodos(items: Todo[]): Todo[] {
+  return [...items].sort((a, b) => {
+    const ordA = typeof a.orderIndex === 'number' ? a.orderIndex : 0;
+    const ordB = typeof b.orderIndex === 'number' ? b.orderIndex : 0;
+    if (ordA !== ordB) return ordA - ordB;
+    return b.createdAt - a.createdAt;
+  });
+}
+
+export function sortSubTasks(items: SubTask[]): SubTask[] {
+  return [...items].sort((a, b) => {
+    const ordA = typeof a.orderIndex === 'number' ? a.orderIndex : 0;
+    const ordB = typeof b.orderIndex === 'number' ? b.orderIndex : 0;
+    if (ordA !== ordB) return ordA - ordB;
+    return a.createdAt - b.createdAt;
+  });
+}
+
+let todoBroadcastChannel: BroadcastChannel | null = null;
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    todoBroadcastChannel = new BroadcastChannel('hub_todos_channel');
+    todoBroadcastChannel.onmessage = (event) => {
+      if (event.data?.type === 'SYNC_TODOS' && Array.isArray(event.data.todos)) {
+        const sorted = sortTodos(event.data.todos);
+        rawStore.setState({ todos: sorted });
+      }
+    };
+  } catch (err) {
+    console.warn('[todoStore] BroadcastChannel setup error', err);
+  }
+}
+
+function broadcastTodos(todos: Todo[]) {
+  if (todoBroadcastChannel) {
+    try {
+      todoBroadcastChannel.postMessage({ type: 'SYNC_TODOS', todos });
+    } catch {}
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY && e.newValue) {
+      try {
+        const parsed = JSON.parse(e.newValue);
+        if (Array.isArray(parsed)) {
+          rawStore.setState({ todos: sortTodos(parsed) });
+        }
+      } catch {}
+    }
+  });
+}
+
 function saveLocalTodos(todos: Todo[]) {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    broadcastTodos(todos);
   } catch (e) {
     console.error('[todoStore] Failed to save todos to localStorage', e);
   }
@@ -274,21 +329,25 @@ function setupTodoRealtime() {
             const newTodo = mapRowToTodo(payload.new);
             const currentTodos = rawStore.getState().todos;
             if (!currentTodos.some((t) => t.id === newTodo.id)) {
-              rawStore.setState({ todos: [newTodo, ...currentTodos] });
+              const sorted = sortTodos([newTodo, ...currentTodos]);
+              rawStore.setState({ todos: sorted });
+              saveLocalTodos(sorted);
             }
           } else if (payload.eventType === 'UPDATE' && payload.new) {
             const updated = mapRowToTodo(payload.new);
-            rawStore.setState({
-              todos: rawStore.getState().todos.map((t) =>
-                t.id === updated.id ? { ...t, ...updated, subTasks: t.subTasks } : t
-              ),
-            });
+            const currentTodos = rawStore.getState().todos;
+            const updatedList = currentTodos.map((t) =>
+              t.id === updated.id ? { ...t, ...updated, subTasks: t.subTasks } : t
+            );
+            const sorted = sortTodos(updatedList);
+            rawStore.setState({ todos: sorted });
+            saveLocalTodos(sorted);
           } else if (payload.eventType === 'DELETE' && payload.old) {
             const oldId = payload.old.id;
             if (oldId) {
-              rawStore.setState({
-                todos: rawStore.getState().todos.filter((t) => t.id !== oldId),
-              });
+              const filtered = rawStore.getState().todos.filter((t) => t.id !== oldId);
+              rawStore.setState({ todos: filtered });
+              saveLocalTodos(filtered);
             }
           }
         }
@@ -306,47 +365,48 @@ function setupTodoRealtime() {
               createdAt: Number(s.created_at) || Date.now(),
               orderIndex: typeof s.order_index === 'number' ? s.order_index : 0,
             };
-            rawStore.setState({
-              todos: rawStore.getState().todos.map((t) => {
-                if (t.id === s.todo_id) {
-                  const existingSubs = t.subTasks || [];
-                  if (!existingSubs.some((item) => item.id === newSub.id)) {
-                    return { ...t, subTasks: [...existingSubs, newSub] };
-                  }
+            const updatedTodos = rawStore.getState().todos.map((t) => {
+              if (t.id === s.todo_id) {
+                const existingSubs = t.subTasks || [];
+                if (!existingSubs.some((item) => item.id === newSub.id)) {
+                  return { ...t, subTasks: sortSubTasks([...existingSubs, newSub]) };
                 }
-                return t;
-              }),
+              }
+              return t;
             });
+            rawStore.setState({ todos: updatedTodos });
+            saveLocalTodos(updatedTodos);
           } else if (payload.eventType === 'UPDATE' && payload.new) {
             const s = payload.new;
-            rawStore.setState({
-              todos: rawStore.getState().todos.map((t) => {
-                if (t.id === s.todo_id && t.subTasks) {
-                  return {
-                    ...t,
-                    subTasks: t.subTasks.map((sub) =>
-                      sub.id === s.id
-                        ? {
-                            ...sub,
-                            text: s.text,
-                            done: Boolean(s.done),
-                            orderIndex: typeof s.order_index === 'number' ? s.order_index : sub.orderIndex,
-                          }
-                        : sub
-                    ),
-                  };
-                }
-                return t;
-              }),
+            const updatedTodos = rawStore.getState().todos.map((t) => {
+              if (t.id === s.todo_id && t.subTasks) {
+                const updatedSubs = t.subTasks.map((sub) =>
+                  sub.id === s.id
+                    ? {
+                        ...sub,
+                        text: s.text,
+                        done: Boolean(s.done),
+                        orderIndex: typeof s.order_index === 'number' ? s.order_index : sub.orderIndex,
+                      }
+                    : sub
+                );
+                return {
+                  ...t,
+                  subTasks: sortSubTasks(updatedSubs),
+                };
+              }
+              return t;
             });
+            rawStore.setState({ todos: updatedTodos });
+            saveLocalTodos(updatedTodos);
           } else if (payload.eventType === 'DELETE' && payload.old) {
             const oldId = payload.old.id;
-            rawStore.setState({
-              todos: rawStore.getState().todos.map((t) => ({
-                ...t,
-                subTasks: (t.subTasks || []).filter((sub) => sub.id !== oldId),
-              })),
-            });
+            const updatedTodos = rawStore.getState().todos.map((t) => ({
+              ...t,
+              subTasks: (t.subTasks || []).filter((sub) => sub.id !== oldId),
+            }));
+            rawStore.setState({ todos: updatedTodos });
+            saveLocalTodos(updatedTodos);
           }
         }
       )
