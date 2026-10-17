@@ -1980,6 +1980,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     // 5. Uji pada tab Company Profile
     await page.goto('/company-profile');
     await expect(page.locator('[data-testid="company-profile-container"]')).toBeVisible();
+    await page.waitForFunction(() => !(window as any).__sectionStore?.getState?.()?.isLoading);
 
     await settingsBtn.click();
     await expect(modal).toBeVisible();
