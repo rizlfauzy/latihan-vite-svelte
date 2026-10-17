@@ -59,7 +59,14 @@
   // Target item for deletion confirmation modal
   let deleteTarget = $state<DeleteTarget>(null);
 
-  const todos = $derived($todoStore.todos);
+  const todos = $derived(
+    [...$todoStore.todos].sort((a, b) => {
+      const ordA = typeof a.orderIndex === 'number' ? a.orderIndex : 0;
+      const ordB = typeof b.orderIndex === 'number' ? b.orderIndex : 0;
+      if (ordA !== ordB) return ordA - ordB;
+      return b.createdAt - a.createdAt;
+    })
+  );
   const isLoading = $derived($todoStore.isLoading);
   const apps = $derived($appStore.apps);
 
@@ -891,7 +898,12 @@
         </li>
       {:else}
         {#each filteredTodos as todo (todo.id)}
-          {@const subList = todo.subTasks || []}
+          {@const subList = [...(todo.subTasks || [])].sort((a, b) => {
+            const ordA = typeof a.orderIndex === 'number' ? a.orderIndex : 0;
+            const ordB = typeof b.orderIndex === 'number' ? b.orderIndex : 0;
+            if (ordA !== ordB) return ordA - ordB;
+            return a.createdAt - b.createdAt;
+          })}
           {@const subDoneCount = subList.filter((s) => s.done).length}
           {@const isExpanded = expandedTodoIds[todo.id] ?? false}
 
