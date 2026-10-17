@@ -389,45 +389,63 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
       return [];
     }
 
+    const userMap = new Map<string, User>();
+
     if (isSupabaseEnabled && supabase) {
       try {
         const { data, error } = await supabase.rpc('get_users_list');
         if (!error && Array.isArray(data) && data.length > 0) {
-          return data.map((row: any) => ({
-            uuid: row.uuid,
-            username: row.username,
-            name: row.name,
-            roleId: row.role_id,
-            role: {
-              id: row.role_id,
-              name: row.role_name || (row.role_id === 1 ? 'SUPERADMIN' : 'VIEWER'),
-              is_debug: Boolean(row.is_debug),
-            },
-          }));
+          data.forEach((row: any) => {
+            const userObj: User = {
+              uuid: row.uuid,
+              username: row.username,
+              name: row.name,
+              roleId: row.role_id,
+              role: {
+                id: row.role_id,
+                name: row.role_name || (row.role_id === 1 ? 'SUPERADMIN' : 'VIEWER'),
+                is_debug: Boolean(row.is_debug),
+              },
+            };
+            userMap.set(userObj.username.toLowerCase(), userObj);
+          });
         }
       } catch (err) {
         console.warn('[authStore] Failed to fetch users via RPC get_users_list', err);
       }
     }
 
-    // Fallback: load local registered users + baseline superadmin
-    const fallbackList: User[] = [
-      {
+    // Fallback: load baseline superadmin if userMap is empty
+    if (userMap.size === 0) {
+      userMap.set('rizlfauzy', {
         uuid: 'a0000000-0000-0000-0000-000000000001',
         username: 'rizlfauzy',
         name: 'Rizal Fauzi',
         roleId: 1,
         role: { id: 1, name: 'SUPERADMIN', is_debug: true },
-      },
-    ];
+      });
+    }
 
+    // Always merge registered users from localStorage (for test mocks, offline, or newly registered local users)
     try {
       const raw = localStorage.getItem(REGISTERED_USERS_KEY) || '[]';
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         parsed.forEach((u: any) => {
-          if (!fallbackList.some((item) => item.username.toLowerCase() === u.username.toLowerCase())) {
-            fallbackList.push({
+          if (!u || !u.username) return;
+          const key = u.username.toLowerCase();
+          const existing = userMap.get(key);
+          if (existing) {
+            if (u.roleId !== undefined) {
+              existing.roleId = u.roleId;
+              existing.role = u.role || {
+                id: u.roleId,
+                name: u.roleId === 1 ? 'SUPERADMIN' : 'VIEWER',
+                is_debug: u.roleId === 1,
+              };
+            }
+          } else {
+            userMap.set(key, {
               uuid: u.uuid || `user-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
               username: u.username,
               name: u.name,
@@ -439,7 +457,7 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
       }
     } catch {}
 
-    return fallbackList;
+    return Array.from(userMap.values());
   },
 
   updateUserRole: async (uuid: string, newRoleId: number | string): Promise<boolean> => {
@@ -477,7 +495,7 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
       const list = JSON.parse(raw);
       if (Array.isArray(list)) {
         const updated = list.map((u: any) => {
-          if (u.uuid === uuid) {
+          if (u.uuid === uuid || (u.username && u.username.toLowerCase() === uuid.toLowerCase())) {
             return {
               ...u,
               roleId: numRoleId,
