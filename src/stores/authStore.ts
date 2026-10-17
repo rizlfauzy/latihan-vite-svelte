@@ -481,11 +481,10 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
           p_target_uuid: uuid,
           p_role_id: numRoleId,
         });
-        if (error) {
-          await supabase.from('users').update({ role_id: numRoleId }).eq('uuid', uuid);
-        }
+        if (error) throw new Error(`${error.message} ${t("common.because", "Karena")} ${error.details}`);
       } catch (err) {
-        console.warn('[authStore] Failed to update user role in Supabase', err);
+        alertStore.throwAlert(err as Error)
+        return false;
       }
     }
 
