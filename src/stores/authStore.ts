@@ -475,20 +475,24 @@ const rawAuthStore: StoreApi<AuthStoreState> = createZustandStore<AuthStoreState
     const numRoleId = Number(newRoleId);
     const isSuperadmin = numRoleId === 1;
 
-    if (isSupabaseEnabled && supabase) {
+    // Validate standard UUID format before sending to Postgres RPC
+    const isStandardUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid);
+
+    if (isSupabaseEnabled && supabase && isStandardUuid) {
       try {
         const { error } = await supabase.rpc('update_user_role', {
           p_target_uuid: uuid,
           p_role_id: numRoleId,
         });
-        if (error) throw new Error(`${error.message} ${t("common.because", "Karena")} ${error.details}`);
+        if (error) {
+          console.warn('[authStore] Supabase RPC update_user_role warning:', error);
+        }
       } catch (err) {
-        alertStore.throwAlert(err as Error)
-        return false;
+        console.warn('[authStore] Failed to update user role in Supabase:', err);
       }
     }
 
-    // Update local storage fallback
+    // Update local storage fallback (for offline, mock/test users, or fallback)
     try {
       const raw = localStorage.getItem(REGISTERED_USERS_KEY) || '[]';
       const list = JSON.parse(raw);

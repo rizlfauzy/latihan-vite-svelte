@@ -2694,7 +2694,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     // 2. Buat user dummy lokal untuk di-toggle rolenya
     await page.evaluate(() => {
       const dummyUser = {
-        uuid: 'test-user-uuid-12345',
+        uuid: '00000000-0000-0000-0000-000000000099',
         username: 'testviewer',
         name: 'Test Viewer',
         roleId: 2,
