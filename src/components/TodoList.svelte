@@ -9,6 +9,7 @@
   import { todoStore, type Todo, type SubTask, type TodoPriority } from '@/stores/todoStore';
   import { defaultStateStore } from "@/stores/defaultStateStore";
   import CustomSelect from './CustomSelect.svelte';
+  import DatePicker from './DatePicker.svelte';
   import { Warning } from '@/exceptions/CustomError';
   import { GripVertical } from '@lucide/svelte';
 
@@ -706,12 +707,11 @@
             <span>📅</span>
             <span>{t('todo.dueDateLabel', 'Tenggat')}:</span>
           </label>
-          <input
+          <DatePicker
             id="todo-due-date-input"
-            type="date"
             bind:value={newTodoDueDate}
-            class="nb-input py-1 px-2 text-xs font-bold bg-white"
-            data-testid="todo-due-date-input"
+            dataTestId="todo-due-date-input"
+            width="w-36"
           />
         </div>
       </div>
@@ -971,11 +971,10 @@
                     dataTestId={`select-edit-todo-priority-${todo.id}`}
                     searchPlaceholder={t('todo.searchPlaceholder', 'Cari Prioritas')}
                   />
-                  <input
-                    type="date"
+                  <DatePicker
                     bind:value={editingTodoDueDate}
-                    class="nb-input py-1 px-2 text-xs font-bold bg-white"
-                    data-testid={`input-edit-todo-due-date-${todo.id}`}
+                    dataTestId={`input-edit-todo-due-date-${todo.id}`}
+                    width="w-36"
                   />
                   <div class="flex items-center gap-2 ml-auto">
                     <button
