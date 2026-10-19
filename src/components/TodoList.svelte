@@ -7,12 +7,14 @@
   import { authStore } from '@/stores/authStore';
   import { appStore } from '@/stores/appStore';
   import { todoStore, type Todo, type SubTask, type TodoPriority } from '@/stores/todoStore';
+  import { defaultStateStore } from "@/stores/defaultStateStore";
   import CustomSelect from './CustomSelect.svelte';
   import { Warning } from '@/exceptions/CustomError';
   import { GripVertical } from '@lucide/svelte';
 
   const t = $derived((key: string, defaultValue?: string): string => $i18nStore.t(key, defaultValue));
   let canManage = $derived($authStore.hasDebugAccess);
+  const priority = $derived($defaultStateStore?.priority ?? []);
 
   type DeleteTarget =
     | { type: 'todo'; id: string; text: string }
@@ -59,7 +61,14 @@
   // Target item for deletion confirmation modal
   let deleteTarget = $state<DeleteTarget>(null);
 
-  const todos = $derived($todoStore.todos);
+  const todos = $derived(
+    [...$todoStore.todos].sort((a, b) => {
+      const ordA = typeof a.orderIndex === 'number' ? a.orderIndex : 0;
+      const ordB = typeof b.orderIndex === 'number' ? b.orderIndex : 0;
+      if (ordA !== ordB) return ordA - ordB;
+      return b.createdAt - a.createdAt;
+    })
+  );
   const isLoading = $derived($todoStore.isLoading);
   const apps = $derived($appStore.apps);
 
@@ -680,17 +689,15 @@
             <span>🏷️</span>
             <span>{t('todo.priorityLabel', 'Prioritas')}:</span>
           </label>
-          <select
+          <CustomSelect
             id="todo-priority-select"
+            options={priority}
             bind:value={newTodoPriority}
-            class="nb-input py-1 px-2 text-xs font-bold bg-white"
-            data-testid="todo-priority-select"
-          >
-            <option value="urgent">🚨 {t('todo.priorityUrgent', 'Urgent')}</option>
-            <option value="high">⚡ {t('todo.priorityHigh', 'High')}</option>
-            <option value="normal">🔵 {t('todo.priorityNormal', 'Normal')}</option>
-            <option value="low">🟢 {t('todo.priorityLow', 'Low')}</option>
-          </select>
+            dataTestId="todo-priority-select"
+            placeholder={t('todo.selectPriority')}
+            searchPlaceholder={t('todo.searchPriority')}
+            width="w-36"
+          />
         </div>
 
         <!-- Due Date Selector -->
@@ -891,7 +898,12 @@
         </li>
       {:else}
         {#each filteredTodos as todo (todo.id)}
-          {@const subList = todo.subTasks || []}
+          {@const subList = [...(todo.subTasks || [])].sort((a, b) => {
+            const ordA = typeof a.orderIndex === 'number' ? a.orderIndex : 0;
+            const ordB = typeof b.orderIndex === 'number' ? b.orderIndex : 0;
+            if (ordA !== ordB) return ordA - ordB;
+            return a.createdAt - b.createdAt;
+          })}
           {@const subDoneCount = subList.filter((s) => s.done).length}
           {@const isExpanded = expandedTodoIds[todo.id] ?? false}
 
@@ -952,16 +964,13 @@
                       {/each}
                     </select>
                   {/if}
-                  <select
+                  <CustomSelect
                     bind:value={editingTodoPriority}
-                    class="nb-input py-1 px-2 text-xs font-bold bg-white"
-                    data-testid={`select-edit-todo-priority-${todo.id}`}
-                  >
-                    <option value="urgent">🚨 {t('todo.priorityUrgent', 'Urgent')}</option>
-                    <option value="high">⚡ {t('todo.priorityHigh', 'High')}</option>
-                    <option value="normal">🔵 {t('todo.priorityNormal', 'Normal')}</option>
-                    <option value="low">🟢 {t('todo.priorityLow', 'Low')}</option>
-                  </select>
+                    options={priority}
+                    placeholder={t('todo.priorityPlaceholder', 'Pilih Prioritas')}
+                    dataTestId={`select-edit-todo-priority-${todo.id}`}
+                    searchPlaceholder={t('todo.searchPlaceholder', 'Cari Prioritas')}
+                  />
                   <input
                     type="date"
                     bind:value={editingTodoDueDate}
