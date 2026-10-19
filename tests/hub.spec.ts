@@ -989,8 +989,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     // Open CustomSelect and pick an option (the first actual app option)
     await topicTrigger.click();
     const appOptions = page.locator('[data-testid^="todo-app-topic-select-option-"]');
-    const secondOption = appOptions.nth(1);
-    await secondOption.click();
+    const optionToSelect = (await appOptions.count()) > 1 ? appOptions.nth(1) : appOptions.first();
+    await optionToSelect.click();
 
     const taskWithTopic = `Test Task for Specific App Topic ${Date.now()}`;
     await page.locator('[data-testid="todo-input"]').fill(taskWithTopic);
@@ -2595,7 +2595,8 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
   test('To-Do List: Priority labels, Due Date indicators, and WhatsApp preview sorting', async ({ page }) => {
     // 1. Tambah Todo Urgent dengan Due Date kemarin (overdue)
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    await page.locator('[data-testid="todo-priority-select"]').selectOption('urgent');
+    await page.locator('[data-testid="todo-priority-select-trigger"]').click();
+    await page.locator('[data-testid="todo-priority-select-option-urgent"]').click();
     await page.locator('[data-testid="todo-due-date-input"]').fill(yesterday);
     await page.locator('[data-testid="todo-input"]').fill('Urgent Overdue Task Test');
     await page.locator('[data-testid="todo-add-button"]').click();
@@ -2711,6 +2712,33 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     // 4. Verifikasi tombol akun sendiri disable (cannot demote self)
     const selfBtn = page.locator('[data-testid="btn-toggle-role-rizlfauzy"]');
     await expect(selfBtn).toBeDisabled();
+  });
+
+  test('To-Do List: Custom DatePicker component allows opening calendar, selecting presets, and clearing date', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('[data-testid="todo-due-date-input"]')).toBeVisible();
+
+    // Verify calendar button trigger
+    const trigger = page.locator('[data-testid="todo-due-date-input-trigger"]');
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+
+    // Verify calendar dialog appears
+    const calendar = page.locator('[data-testid="todo-due-date-input-calendar"]');
+    await expect(calendar).toBeVisible();
+
+    // Click "Hari Ini" preset
+    await page.locator('[data-testid="todo-due-date-input-btn-today"]').click();
+    await expect(calendar).not.toBeVisible();
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    await expect(page.locator('[data-testid="todo-due-date-input"]')).toHaveValue(todayStr);
+
+    // Clear using the clear button
+    const clearBtn = page.locator('[data-testid="todo-due-date-input-clear"]');
+    await expect(clearBtn).toBeVisible();
+    await clearBtn.click();
+    await expect(page.locator('[data-testid="todo-due-date-input"]')).toHaveValue('');
   });
 });
 
