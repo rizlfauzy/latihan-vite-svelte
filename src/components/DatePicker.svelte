@@ -46,6 +46,18 @@
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
 
+  let yearList = $derived.by(() => {
+    const minYear = min && /^\d{4}/.test(min) ? parseInt(min.slice(0, 4), 10) : 1970;
+    const maxYear = max && /^\d{4}/.test(max) ? parseInt(max.slice(0, 4), 10) : 2050;
+    const fromY = Math.min(minYear, viewYear, today.getFullYear() - 10);
+    const toY = Math.max(maxYear, viewYear, today.getFullYear() + 20);
+    const list: number[] = [];
+    for (let y = fromY; y <= toY; y++) {
+      list.push(y);
+    }
+    return list;
+  });
+
   const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
   interface CalendarDay {
@@ -211,7 +223,7 @@
 
 <div
   bind:this={containerEl}
-  class="relative inline-flex items-center {width}"
+  class="relative inline-flex items-center {width} {isOpen ? 'z-50' : ''}"
   data-testid="{dataTestId}-container"
 >
   <div class="relative w-full flex items-center">
@@ -259,31 +271,53 @@
 
   {#if isOpen}
     <div
-      class="absolute left-0 top-full mt-1.5 z-50 bg-white border-3 border-nb-black shadow-nb p-3 min-w-64 select-none animate-in fade-in"
+      class="absolute left-0 top-full mt-1.5 z-50 bg-white border-3 border-nb-black shadow-nb p-3 min-w-72 select-none animate-in fade-in"
       data-testid="{dataTestId}-calendar"
       role="dialog"
       aria-label="Kalender pemilih tanggal"
     >
       <!-- Calendar Header: Month & Year Controls -->
-      <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center justify-between mb-2 gap-1.5">
         <button
           type="button"
           onclick={prevMonth}
-          class="w-7 h-7 flex items-center justify-center border-2 border-nb-black bg-gray-100 hover:bg-nb-yellow font-black text-xs shadow-nb-xs cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+          class="w-7 h-7 shrink-0 flex items-center justify-center border-2 border-nb-black bg-gray-100 hover:bg-nb-yellow font-black text-xs shadow-nb-xs cursor-pointer active:translate-x-0.5 active:translate-y-0.5 text-nb-black"
           aria-label="Bulan sebelumnya"
           data-testid="{dataTestId}-prev-month"
         >
           ◀
         </button>
 
-        <span class="font-extrabold text-xs text-nb-black" data-testid="{dataTestId}-month-label">
-          {monthNames[viewMonth]} {viewYear}
-        </span>
+        <div class="flex items-center gap-1.5 grow justify-center" data-testid="{dataTestId}-month-label">
+          <select
+            value={viewMonth}
+            onchange={(e) => (viewMonth = Number((e.target as HTMLSelectElement).value))}
+            class="nb-input py-0.5 px-1.5 text-xs font-black bg-white text-nb-black border-2 border-nb-black shadow-nb-xs cursor-pointer focus:outline-none"
+            data-testid="{dataTestId}-select-month"
+            aria-label="Pilih Bulan"
+          >
+            {#each monthNames as mName, idx}
+              <option value={idx}>{mName}</option>
+            {/each}
+          </select>
+
+          <select
+            value={viewYear}
+            onchange={(e) => (viewYear = Number((e.target as HTMLSelectElement).value))}
+            class="nb-input py-0.5 px-1.5 text-xs font-black bg-white text-nb-black border-2 border-nb-black shadow-nb-xs cursor-pointer focus:outline-none"
+            data-testid="{dataTestId}-select-year"
+            aria-label="Pilih Tahun"
+          >
+            {#each yearList as y}
+              <option value={y}>{y}</option>
+            {/each}
+          </select>
+        </div>
 
         <button
           type="button"
           onclick={nextMonth}
-          class="w-7 h-7 flex items-center justify-center border-2 border-nb-black bg-gray-100 hover:bg-nb-yellow font-black text-xs shadow-nb-xs cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+          class="w-7 h-7 shrink-0 flex items-center justify-center border-2 border-nb-black bg-gray-100 hover:bg-nb-yellow font-black text-xs shadow-nb-xs cursor-pointer active:translate-x-0.5 active:translate-y-0.5 text-nb-black"
           aria-label="Bulan berikutnya"
           data-testid="{dataTestId}-next-month"
         >

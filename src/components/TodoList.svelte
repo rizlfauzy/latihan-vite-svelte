@@ -698,6 +698,7 @@
             placeholder={t('todo.selectPriority')}
             searchPlaceholder={t('todo.searchPriority')}
             width="w-36"
+            size="sm"
           />
         </div>
 
@@ -908,9 +909,10 @@
           {@const isExpanded = expandedTodoIds[todo.id] ?? false}
 
           <li
-            class="flex flex-col border-2 border-nb-black rounded-md shadow-nb-sm overflow-hidden transition-all duration-100 {todo.done
+            class="flex flex-col border-2 border-nb-black rounded-md shadow-nb-sm transition-all duration-100 {todo.done
               ? 'bg-gray-100 opacity-80'
               : 'bg-white'}
+              {editingTodoId === todo.id ? 'overflow-visible z-30 relative' : 'overflow-hidden'}
               {isTodoDragReady[todo.id] ? 'ring-4 ring-nb-yellow shadow-nb-lg scale-[1.01] cursor-grab active:cursor-grabbing' : ''}
               {draggedTodo?.id === todo.id ? 'opacity-40 border-dashed scale-95' : ''}
               {dragOverTodoId === todo.id ? (draggedSubTask ? 'border-nb-green ring-4 ring-nb-green bg-green-50' : 'border-nb-blue ring-4 ring-nb-blue bg-blue-50') : ''}"
@@ -955,7 +957,7 @@
                   {#if apps.length > 0}
                     <select
                       bind:value={editingTodoAppId}
-                      class="nb-input py-1 px-2 text-xs font-bold bg-white"
+                      class="nb-input py-1 px-2 text-xs font-bold bg-white max-w-28 sm:max-w-36 h-8.5 shrink-0"
                       data-testid={`select-edit-todo-app-${todo.id}`}
                     >
                       <option value="">{t('todo.allTopics', 'Tanpa Topik')}</option>
@@ -970,16 +972,18 @@
                     placeholder={t('todo.priorityPlaceholder', 'Pilih Prioritas')}
                     dataTestId={`select-edit-todo-priority-${todo.id}`}
                     searchPlaceholder={t('todo.searchPlaceholder', 'Cari Prioritas')}
+                    width="w-32 sm:w-36"
+                    size="sm"
                   />
                   <DatePicker
                     bind:value={editingTodoDueDate}
                     dataTestId={`input-edit-todo-due-date-${todo.id}`}
-                    width="w-36"
+                    width="w-32 sm:w-36"
                   />
-                  <div class="flex items-center gap-2 ml-auto">
+                  <div class="flex items-center gap-2 ml-auto shrink-0">
                     <button
                       type="button"
-                      class="nb-btn bg-nb-green text-black text-xs font-bold px-3 py-1.5"
+                      class="nb-btn bg-nb-green text-black text-xs font-bold px-3 py-1.5 shadow-nb-xs cursor-pointer"
                       onclick={() => saveEditTodo(todo.id)}
                       data-testid={`btn-save-edit-todo-${todo.id}`}
                     >
@@ -987,7 +991,7 @@
                     </button>
                     <button
                       type="button"
-                      class="nb-btn bg-gray-200 text-black text-xs font-bold px-3 py-1.5"
+                      class="nb-btn bg-gray-200 text-black text-xs font-bold px-3 py-1.5 shadow-nb-xs cursor-pointer"
                       onclick={cancelEditTodo}
                       data-testid={`btn-cancel-edit-todo-${todo.id}`}
                     >

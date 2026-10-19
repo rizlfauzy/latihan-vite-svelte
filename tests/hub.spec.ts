@@ -1097,8 +1097,6 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
   });
 
   test('To-Do list topic filter filters tasks by App topic and resets when app is deleted', async ({ page }) => {
-    await expect(page.locator('[data-testid="todo-topic-filter"]')).toBeVisible();
-
     // Ensure we have at least two apps for topic selection
     let appCards = page.locator('[data-testid="apps-list"] [data-testid^="app-card-"]');
     while ((await appCards.count()) < 2) {
@@ -1113,9 +1111,11 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
       await page.locator('[data-testid="input-app-wa"]').fill('6281234567890');
       await page.locator('[data-testid="btn-submit-add-app"]').click();
       await expect(page.locator('[data-testid="add-app-modal-backdrop"]')).not.toBeVisible();
-      await expect(page.locator(`text=${appName}`)).toBeVisible();
+      await expect(page.locator('[data-testid="apps-list"]').getByText(appName)).toBeVisible();
       await page.evaluate(() => (window as any).alertStore?.clearAlerts?.());
     }
+
+    await expect(page.locator('[data-testid="todo-topic-filter"]')).toBeVisible();
 
     const deleteBtns = page.locator('[data-testid^="btn-delete-app-"]');
     const firstTestid = await deleteBtns.first().getAttribute('data-testid');
@@ -2733,7 +2733,22 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     const calendar = page.locator('[data-testid="todo-due-date-input-calendar"]');
     await expect(calendar).toBeVisible();
 
+    // Test direct month and year selection
+    const selectMonth = page.locator('[data-testid="todo-due-date-input-select-month"]');
+    const selectYear = page.locator('[data-testid="todo-due-date-input-select-year"]');
+    await expect(selectMonth).toBeVisible();
+    await expect(selectYear).toBeVisible();
+
+    await selectMonth.selectOption('7'); // Agustus (0-indexed)
+    await selectYear.selectOption('2028');
+    const targetDay = page.locator('[data-testid="todo-due-date-input-day-2028-08-17"]');
+    await expect(targetDay).toBeVisible();
+    await targetDay.click();
+    await expect(page.locator('[data-testid="todo-due-date-input"]')).toHaveValue('2028-08-17');
+
     // Click "Hari Ini" preset
+    await trigger.click();
+    await expect(calendar).toBeVisible();
     await page.locator('[data-testid="todo-due-date-input-btn-today"]').click();
     await expect(calendar).not.toBeVisible();
 
@@ -2745,6 +2760,65 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await expect(clearBtn).toBeVisible();
     await clearBtn.click();
     await expect(page.locator('[data-testid="todo-due-date-input"]')).toHaveValue('');
+  });
+
+  test('To-Do List: Inline edit layout aligns Priority, DatePicker, Save and Cancel, and dropdowns are clearly visible', async ({ page }) => {
+    await page.goto('/');
+
+    // 1. Tambah Todo baru untuk di-edit
+    const todoInput = page.locator('[data-testid="todo-input"]');
+    await todoInput.fill('Todo Inline Layout Test');
+    await page.locator('[data-testid="todo-add-button"]').click();
+    await expect(page.getByText('Todo Inline Layout Test')).toBeVisible();
+
+    const todoItem = page.locator('[data-testid^="todo-item-"]', { hasText: 'Todo Inline Layout Test' });
+    await expect(todoItem).toBeVisible();
+    const todoTestId = await todoItem.getAttribute('data-testid');
+    const todoId = todoTestId?.replace('todo-item-', '') || '';
+
+    const editBtn = todoItem.locator(`[data-testid="btn-edit-todo-${todoId}"]`);
+    await expect(editBtn).toBeVisible();
+    await editBtn.click();
+
+    // Verify inline edit container appears
+    const inlineEdit = page.locator(`[data-testid="inline-edit-todo-${todoId}"]`);
+    await expect(inlineEdit).toBeVisible();
+
+    // Verify Priority select, DatePicker, Save, and Cancel are all visible
+    const priorityTrigger = inlineEdit.locator(`[data-testid="select-edit-todo-priority-${todoId}-trigger"]`);
+    const datePickerContainer = inlineEdit.locator(`[data-testid="input-edit-todo-due-date-${todoId}-container"]`);
+    const saveBtn = inlineEdit.locator(`[data-testid="btn-save-edit-todo-${todoId}"]`);
+    const cancelBtn = inlineEdit.locator(`[data-testid="btn-cancel-edit-todo-${todoId}"]`);
+
+    await expect(priorityTrigger).toBeVisible();
+    await expect(datePickerContainer).toBeVisible();
+    await expect(saveBtn).toBeVisible();
+    await expect(cancelBtn).toBeVisible();
+
+    // Open Priority dropdown and verify it is visible
+    await priorityTrigger.click();
+    const priorityDropdown = inlineEdit.locator(`[data-testid="select-edit-todo-priority-${todoId}-dropdown"]`);
+    await expect(priorityDropdown).toBeVisible();
+
+    // Select Urgent
+    const urgentOption = inlineEdit.locator(`[data-testid="select-edit-todo-priority-${todoId}-option-urgent"]`);
+    await expect(urgentOption).toBeVisible();
+    await urgentOption.click();
+
+    // Open DatePicker in edit mode and verify calendar dialog is visible
+    const datePickerTrigger = inlineEdit.locator(`[data-testid="input-edit-todo-due-date-${todoId}-trigger"]`);
+    await datePickerTrigger.click();
+    const editCalendar = inlineEdit.locator(`[data-testid="input-edit-todo-due-date-${todoId}-calendar"]`);
+    await expect(editCalendar).toBeVisible();
+
+    // Select Today and save
+    await inlineEdit.locator(`[data-testid="input-edit-todo-due-date-${todoId}-btn-today"]`).click();
+    await saveBtn.click();
+
+    // Verify inline edit closes and updated badge appears
+    await expect(inlineEdit).not.toBeVisible();
+    const updatedTodoItem = page.locator(`[data-testid="todo-item-${todoId}"]`);
+    await expect(updatedTodoItem.locator(`[data-testid="todo-priority-badge-${todoId}"]`)).toContainText('URGENT');
   });
 });
 
