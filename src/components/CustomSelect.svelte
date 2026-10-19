@@ -15,6 +15,8 @@
     width = "w-full",
     dataTestId = 'custom-select',
     disabled = false,
+    size = 'normal',
+    class: customClass = '',
   }: {
     options: (SelectOption | string)[];
     value: string | string[];
@@ -25,6 +27,8 @@
     width?: string;
     dataTestId?: string;
     disabled?: boolean;
+    size?: 'normal' | 'sm';
+    class?: string;
   } = $props();
 
   let isOpen = $state(false);
@@ -162,14 +166,14 @@
 
 <div
   bind:this={containerEl}
-  class="relative {width}"
+  class="relative {width} {isOpen ? 'z-50' : ''}"
   data-testid={dataTestId}
 >
   <!-- Trigger Button -->
   <button
     type="button"
     {id}
-    class="nb-input w-full p-2.5 bg-white text-nb-black min-h-10.5 flex items-center justify-between gap-2 text-left cursor-pointer transition-all {disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+    class="nb-input w-full {size === 'sm' ? 'py-1 px-2.5 min-h-8.5 text-xs' : 'p-2.5 min-h-10.5'} bg-white text-nb-black flex items-center justify-between gap-1.5 text-left cursor-pointer transition-all {disabled ? 'opacity-50 cursor-not-allowed' : ''} {customClass}"
     onclick={toggleDropdown}
     aria-haspopup="listbox"
     aria-expanded={isOpen}
@@ -234,7 +238,7 @@
   <!-- Dropdown Menu -->
   {#if isOpen}
     <div
-      class="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white border-3 border-nb-black shadow-nb flex flex-col gap-2 p-2 max-h-64 overflow-hidden animate-in fade-in"
+      class="absolute left-0 top-full mt-1.5 z-50 bg-white border-3 border-nb-black shadow-nb flex flex-col gap-2 p-2 max-h-64 min-w-44 w-full overflow-hidden animate-in fade-in"
       role="listbox"
       aria-multiselectable={multiple}
       data-testid="{dataTestId}-dropdown"
