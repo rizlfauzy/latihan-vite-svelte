@@ -1061,6 +1061,7 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
 
     set({ todos: reordered });
     saveLocalTodos(reordered);
+    alertStore.showSuccess(i18nStore.t('todo.reorderSuccess', 'Urutan catatan berhasil diperbarui!'));
 
     const client = supabase;
     if (isSupabaseEnabled && client) {
@@ -1077,7 +1078,6 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
         console.error('[todoStore] Failed to update todo order in Supabase', err);
       }
     }
-    alertStore.showSuccess(i18nStore.t('todo.reorderSuccess', 'Urutan catatan berhasil diperbarui!'));
     return true;
   },
 
@@ -1106,6 +1106,7 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
     );
     set({ todos: updated });
     saveLocalTodos(updated);
+    alertStore.showSuccess(i18nStore.t('todo.reorderSubtaskSuccess', 'Urutan sub-task berhasil diperbarui!'));
 
     const client = supabase;
     if (isSupabaseEnabled && client) {
@@ -1122,7 +1123,6 @@ const rawStore: StoreApi<TodoStoreState> = createZustandStore<TodoStoreState>((s
         console.error('[todoStore] Failed to update subtodo order in Supabase', err);
       }
     }
-    alertStore.showSuccess(i18nStore.t('todo.reorderSubtaskSuccess', 'Urutan sub-task berhasil diperbarui!'));
     return true;
   },
 

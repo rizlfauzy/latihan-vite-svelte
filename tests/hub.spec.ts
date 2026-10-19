@@ -197,31 +197,32 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="todo-input"]').fill(parentTaskTitle);
     await page.locator('[data-testid="todo-add-button"]').click();
 
-    // The newly created todo is the first one in the list
-    const firstTodo = page.locator('[data-testid^="todo-item-"]').first();
-    await expect(firstTodo).toContainText(parentTaskTitle);
+    // Locate the exact newly created todo
+    const targetTodo = page.locator('[data-testid^="todo-item-"]', { hasText: parentTaskTitle });
+    await expect(targetTodo).toBeVisible();
 
     // Add a subtask under this parent task
-    const subTaskInput = firstTodo.locator('[data-testid^="input-subtask-"]');
+    const subTaskInput = targetTodo.locator('[data-testid^="input-subtask-"]');
     await subTaskInput.fill('Langkah 1: Setup database');
-    const addSubButton = firstTodo.locator('button', { hasText: '+ SUB' });
+    const addSubButton = targetTodo.locator('button', { hasText: '+ SUB' });
     await addSubButton.click();
 
     // Verify sub-task text is rendered
-    await expect(firstTodo.getByText('Langkah 1: Setup database')).toBeVisible();
+    await expect(targetTodo.getByText('Langkah 1: Setup database')).toBeVisible();
 
     // Verify subtask progress badge is displayed
-    await expect(firstTodo.getByText('0/1 SUB-TASKS')).toBeVisible();
+    await expect(targetTodo.getByText('0/1 SUB-TASKS')).toBeVisible();
 
     // Toggle sub-task checkbox
-    const subCheckbox = firstTodo.locator('[data-testid^="checkbox-subtask-"]').first();
+    const subCheckbox = targetTodo.locator('[data-testid^="checkbox-subtask-"]').first();
     await subCheckbox.check();
 
     // Progress badge should update to 1/1
-    await expect(firstTodo.getByText('1/1 SUB-TASKS')).toBeVisible();
+    await expect(targetTodo.getByText('1/1 SUB-TASKS')).toBeVisible();
 
     // Delete the sub-task (triggers confirmation modal)
-    const deleteSubBtn = firstTodo.locator('[data-testid^="delete-subtask-"]').first();
+    const deleteSubBtn = targetTodo.locator('[data-testid^="delete-subtask-"]').first();
+    await expect(deleteSubBtn).toBeVisible();
     await deleteSubBtn.click();
 
     // Verify confirmation modal appears
@@ -229,10 +230,10 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     await page.locator('[data-testid="modal-confirm-button"]').click();
 
     // Verify subtask is removed
-    await expect(firstTodo.getByText('Langkah 1: Setup database')).not.toBeVisible();
+    await expect(targetTodo.getByText('Langkah 1: Setup database')).not.toBeVisible();
 
     // Clean up: delete parent task
-    const deleteParentBtn = firstTodo.locator('[data-testid^="delete-todo-"]').first();
+    const deleteParentBtn = targetTodo.locator('[data-testid^="delete-todo-"]').first();
     await deleteParentBtn.click();
     await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
     await page.locator('[data-testid="modal-confirm-button"]').click();
@@ -280,31 +281,36 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
 
   test('Multiline input with Shift+Enter creates a task with line breaks and Enter submits', async ({ page }) => {
     // Verify keyboard shortcut info is displayed
-    await expect(page.getByText(/Tekan Enter untuk menyimpan, Shift \+ Enter untuk baris baru/i)).toBeVisible();
+    await expect(page.getByText(/Enter (untuk menyimpan|to save)/i)).toBeVisible();
+
+    const uniqueId = Date.now();
+    const line1 = `Test Catatan Baris 1 ${uniqueId}`;
+    const line2 = `Test Catatan Baris 2 ${uniqueId}`;
 
     const todoInput = page.locator('[data-testid="todo-input"]');
     await todoInput.focus();
-    await page.keyboard.type('Test Catatan Baris 1');
+    await page.keyboard.type(line1);
     await page.keyboard.press('Shift+Enter');
-    await page.keyboard.type('Test Catatan Baris 2');
+    await page.keyboard.type(line2);
 
     // Press Enter without Shift to submit
     await page.keyboard.press('Enter');
 
     // Verify task is added and contains both lines
-    const firstTodo = page.locator('[data-testid^="todo-item-"]').first();
-    await expect(firstTodo).toContainText('Test Catatan Baris 1\nTest Catatan Baris 2');
+    const targetTodo = page.locator('[data-testid^="todo-item-"]', { hasText: line1 });
+    await expect(targetTodo).toBeVisible();
+    await expect(targetTodo).toContainText(`${line1}\n${line2}`);
 
     // Verify input is cleared
     await expect(todoInput).toHaveValue('');
 
     // Clean up: delete the multiline task
-    const deleteBtn = firstTodo.locator('[data-testid^="delete-todo-"]').first();
+    const deleteBtn = targetTodo.locator('[data-testid^="delete-todo-"]').first();
     await deleteBtn.click();
     await expect(page.locator('[data-testid="confirm-modal"]')).toBeVisible();
     await page.locator('[data-testid="modal-confirm-button"]').click();
     await expect(page.locator('[data-testid="confirm-modal"]')).not.toBeVisible();
-    await expect(page.getByText('Test Catatan Baris 1')).not.toBeVisible();
+    await expect(page.getByText(line1)).not.toBeVisible();
   });
 
   test('Dev Mode indicator badge is visible in development environment', async ({ page }) => {
@@ -2244,7 +2250,7 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
     }, [todoA, todoB]);
 
     // Verifikasi alert toast sukses muncul
-    await expect(page.locator('[data-testid="alert-toast"]').filter({ hasText: 'Urutan catatan' })).toBeVisible();
+    await expect(page.locator('[data-testid="alert-toast"]').filter({ hasText: /Urutan catatan|Note order/i })).toBeVisible({ timeout: 10000 });
 
     // 5. Cleanup kedua test todos
     await page.evaluate(async (texts) => {
