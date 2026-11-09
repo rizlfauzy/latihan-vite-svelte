@@ -1174,26 +1174,33 @@
                             <button type="button" class="nb-btn bg-gray-200 text-black text-xs px-2 py-1 font-bold" onclick={cancelEditSubTask} data-testid={`btn-cancel-edit-subtask-${sub.id}`}> ✕ </button>
                           </div>
                         {:else}
-                          <div class="flex items-center gap-1.5 grow">
-                            <button
-                              type="button"
-                              class="cursor-grab active:cursor-grabbing p-0.5 text-gray-500 hover:text-black transition-colors shrink-0"
-                              title={t("todo.dragSubtaskTooltip", "Tekan lama sub-task atau drag handle ini untuk mengubah posisi atau memindahkan ke catatan lain")}
-                              onpointerdown={() => (isSubDragReady[sub.id] = true)}
-                              data-testid={`drag-handle-subtask-${sub.id}`}
-                              aria-label={`Drag to rearrange subtask ${sub.text}`}
-                            >
-                              <GripVertical size={14} />
-                            </button>
+                          <div class="flex items-start gap-2 grow flex-col sm:flex-row">
+                            <!-- Dragable & Checkbox -->
+                            <div class="flex gap-2.5">
+                              <button
+                                type="button"
+                                class="cursor-grab active:cursor-grabbing p-0.5 text-gray-500 hover:text-black transition-colors shrink-0"
+                                title={t("todo.dragSubtaskTooltip", "Tekan lama sub-task atau drag handle ini untuk mengubah posisi atau memindahkan ke catatan lain")}
+                                onpointerdown={() => (isSubDragReady[sub.id] = true)}
+                                data-testid={`drag-handle-subtask-${sub.id}`}
+                                aria-label={`Drag to rearrange subtask ${sub.text}`}
+                              >
+                                <GripVertical size={14} />
+                              </button>
 
-                            <label class="flex items-center gap-2.5 cursor-pointer grow select-none">
-                              <input
-                                type="checkbox"
-                                checked={sub.done}
-                                onchange={() => toggleSubTask(todo.id, sub.id)}
-                                class="w-4.5 h-4.5 border-2 border-nb-black rounded bg-white cursor-pointer accent-nb-green shrink-0"
-                                data-testid={`checkbox-subtask-${sub.id}`}
-                              />
+                              <!-- Checkbox -->
+                              <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={sub.done}
+                                  onchange={() => toggleSubTask(todo.id, sub.id)}
+                                  class="w-4.5 h-4.5 border-2 border-nb-black rounded bg-white cursor-pointer accent-nb-green shrink-0"
+                                  data-testid={`checkbox-subtask-${sub.id}`}
+                                />
+                              </label>
+                            </div>
+
+                            <div class="flex items-center gap-2.5 cursor-pointer grow select-none">
                               <span
                                 role="button"
                                 tabindex="0"
@@ -1205,32 +1212,35 @@
                               >
                                 {sub.text}
                               </span>
-                            </label>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="flex gap-3">
+                              <!-- Edit Sub-task Button -->
+                              <button
+                                type="button"
+                                class="w-6 h-6 shrink-0 border border-nb-black bg-white hover:bg-nb-yellow text-black font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
+                                onclick={() => startEditSubTask(todo.id, sub)}
+                                title={t("todo.edit", "Edit")}
+                                aria-label={t("todo.edit", "Edit")}
+                                data-testid={`btn-edit-subtask-${sub.id}`}
+                              >
+                                ✏️
+                              </button>
+                              <!-- Delete Sub-task Button -->
+                              <button
+                                type="button"
+                                class="w-6 h-6 shrink-0 border border-nb-black bg-gray-100 hover:bg-nb-red hover:text-white text-gray-600 font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
+                                onclick={() => promptDeleteSubTask(todo.id, sub)}
+                                title={t("todo.deleteSubtask")}
+                                aria-label={t("todo.deleteSubtask")}
+                                data-testid={`delete-subtask-${sub.id}`}
+                              >
+                                ✕
+                              </button>
+                            </div>
                           </div>
-
-                          <!-- Edit Sub-task Button -->
-                          <button
-                            type="button"
-                            class="w-6 h-6 shrink-0 border border-nb-black bg-white hover:bg-nb-yellow text-black font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
-                            onclick={() => startEditSubTask(todo.id, sub)}
-                            title={t("todo.edit", "Edit")}
-                            aria-label={t("todo.edit", "Edit")}
-                            data-testid={`btn-edit-subtask-${sub.id}`}
-                          >
-                            ✏️
-                          </button>
-
-                          <button
-                            type="button"
-                            class="w-6 h-6 shrink-0 border border-nb-black bg-gray-100 hover:bg-nb-red hover:text-white text-gray-600 font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
-                            onclick={() => promptDeleteSubTask(todo.id, sub)}
-                            title={t("todo.deleteSubtask")}
-                            aria-label={t("todo.deleteSubtask")}
-                            data-testid={`delete-subtask-${sub.id}`}
-                          >
-                            ✕
-                          </button>
-                        {/if}
+                          {/if}
                       </li>
                     {/each}
                   </ul>
