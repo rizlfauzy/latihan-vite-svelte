@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AppIcon from "./AppIcon.svelte";
+
   export interface SelectOption {
     label: string;
     value: string;
@@ -9,14 +11,14 @@
     options = [],
     value = $bindable(),
     multiple = false,
-    placeholder = 'Pilih opsi...',
-    searchPlaceholder = 'Cari opsi...',
+    placeholder = "Pilih opsi...",
+    searchPlaceholder = "Cari opsi...",
     id,
     width = "w-full",
-    dataTestId = 'custom-select',
+    dataTestId = "custom-select",
     disabled = false,
-    size = 'normal',
-    class: customClass = '',
+    size = "normal",
+    class: customClass = "",
   }: {
     options: (SelectOption | string)[];
     value: string | string[];
@@ -27,12 +29,12 @@
     width?: string;
     dataTestId?: string;
     disabled?: boolean;
-    size?: 'normal' | 'sm';
+    size?: "normal" | "sm";
     class?: string;
   } = $props();
 
   let isOpen = $state(false);
-  let searchQuery = $state('');
+  let searchQuery = $state("");
   let highlightedIndex = $state(0);
   let containerEl = $state<HTMLElement | null>(null);
   let searchInputEl = $state<HTMLInputElement | null>(null);
@@ -43,39 +45,29 @@
     highlightedIndex = 0;
   });
 
-  let normalizedOptions = $derived<SelectOption[]>(
-    options.map((opt) =>
-      typeof opt === 'string' ? { label: opt, value: opt } : opt
-    )
-  );
+  let normalizedOptions = $derived<SelectOption[]>(options.map((opt) => (typeof opt === "string" ? { label: opt, value: opt } : opt)));
 
   let filteredOptions = $derived<SelectOption[]>(
     normalizedOptions.filter((opt) => {
       const q = searchQuery.trim().toLowerCase();
       if (!q) return true;
-      return (
-        opt.label.toLowerCase().includes(q) ||
-        opt.value.toLowerCase().includes(q)
-      );
-    })
+      return opt.label.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q);
+    }),
   );
 
-  let selectedValues = $derived<string[]>(
-    multiple
-      ? Array.isArray(value)
-        ? value
-        : []
-      : typeof value === 'string' && value
-        ? [value]
-        : []
-  );
+  let selectedValues = $derived<string[]>(multiple ? (Array.isArray(value) ? value : []) : typeof value === "string" && value ? [value] : []);
 
   function isSelected(val: string): boolean {
     return selectedValues.includes(val);
   }
 
+  function getOption(val: string): SelectOption {
+    return normalizedOptions.find((o) => o.value === val) ?? { label: val, value: val };
+  }
+
   function getOptionLabel(val: string): string {
     const found = normalizedOptions.find((o) => o.value === val);
+    console.log($state.snapshot(normalizedOptions));
     return found ? found.label : val;
   }
 
@@ -83,7 +75,7 @@
     if (disabled) return;
     isOpen = !isOpen;
     if (isOpen) {
-      searchQuery = '';
+      searchQuery = "";
       highlightedIndex = 0;
       setTimeout(() => {
         searchInputEl?.focus();
@@ -101,41 +93,41 @@
         current.push(val);
       }
       value = current;
-      searchQuery = '';
+      searchQuery = "";
       if (closeAfter) {
         isOpen = false;
       }
     } else {
       value = val;
       isOpen = false;
-      searchQuery = '';
+      searchQuery = "";
     }
   }
 
   function handleSearchKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' || e.key === 'Tab') {
+    if (e.key === "Enter" || e.key === "Tab") {
       if (filteredOptions.length > 0) {
         e.preventDefault();
         const targetOption = filteredOptions[highlightedIndex] || filteredOptions[0];
-        const isTab = e.key === 'Tab';
+        const isTab = e.key === "Tab";
         handleSelect(targetOption.value, isTab);
         if (!multiple || isTab) {
           containerEl?.querySelector<HTMLButtonElement>('button[data-testid$="-trigger"]')?.focus();
         }
-      } else if (e.key === 'Enter') {
+      } else if (e.key === "Enter") {
         e.preventDefault();
       }
-    } else if (e.key === 'ArrowDown') {
+    } else if (e.key === "ArrowDown") {
       if (filteredOptions.length > 0) {
         e.preventDefault();
         highlightedIndex = (highlightedIndex + 1) % filteredOptions.length;
       }
-    } else if (e.key === 'ArrowUp') {
+    } else if (e.key === "ArrowUp") {
       if (filteredOptions.length > 0) {
         e.preventDefault();
         highlightedIndex = (highlightedIndex - 1 + filteredOptions.length) % filteredOptions.length;
       }
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       e.preventDefault();
       isOpen = false;
       containerEl?.querySelector<HTMLButtonElement>('button[data-testid$="-trigger"]')?.focus();
@@ -156,7 +148,7 @@
   }
 
   function handleWindowKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && isOpen) {
+    if (e.key === "Escape" && isOpen) {
       isOpen = false;
     }
   }
@@ -164,16 +156,14 @@
 
 <svelte:window onclick={handleWindowClick} onkeydown={handleWindowKeydown} />
 
-<div
-  bind:this={containerEl}
-  class="relative {width} {isOpen ? 'z-50' : ''}"
-  data-testid={dataTestId}
->
+<div bind:this={containerEl} class="relative {width} {isOpen ? 'z-50' : ''}" data-testid={dataTestId}>
   <!-- Trigger Button -->
   <button
     type="button"
     {id}
-    class="nb-input w-full {size === 'sm' ? 'py-1 px-2.5 min-h-8.5 text-xs' : 'p-2.5 min-h-10.5'} bg-white text-nb-black flex items-center justify-between gap-1.5 text-left cursor-pointer transition-all {disabled ? 'opacity-50 cursor-not-allowed' : ''} {customClass}"
+    class="nb-input w-full {size === 'sm' ? 'py-1 px-2.5 min-h-8.5 text-xs' : 'p-2.5 min-h-10.5'} bg-white text-nb-black flex items-center justify-between gap-1.5 text-left cursor-pointer transition-all {disabled
+      ? 'opacity-50 cursor-not-allowed'
+      : ''} {customClass}"
     onclick={toggleDropdown}
     aria-haspopup="listbox"
     aria-expanded={isOpen}
@@ -185,18 +175,20 @@
       {#if multiple}
         {#if selectedValues.length > 0}
           {#each selectedValues as v (v)}
-            <span
-              class="inline-flex items-center gap-1 bg-nb-yellow px-2 py-0.5 border-2 border-nb-black text-xs font-black text-black shadow-nb-xs"
-              data-testid="{dataTestId}-tag-{v.toLowerCase().replace(/\s+/g, '-')}"
-            >
-              <span>{getOptionLabel(v)}</span>
+            {@const opt = getOption(v)}
+            <span class="inline-flex items-center gap-1 bg-nb-yellow px-2 py-0.5 border-2 border-nb-black text-xs font-black text-black shadow-nb-xs" data-testid="{dataTestId}-tag-{v.toLowerCase().replace(/\s+/g, '-')}">
+              <span class="inline-flex items-center gap-1">
+                {#if opt.icon}<AppIcon name={opt.icon} size={16} />{/if}
+                <span>{opt.label}</span>
+              </span>
+
               <span
                 role="button"
                 tabindex="0"
                 class="hover:text-red-600 font-extrabold cursor-pointer ml-0.5"
                 onclick={(e) => removeTag(v, e)}
                 onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     removeTag(v, e as any);
                   }
@@ -215,8 +207,10 @@
         {/if}
       {:else}
         {#if selectedValues.length > 0}
-          <span class="font-bold text-xs text-nb-black truncate">
-            {getOptionLabel(selectedValues[0])}
+          {@const opt = getOption(selectedValues[0])}
+          <span class="font-bold text-xs text-nb-black truncate flex items-center gap-1.5">
+            {#if opt.icon}<AppIcon name={opt.icon} size={16} />{/if}
+            {opt.label}
           </span>
         {:else}
           <span class="text-gray-400 font-semibold text-xs select-none">
@@ -227,12 +221,7 @@
     </div>
 
     <!-- Arrow icon -->
-    <span
-      class="text-xs font-black transition-transform duration-150 select-none {isOpen ? 'rotate-180' : ''}"
-      data-testid="{dataTestId}-arrow"
-    >
-      ▼
-    </span>
+    <span class="text-xs font-black transition-transform duration-150 select-none {isOpen ? 'rotate-180' : ''}" data-testid="{dataTestId}-arrow"> ▼ </span>
   </button>
 
   <!-- Dropdown Menu -->
@@ -245,9 +234,7 @@
     >
       <!-- Search Box inside dropdown -->
       <div class="relative">
-        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs select-none text-gray-500 z-10 pointer-events-none">
-          🔍
-        </span>
+        <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs select-none text-gray-500 z-10 pointer-events-none"> 🔍 </span>
         <input
           bind:this={searchInputEl}
           type="text"
@@ -261,7 +248,7 @@
           <button
             type="button"
             class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gray-200 hover:bg-nb-pink text-[10px] font-black flex items-center justify-center cursor-pointer text-black"
-            onclick={() => (searchQuery = '')}
+            onclick={() => (searchQuery = "")}
             title="Reset"
             data-testid="{dataTestId}-search-clear"
           >
@@ -271,17 +258,9 @@
       </div>
 
       <!-- Options List -->
-      <div
-        class="overflow-y-auto flex flex-col gap-1 max-h-44 pr-1 text-black"
-        data-testid="{dataTestId}-options-list"
-      >
+      <div class="overflow-y-auto flex flex-col gap-1 max-h-44 pr-1 text-black" data-testid="{dataTestId}-options-list">
         {#if filteredOptions.length === 0}
-          <div
-            class="p-3 text-center text-xs font-bold text-gray-500 italic"
-            data-testid="{dataTestId}-empty"
-          >
-            Tidak ada opsi yang cocok
-          </div>
+          <div class="p-3 text-center text-xs font-bold text-gray-500 italic" data-testid="{dataTestId}-empty">Tidak ada opsi yang cocok</div>
         {:else}
           {#each filteredOptions as opt, idx (opt.value)}
             {@const selected = isSelected(opt.value)}
@@ -290,11 +269,15 @@
               role="option"
               aria-selected={selected}
               tabindex="0"
-              class="p-2 text-xs font-bold flex items-center justify-between cursor-pointer border-2 transition-all {selected ? 'bg-nb-yellow border-nb-black shadow-nb-xs font-black' : isHighlighted ? 'bg-gray-100 border-nb-black text-nb-black' : 'border-transparent hover:bg-gray-100 hover:border-gray-300 text-nb-black'}"
+              class="p-2 text-xs font-bold flex items-center justify-between cursor-pointer border-2 transition-all {selected
+                ? 'bg-nb-yellow border-nb-black shadow-nb-xs font-black'
+                : isHighlighted
+                  ? 'bg-gray-100 border-nb-black text-nb-black'
+                  : 'border-transparent hover:bg-gray-100 hover:border-gray-300 text-nb-black'}"
               onclick={() => handleSelect(opt.value)}
               onmouseenter={() => (highlightedIndex = idx)}
               onkeydown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   handleSelect(opt.value);
                 }
@@ -303,7 +286,8 @@
             >
               <div class="flex items-center gap-2">
                 {#if opt.icon}
-                  <span>{opt.icon}</span>
+                  <!-- <span>{opt.icon}</span> -->
+                  <AppIcon name={opt.icon} size={24} />
                 {/if}
                 <span>{opt.label}</span>
               </div>
