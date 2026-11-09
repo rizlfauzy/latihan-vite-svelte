@@ -986,7 +986,7 @@
 
                 <!-- Text -->
                 <div class="flex items-center gap-3 cursor-pointer grow select-none flex-col sm:flex-row me-auto">
-                  <div class="flex flex-col sm:items-start gap-2 me-auto">
+                  <div class="flex sm:flex-col flex-row sm:items-start items-center flex-wrap gap-2 me-auto">
                     {#if todo.appId}
                       {@const linkedApp = apps.find((a) => a.id === todo.appId)}
                       {#if linkedApp}
@@ -1177,6 +1177,7 @@
                           <div class="flex items-start gap-2 grow flex-col sm:flex-row">
                             <!-- Dragable & Checkbox -->
                             <div class="flex gap-2.5">
+                            <!-- Dragable -->
                               <button
                                 type="button"
                                 class="cursor-grab active:cursor-grabbing p-0.5 text-gray-500 hover:text-black transition-colors shrink-0"
