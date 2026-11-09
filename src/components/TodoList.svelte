@@ -1,59 +1,55 @@
 <script lang="ts">
-  import ConfirmModal from './ConfirmModal.svelte';
-  import SkeletonTodo from './SkeletonTodo.svelte';
-  import ImageUploadModal from './ImageUploadModal.svelte';
-  import { alertStore } from '@/stores/alertStore';
-  import { i18nStore } from '@/stores/i18nStore';
-  import { authStore } from '@/stores/authStore';
-  import { appStore } from '@/stores/appStore';
-  import { todoStore, type Todo, type SubTask, type TodoPriority } from '@/stores/todoStore';
+  import ConfirmModal from "./ConfirmModal.svelte";
+  import SkeletonTodo from "./SkeletonTodo.svelte";
+  import ImageUploadModal from "./ImageUploadModal.svelte";
+  import { alertStore } from "@/stores/alertStore";
+  import { i18nStore } from "@/stores/i18nStore";
+  import { authStore } from "@/stores/authStore";
+  import { appStore } from "@/stores/appStore";
+  import { todoStore, type Todo, type SubTask, type TodoPriority } from "@/stores/todoStore";
   import { defaultStateStore } from "@/stores/defaultStateStore";
-  import CustomSelect from './CustomSelect.svelte';
-  import DatePicker from './DatePicker.svelte';
-  import { Warning } from '@/exceptions/CustomError';
-  import { GripVertical } from '@lucide/svelte';
+  import CustomSelect from "./CustomSelect.svelte";
+  import DatePicker from "./DatePicker.svelte";
+  import { Warning } from "@/exceptions/CustomError";
+  import { GripVertical } from "@lucide/svelte";
 
   const t = $derived((key: string, defaultValue?: string): string => $i18nStore.t(key, defaultValue));
   let canManage = $derived($authStore.hasDebugAccess);
   const priority = $derived($defaultStateStore?.priority ?? []);
 
-  type DeleteTarget =
-    | { type: 'todo'; id: string; text: string }
-    | { type: 'subtask'; todoId: string; subTaskId: string; text: string }
-    | { type: 'all'; text: string }
-    | null;
+  type DeleteTarget = { type: "todo"; id: string; text: string } | { type: "subtask"; todoId: string; subTaskId: string; text: string } | { type: "all"; text: string } | null;
 
-  let newTodoText = $state('');
-  let newTodoPriority = $state<TodoPriority>('normal');
-  let newTodoDueDate = $state<string>('');
+  let newTodoText = $state("");
+  let newTodoPriority = $state<TodoPriority>("normal");
+  let newTodoDueDate = $state<string>("");
   let newTodoImageUrls = $state<string[]>([]);
   let newTodoImageFiles = $state<File[]>([]);
   const newTodoImageUrl = $derived(newTodoImageUrls[0] || null);
   let activeImageTodo = $state<Todo | null>(null);
   let isImageModalOpen = $state(false);
-  let imageModalMode = $state<'new' | 'existing'>('new');
-  let searchQuery = $state('');
-  let filter = $state<'all' | 'active' | 'done'>('all');
-  let topicFilter = $state<string>('all');
-  let selectedAppId = $state<string>('');
+  let imageModalMode = $state<"new" | "existing">("new");
+  let searchQuery = $state("");
+  let filter = $state<"all" | "active" | "done">("all");
+  let topicFilter = $state<string>("all");
+  let selectedAppId = $state<string>("");
 
   // Inline edit state for Todo
   let editingTodoId = $state<string | null>(null);
-  let editingTodoText = $state<string>('');
-  let editingTodoAppId = $state<string>('');
-  let editingTodoPriority = $state<TodoPriority>('normal');
-  let editingTodoDueDate = $state<string>('');
+  let editingTodoText = $state<string>("");
+  let editingTodoAppId = $state<string>("");
+  let editingTodoPriority = $state<TodoPriority>("normal");
+  let editingTodoDueDate = $state<string>("");
 
   // Inline edit state for SubTask
   let editingSubTaskId = $state<string | null>(null);
   let editingSubTaskParentId = $state<string | null>(null);
-  let editingSubTaskText = $state<string>('');
+  let editingSubTaskText = $state<string>("");
 
   // Track expanded state for each todo's sub-tasks
   let expandedTodoIds = $state<Record<string, boolean>>({
-    '1': true,
-    '2': true,
-    '3': true
+    "1": true,
+    "2": true,
+    "3": true,
   });
 
   // Track input text for new sub-task per todo
@@ -64,11 +60,11 @@
 
   const todos = $derived(
     [...$todoStore.todos].sort((a, b) => {
-      const ordA = typeof a.orderIndex === 'number' ? a.orderIndex : 0;
-      const ordB = typeof b.orderIndex === 'number' ? b.orderIndex : 0;
+      const ordA = typeof a.orderIndex === "number" ? a.orderIndex : 0;
+      const ordB = typeof b.orderIndex === "number" ? b.orderIndex : 0;
       if (ordA !== ordB) return ordA - ordB;
       return b.createdAt - a.createdAt;
-    })
+    }),
   );
   const isLoading = $derived($todoStore.isLoading);
   const apps = $derived($appStore.apps);
@@ -80,11 +76,11 @@
     }
     // If selectedAppId is no longer in apps, fallback to first app
     if (selectedAppId && !apps.some((a) => a.id === selectedAppId)) {
-      selectedAppId = apps[0]?.id || '';
+      selectedAppId = apps[0]?.id || "";
     }
     // If topicFilter is no longer in apps, reset to all
-    if (topicFilter !== 'all' && !apps.some((a) => a.id === topicFilter)) {
-      topicFilter = 'all';
+    if (topicFilter !== "all" && !apps.some((a) => a.id === topicFilter)) {
+      topicFilter = "all";
     }
   });
 
@@ -97,15 +93,15 @@
     const targetDone = !allTodosDone;
     await todoStore.checkAllTodos(targetDone);
     if (targetDone) {
-      alertStore.showSuccess(t('todo.checkAllDoneMsg'));
+      alertStore.showSuccess(t("todo.checkAllDoneMsg"));
     }
   }
 
   const filteredTodos = $derived(
     todos.filter((t) => {
-      if (filter === 'active' && t.done) return false;
-      if (filter === 'done' && !t.done) return false;
-      if (topicFilter !== 'all' && t.appId !== topicFilter) return false;
+      if (filter === "active" && t.done) return false;
+      if (filter === "done" && !t.done) return false;
+      if (topicFilter !== "all" && t.appId !== topicFilter) return false;
 
       if (searchQuery.trim().length > 0) {
         const query = searchQuery.trim().toLowerCase();
@@ -114,7 +110,7 @@
 
         const linkedApp = apps.find((a) => a.id === t.appId);
         const matchesAppName = linkedApp ? linkedApp.name.toLowerCase().includes(query) : false;
-        const matchesCategory = linkedApp ? (linkedApp.category || '').toLowerCase().includes(query) : false;
+        const matchesCategory = linkedApp ? (linkedApp.category || "").toLowerCase().includes(query) : false;
 
         if (!matchesText && !matchesSubtasks && !matchesAppName && !matchesCategory) {
           return false;
@@ -122,27 +118,27 @@
       }
 
       return true;
-    })
+    }),
   );
 
   function openNewTodoImageModal() {
-    imageModalMode = 'new';
+    imageModalMode = "new";
     isImageModalOpen = true;
   }
 
   function openTodoImageModal(todo: Todo) {
-    imageModalMode = 'existing';
+    imageModalMode = "existing";
     activeImageTodo = todo;
     isImageModalOpen = true;
   }
 
   async function handleImageModalSave(urls: string[], files: File[]) {
-    if (imageModalMode === 'new') {
+    if (imageModalMode === "new") {
       newTodoImageUrls = urls;
       newTodoImageFiles = files;
-    } else if (imageModalMode === 'existing' && activeImageTodo) {
+    } else if (imageModalMode === "existing" && activeImageTodo) {
       try {
-        let finalUrls = urls.filter((u) => !u.startsWith('blob:'));
+        let finalUrls = urls.filter((u) => !u.startsWith("blob:"));
         if (files.length > 0) {
           const uploadedUrls = await todoStore.uploadTodoImages(files);
           finalUrls = [...finalUrls, ...uploadedUrls];
@@ -156,10 +152,10 @@
   }
 
   async function handleImageModalRemove() {
-    if (imageModalMode === 'new') {
+    if (imageModalMode === "new") {
       newTodoImageUrls = [];
       newTodoImageFiles = [];
-    } else if (imageModalMode === 'existing' && activeImageTodo) {
+    } else if (imageModalMode === "existing" && activeImageTodo) {
       try {
         await todoStore.updateTodoImages(activeImageTodo.id, []);
       } catch (err) {
@@ -185,30 +181,24 @@
   function startEditTodo(todo: Todo) {
     editingTodoId = todo.id;
     editingTodoText = todo.text;
-    editingTodoAppId = todo.appId || '';
-    editingTodoPriority = todo.priority || 'normal';
-    editingTodoDueDate = todo.dueDate || '';
+    editingTodoAppId = todo.appId || "";
+    editingTodoPriority = todo.priority || "normal";
+    editingTodoDueDate = todo.dueDate || "";
   }
 
   function cancelEditTodo() {
     editingTodoId = null;
-    editingTodoText = '';
-    editingTodoAppId = '';
-    editingTodoPriority = 'normal';
-    editingTodoDueDate = '';
+    editingTodoText = "";
+    editingTodoAppId = "";
+    editingTodoPriority = "normal";
+    editingTodoDueDate = "";
   }
 
   async function saveEditTodo(todoId: string) {
     const trimmed = editingTodoText.trim();
     try {
-      if (!trimmed) throw new Warning(t('todo.textTodoRequired', "Catatan Tidak Boleh Kosong"));
-      await todoStore.editTodoText(
-        todoId,
-        trimmed,
-        editingTodoAppId || null,
-        editingTodoPriority,
-        editingTodoDueDate || null
-      );
+      if (!trimmed) throw new Warning(t("todo.textTodoRequired", "Catatan Tidak Boleh Kosong"));
+      await todoStore.editTodoText(todoId, trimmed, editingTodoAppId || null, editingTodoPriority, editingTodoDueDate || null);
       cancelEditTodo();
     } catch (e) {
       alertStore.throwAlert(e as Error);
@@ -224,13 +214,13 @@
   function cancelEditSubTask() {
     editingSubTaskId = null;
     editingSubTaskParentId = null;
-    editingSubTaskText = '';
+    editingSubTaskText = "";
   }
 
   async function saveEditSubTask(todoId: string, subTaskId: string) {
     const trimmed = editingSubTaskText.trim();
     try {
-      if (!trimmed) throw new Warning(t('todo.textSubTaskRequired', "Isi sub task tidak boleh kosong !!!"));
+      if (!trimmed) throw new Warning(t("todo.textSubTaskRequired", "Isi sub task tidak boleh kosong !!!"));
       await todoStore.editSubTaskText(todoId, subTaskId, trimmed);
       cancelEditSubTask();
     } catch (e) {
@@ -242,9 +232,9 @@
     if (e) e.preventDefault();
     const trimmed = newTodoText.trim();
     try {
-      if (!trimmed) throw new Warning(t('todo.textTodoRequired', "Catatan Tidak Boleh Kosong"));
+      if (!trimmed) throw new Warning(t("todo.textTodoRequired", "Catatan Tidak Boleh Kosong"));
 
-      let finalUrls = newTodoImageUrls.filter((u) => !u.startsWith('blob:'));
+      let finalUrls = newTodoImageUrls.filter((u) => !u.startsWith("blob:"));
       if (newTodoImageFiles.length > 0) {
         const uploadedUrls = await todoStore.uploadTodoImages(newTodoImageFiles);
         finalUrls = [...finalUrls, ...uploadedUrls];
@@ -253,9 +243,9 @@
       const priority = newTodoPriority;
       const dueDate = newTodoDueDate.trim() || null;
 
-      newTodoText = '';
-      newTodoPriority = 'normal';
-      newTodoDueDate = '';
+      newTodoText = "";
+      newTodoPriority = "normal";
+      newTodoDueDate = "";
       newTodoImageUrls = [];
       newTodoImageFiles = [];
       const chosenAppId = selectedAppId || (apps.length > 0 ? apps[0].id : null);
@@ -267,7 +257,7 @@
   }
 
   function handleTodoKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       addTodo();
     }
@@ -279,9 +269,9 @@
 
   function promptDeleteTodo(todo: Todo) {
     deleteTarget = {
-      type: 'todo',
+      type: "todo",
       id: todo.id,
-      text: todo.text
+      text: todo.text,
     };
   }
 
@@ -291,27 +281,27 @@
 
   function promptDeleteSubTask(todoId: string, sub: SubTask) {
     deleteTarget = {
-      type: 'subtask',
+      type: "subtask",
       todoId,
       subTaskId: sub.id,
-      text: sub.text
+      text: sub.text,
     };
   }
 
-  function promptDeleteAllCompleted(){
+  function promptDeleteAllCompleted() {
     deleteTarget = {
-      type: 'all',
-      text: 'Semua Catatan yang Selesai'
-    }
+      type: "all",
+      text: "Semua Catatan yang Selesai",
+    };
   }
 
   function handleConfirmDelete() {
     if (!deleteTarget) return;
-    if (deleteTarget.type === 'todo') {
+    if (deleteTarget.type === "todo") {
       deleteTodo(deleteTarget.id);
-    } else if (deleteTarget.type === 'subtask') {
+    } else if (deleteTarget.type === "subtask") {
       deleteSubTask(deleteTarget.todoId, deleteTarget.subTaskId);
-    } else if (deleteTarget.type === 'all') {
+    } else if (deleteTarget.type === "all") {
       clearCompleted();
     }
     deleteTarget = null;
@@ -331,11 +321,11 @@
 
   function addSubTask(todoId: string, e?: Event) {
     if (e) e.preventDefault();
-    const inputVal = (subTaskInputs[todoId] || '').trim();
+    const inputVal = (subTaskInputs[todoId] || "").trim();
     try {
-      if (!inputVal) throw new Warning(t('todo.textSubTaskRequired', "Isi sub task tidak boleh kosong !!!"));
+      if (!inputVal) throw new Warning(t("todo.textSubTaskRequired", "Isi sub task tidak boleh kosong !!!"));
       todoStore.addSubTask(todoId, inputVal);
-      subTaskInputs[todoId] = '';
+      subTaskInputs[todoId] = "";
       expandedTodoIds[todoId] = true;
     } catch (e) {
       alertStore.throwAlert(e as Error);
@@ -343,7 +333,7 @@
   }
 
   function handleSubTaskKeydown(todoId: string, e: KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       addSubTask(todoId);
     }
@@ -364,7 +354,7 @@
   let todoLongPressTimer: any = null;
 
   function handleTodoPointerDown(id: string, e: PointerEvent) {
-    if ((e.target as HTMLElement).closest('button, input, textarea, a, label')) return;
+    if ((e.target as HTMLElement).closest("button, input, textarea, a, label")) return;
     todoLongPressTimer = setTimeout(() => {
       isTodoDragReady[id] = true;
     }, 150);
@@ -380,8 +370,8 @@
   function handleTodoDragStart(todo: Todo, e: DragEvent) {
     draggedTodo = todo;
     if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('application/json', JSON.stringify({ type: 'todo', id: todo.id }));
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("application/json", JSON.stringify({ type: "todo", id: todo.id }));
     }
   }
 
@@ -476,7 +466,7 @@
   let subLongPressTimer: any = null;
 
   function handleSubPointerDown(id: string, e: PointerEvent) {
-    if ((e.target as HTMLElement).closest('button, input, textarea, a, label')) return;
+    if ((e.target as HTMLElement).closest("button, input, textarea, a, label")) return;
     subLongPressTimer = setTimeout(() => {
       isSubDragReady[id] = true;
     }, 150);
@@ -493,8 +483,8 @@
     e.stopPropagation();
     draggedSubTask = { sub, sourceTodoId };
     if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('application/json', JSON.stringify({ type: 'subtask', id: sub.id, sourceTodoId }));
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("application/json", JSON.stringify({ type: "subtask", id: sub.id, sourceTodoId }));
     }
   }
 
@@ -560,7 +550,10 @@
 
       subList.splice(sourceIdx, 1);
       subList.splice(targetIdx, 0, source.sub);
-      await todoStore.reorderSubTasks(targetTodoId, subList.map((s) => s.id));
+      await todoStore.reorderSubTasks(
+        targetTodoId,
+        subList.map((s) => s.id),
+      );
     } else {
       const targetTodo = todos.find((t) => t.id === targetTodoId);
       const targetSubs = targetTodo?.subTasks || [];
@@ -645,16 +638,18 @@
   <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
     <div class="inline-flex items-center gap-2.5 bg-nb-yellow px-4.5 py-2 border-3 border-nb-black shadow-nb rounded-md text-lg md:text-xl font-extrabold uppercase tracking-wide text-black">
       <span>📝</span>
-      <span>{t('todo.title')}</span>
+      <span>{t("todo.title")}</span>
     </div>
 
     <div class="flex gap-2">
       <span class="nb-badge bg-nb-yellow text-black">
-        {remainingCount} {t('todo.pending')}
+        {remainingCount}
+        {t("todo.pending")}
       </span>
       {#if completedCount > 0}
         <span class="nb-badge bg-nb-green">
-          {completedCount} {t('todo.completed')}
+          {completedCount}
+          {t("todo.completed")}
         </span>
       {/if}
     </div>
@@ -669,16 +664,16 @@
           <div class="flex items-center gap-1.5 grow max-w-xs">
             <label for="todo-app-topic-select" class="font-extrabold text-nb-black flex items-center gap-1.5 select-none shrink-0">
               <span>🎯</span>
-              <span>{t('todo.appTopic')}:</span>
+              <span>{t("todo.appTopic")}:</span>
             </label>
             <div class="grow">
               <CustomSelect
                 id="todo-app-topic-select"
-                options={apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))}
+                options={apps.map((app) => ({ icon: `${app.icon}`, label: `${app.name}`, value: app.id }))}
                 bind:value={selectedAppId}
                 dataTestId="todo-app-topic-select"
-                placeholder={t('todo.selectAppTopic')}
-                searchPlaceholder={t('todo.searchAppTopic')}
+                placeholder={t("todo.selectAppTopic")}
+                searchPlaceholder={t("todo.searchAppTopic")}
               />
             </div>
           </div>
@@ -688,15 +683,15 @@
         <div class="flex items-center gap-1.5">
           <label for="todo-priority-select" class="font-extrabold text-nb-black flex items-center gap-1 select-none">
             <span>🏷️</span>
-            <span>{t('todo.priorityLabel', 'Prioritas')}:</span>
+            <span>{t("todo.priorityLabel", "Prioritas")}:</span>
           </label>
           <CustomSelect
             id="todo-priority-select"
             options={priority}
             bind:value={newTodoPriority}
             dataTestId="todo-priority-select"
-            placeholder={t('todo.selectPriority')}
-            searchPlaceholder={t('todo.searchPriority')}
+            placeholder={t("todo.selectPriority")}
+            searchPlaceholder={t("todo.searchPriority")}
             width="w-36"
             size="sm"
           />
@@ -706,44 +701,38 @@
         <div class="flex items-center gap-1.5">
           <label for="todo-due-date-input" class="font-extrabold text-nb-black flex items-center gap-1 select-none">
             <span>📅</span>
-            <span>{t('todo.dueDateLabel', 'Tenggat')}:</span>
+            <span>{t("todo.dueDateLabel", "Tenggat")}:</span>
           </label>
-          <DatePicker
-            id="todo-due-date-input"
-            bind:value={newTodoDueDate}
-            dataTestId="todo-due-date-input"
-            width="w-36"
-          />
+          <DatePicker id="todo-due-date-input" bind:value={newTodoDueDate} dataTestId="todo-due-date-input" width="w-36" />
         </div>
       </div>
 
       <div class="flex flex-col sm:flex-row gap-3 items-stretch">
-        <textarea
-          bind:value={newTodoText}
-          onkeydown={handleTodoKeydown}
-          placeholder={t('todo.placeholder')}
-          rows="2"
-          class="nb-input grow resize-y min-h-14 leading-relaxed"
-          data-testid="todo-input"
-        ></textarea>
+        <textarea bind:value={newTodoText} onkeydown={handleTodoKeydown} placeholder={t("todo.placeholder")} rows="2" class="nb-input grow resize-y min-h-14 leading-relaxed" data-testid="todo-input"></textarea>
         <div class="flex sm:flex-col gap-2 shrink-0">
-          <button
-            type="submit"
-            class="nb-btn bg-nb-pink whitespace-nowrap px-6 py-3 flex items-center justify-center gap-1.5 grow sm:grow-0"
-            data-testid="todo-add-button"
-          >
+          <button type="submit" class="nb-btn bg-nb-pink whitespace-nowrap px-6 py-3 flex items-center justify-center gap-1.5 grow sm:grow-0" data-testid="todo-add-button">
             <span>+</span>
-            <span>{t('todo.addButton')}</span>
+            <span>{t("todo.addButton")}</span>
           </button>
           <button
             type="button"
             class="nb-btn text-xs px-3 py-2 border-2 border-nb-black shadow-nb-xs cursor-pointer flex items-center justify-center gap-1.5 {newTodoImageUrls.length > 0 ? 'bg-nb-green text-white' : 'bg-white hover:bg-gray-100 text-black'}"
             onclick={openNewTodoImageModal}
             data-testid="btn-open-image-modal"
-            title={newTodoImageUrls.length > 0 ? (newTodoImageUrls.length > 1 ? `${newTodoImageUrls.length} ${t('todo.imagesAttached', 'Gambar Terlampir')}` : t('todo.imageAttached', 'Gambar Terlampir')) : t('todo.attachImage', 'Lampirkan Gambar')}
+            title={newTodoImageUrls.length > 0
+              ? newTodoImageUrls.length > 1
+                ? `${newTodoImageUrls.length} ${t("todo.imagesAttached", "Gambar Terlampir")}`
+                : t("todo.imageAttached", "Gambar Terlampir")
+              : t("todo.attachImage", "Lampirkan Gambar")}
           >
             <span>📷</span>
-            <span>{newTodoImageUrls.length > 0 ? (newTodoImageUrls.length > 1 ? `${newTodoImageUrls.length} ${t('todo.imagesAttached', 'Gambar Terlampir')}` : t('todo.imageAttached', 'Gambar Terlampir')) : t('todo.attachImage', 'Lampirkan Gambar')}</span>
+            <span
+              >{newTodoImageUrls.length > 0
+                ? newTodoImageUrls.length > 1
+                  ? `${newTodoImageUrls.length} ${t("todo.imagesAttached", "Gambar Terlampir")}`
+                  : t("todo.imageAttached", "Gambar Terlampir")
+                : t("todo.attachImage", "Lampirkan Gambar")}</span
+            >
           </button>
         </div>
       </div>
@@ -756,12 +745,15 @@
             {/each}
           </div>
           <span class="text-xs font-bold text-gray-700">
-            {newTodoImageUrls.length > 1 ? `${newTodoImageUrls.length} ${t('todo.imagesAttached', 'Gambar Terlampir')}` : t('todo.imageAttached', 'Gambar Terlampir')}
+            {newTodoImageUrls.length > 1 ? `${newTodoImageUrls.length} ${t("todo.imagesAttached", "Gambar Terlampir")}` : t("todo.imageAttached", "Gambar Terlampir")}
           </span>
           <button
             type="button"
             class="text-nb-red font-black text-xs hover:underline cursor-pointer ml-1"
-            onclick={() => { newTodoImageUrls = []; newTodoImageFiles = []; }}
+            onclick={() => {
+              newTodoImageUrls = [];
+              newTodoImageFiles = [];
+            }}
             title="Hapus lampiran"
             data-testid="btn-remove-new-todo-image"
           >
@@ -774,7 +766,9 @@
       <div class="flex items-center gap-1.5 text-xs font-bold text-gray-500 select-none">
         <span>💡</span>
         <span>
-          {t('todo.shortcutPrefix')} <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-nb-yellow text-black font-mono text-[11px] shadow-nb-xs">Enter</kbd> {t('todo.shortcutToSave')}, <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-gray-200 text-black font-mono text-[11px] shadow-nb-xs">Shift + Enter</kbd> {t('todo.shortcutForNewLine')}
+          {t("todo.shortcutPrefix")} <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-nb-yellow text-black font-mono text-[11px] shadow-nb-xs">Enter</kbd>
+          {t("todo.shortcutToSave")}, <kbd class="px-1.5 py-0.5 border border-nb-black rounded bg-gray-200 text-black font-mono text-[11px] shadow-nb-xs">Shift + Enter</kbd>
+          {t("todo.shortcutForNewLine")}
         </span>
       </div>
     </form>
@@ -783,23 +777,15 @@
     <div class="flex flex-col gap-3 pb-3 border-b-2 border-dashed border-gray-300">
       <!-- Search Input Container -->
       <div class="relative w-full">
-        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold select-none text-base pointer-events-none z-10">
-          🔍
-        </span>
-        <input
-          type="text"
-          bind:value={searchQuery}
-          placeholder={t('todo.searchPlaceholder')}
-          class="nb-input pl-10 pr-10 py-2 text-sm font-bold w-full"
-          data-testid="search-todo-input"
-        />
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 font-bold select-none text-base pointer-events-none z-10"> 🔍 </span>
+        <input type="text" bind:value={searchQuery} placeholder={t("todo.searchPlaceholder")} class="nb-input pl-10 pr-10 py-2 text-sm font-bold w-full" data-testid="search-todo-input" />
         {#if searchQuery.trim().length > 0}
           <button
             type="button"
             class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-nb-pink text-xs font-black flex items-center justify-center cursor-pointer border border-nb-black shadow-nb-xs text-black"
-            onclick={() => (searchQuery = '')}
-            title={t('todo.clearSearch')}
-            aria-label={t('todo.clearSearch')}
+            onclick={() => (searchQuery = "")}
+            title={t("todo.clearSearch")}
+            aria-label={t("todo.clearSearch")}
             data-testid="btn-clear-todo-search"
           >
             ✕
@@ -809,29 +795,14 @@
 
       <div class="flex justify-between items-center flex-wrap gap-3">
         <div class="flex gap-2 flex-wrap items-center">
-          <button
-            type="button"
-            class="nb-btn text-xs px-3.5 py-1.5 {filter === 'all' ? 'bg-nb-yellow' : 'bg-white'}"
-            onclick={() => (filter = 'all')}
-            data-testid="filter-all"
-          >
-            {t('todo.filterAll')} ({todos.length})
+          <button type="button" class="nb-btn text-xs px-3.5 py-1.5 {filter === 'all' ? 'bg-nb-yellow' : 'bg-white'}" onclick={() => (filter = "all")} data-testid="filter-all">
+            {t("todo.filterAll")} ({todos.length})
           </button>
-          <button
-            type="button"
-            class="nb-btn text-xs px-3.5 py-1.5 {filter === 'active' ? 'bg-nb-yellow' : 'bg-white'}"
-            onclick={() => (filter = 'active')}
-            data-testid="filter-active"
-          >
-            {t('todo.filterActive')} ({remainingCount})
+          <button type="button" class="nb-btn text-xs px-3.5 py-1.5 {filter === 'active' ? 'bg-nb-yellow' : 'bg-white'}" onclick={() => (filter = "active")} data-testid="filter-active">
+            {t("todo.filterActive")} ({remainingCount})
           </button>
-          <button
-            type="button"
-            class="nb-btn text-xs px-3.5 py-1.5 {filter === 'done' ? 'bg-nb-yellow' : 'bg-white'}"
-            onclick={() => (filter = 'done')}
-            data-testid="filter-done"
-          >
-            {t('todo.filterDone')} ({completedCount})
+          <button type="button" class="nb-btn text-xs px-3.5 py-1.5 {filter === 'done' ? 'bg-nb-yellow' : 'bg-white'}" onclick={() => (filter = "done")} data-testid="filter-done">
+            {t("todo.filterDone")} ({completedCount})
           </button>
 
           {#if apps.length > 0}
@@ -839,11 +810,11 @@
               <span class="text-xs font-extrabold text-nb-black select-none">🎯</span>
               <CustomSelect
                 width="min-w-[15dvw]"
-                options={[{ label: t('todo.allTopics'), value: 'all' }, ...apps.map(app => ({ label: `${app.icon} ${app.name}`, value: app.id }))]}
+                options={[{ label: t("todo.allTopics"), value: "all" }, ...apps.map((app) => ({ label: app.name, value: app.id, icon: app.icon }))]}
                 bind:value={topicFilter}
                 dataTestId="todo-topic-filter"
-                placeholder={t('todo.allTopics')}
-                searchPlaceholder={t('todo.searchTopics')}
+                placeholder={t("todo.allTopics")}
+                searchPlaceholder={t("todo.searchTopics")}
               />
             </div>
           {/if}
@@ -856,21 +827,16 @@
               class="nb-btn text-xs px-3.5 py-1.5 {allTodosDone ? 'bg-nb-yellow text-black' : 'bg-white hover:bg-gray-100 text-black'} border-2 border-nb-black shadow-nb-xs cursor-pointer flex items-center gap-1.5"
               onclick={handleToggleAllTodos}
               data-testid="btn-check-all-todos"
-              title={allTodosDone ? t('todo.uncheckAll') : t('todo.checkAll')}
+              title={allTodosDone ? t("todo.uncheckAll") : t("todo.checkAll")}
             >
-              <span class="text-sm">{allTodosDone ? '☑' : '☐'}</span>
-              <span>{allTodosDone ? t('todo.uncheckAll') : t('todo.checkAll')}</span>
+              <span class="text-sm">{allTodosDone ? "☑" : "☐"}</span>
+              <span>{allTodosDone ? t("todo.uncheckAll") : t("todo.checkAll")}</span>
             </button>
           {/if}
 
           {#if completedCount > 0}
-            <button
-              type="button"
-              class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5 cursor-pointer"
-              onclick={promptDeleteAllCompleted}
-              data-testid="clear-completed-button"
-            >
-              {t('todo.clearCompleted')}
+            <button type="button" class="nb-btn bg-nb-red text-white text-xs px-3.5 py-1.5 cursor-pointer" onclick={promptDeleteAllCompleted} data-testid="clear-completed-button">
+              {t("todo.clearCompleted")}
             </button>
           {/if}
         </div>
@@ -878,11 +844,7 @@
     </div>
 
     <!-- List Items -->
-    <ul
-      class="list-none flex flex-col gap-4 p-0 m-0"
-      ondragover={handleListDragOver}
-      ondrop={handleListDrop}
-    >
+    <ul class="list-none flex flex-col gap-4 p-0 m-0" ondragover={handleListDragOver} ondrop={handleListDrop}>
       {#if isLoading}
         <div class="flex flex-col gap-3" data-testid="todos-skeleton-list">
           <SkeletonTodo />
@@ -892,16 +854,14 @@
       {:else if filteredTodos.length === 0}
         <li class="p-9 text-center border-2 border-dashed border-gray-300 rounded-md text-gray-500 font-semibold" data-testid="todo-empty-state">
           <p class="m-0">
-            {searchQuery.trim().length > 0
-              ? t('todo.emptySearch')
-              : t('todo.emptyState')}
+            {searchQuery.trim().length > 0 ? t("todo.emptySearch") : t("todo.emptyState")}
           </p>
         </li>
       {:else}
         {#each filteredTodos as todo (todo.id)}
           {@const subList = [...(todo.subTasks || [])].sort((a, b) => {
-            const ordA = typeof a.orderIndex === 'number' ? a.orderIndex : 0;
-            const ordB = typeof b.orderIndex === 'number' ? b.orderIndex : 0;
+            const ordA = typeof a.orderIndex === "number" ? a.orderIndex : 0;
+            const ordB = typeof b.orderIndex === "number" ? b.orderIndex : 0;
             if (ordA !== ordB) return ordA - ordB;
             return a.createdAt - b.createdAt;
           })}
@@ -909,9 +869,7 @@
           {@const isExpanded = expandedTodoIds[todo.id] ?? false}
 
           <li
-            class="flex flex-col border-2 border-nb-black rounded-md shadow-nb-sm transition-all duration-100 {todo.done
-              ? 'bg-gray-100 opacity-80'
-              : 'bg-white'}
+            class="flex flex-col border-2 border-nb-black rounded-md shadow-nb-sm transition-all duration-100 {todo.done ? 'bg-gray-100 opacity-80' : 'bg-white'}
               {editingTodoId === todo.id ? 'overflow-visible z-30 relative' : 'overflow-hidden'}
               {isTodoDragReady[todo.id] ? 'ring-4 ring-nb-yellow shadow-nb-lg scale-[1.01] cursor-grab active:cursor-grabbing' : ''}
               {draggedTodo?.id === todo.id ? 'opacity-40 border-dashed scale-95' : ''}
@@ -926,13 +884,14 @@
             ondrop={(e) => handleTodoDrop(todo, e)}
             ondragend={handleTodoDragEnd}
             data-testid={`todo-item-${todo.id}`}
-            data-drag-ready={isTodoDragReady[todo.id] ? 'true' : 'false'}
+            data-drag-ready={isTodoDragReady[todo.id] ? "true" : "false"}
           >
             <!-- Hint saat Sub-Task di-drag ke atas Todo item -->
             {#if draggedSubTask && dragOverTodoId === todo.id}
               <div class="p-1.5 border-b-2 border-nb-green bg-green-100 text-center" data-testid="drop-subtask-to-todo-hint">
                 <p class="text-xs text-green-900 font-bold m-0 flex items-center justify-center gap-1">
-                  <span>🚀</span> {t('todo.dropSubtaskAsTodo', 'Lepaskan di sini untuk mengubah menjadi catatan mandiri')}
+                  <span>🚀</span>
+                  {t("todo.dropSubtaskAsTodo", "Lepaskan di sini untuk mengubah menjadi catatan mandiri")}
                 </p>
               </div>
             {/if}
@@ -945,57 +904,42 @@
                   class="nb-input w-full text-sm font-bold min-h-14 resize-y leading-snug"
                   data-testid={`input-edit-todo-text-${todo.id}`}
                   onkeydown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       saveEditTodo(todo.id);
-                    } else if (e.key === 'Escape') {
+                    } else if (e.key === "Escape") {
                       cancelEditTodo();
                     }
-                  }}
-                ></textarea>
+                  }}></textarea>
                 <div class="flex items-center gap-2 flex-wrap">
                   {#if apps.length > 0}
-                    <select
+                    <CustomSelect
+                      id="select-edit-todo-app"
+                      options={[{icon: '', label: t("todo.allTopics", "Tanpa Topik"), value: ''}, ...apps.map((app) => ({ icon: `${app.icon}`, label: `${app.name}`, value: app.id }))]}
+                      width="w-32 sm:w-46"
                       bind:value={editingTodoAppId}
-                      class="nb-input py-1 px-2 text-xs font-bold bg-white max-w-28 sm:max-w-36 h-8.5 shrink-0"
-                      data-testid={`select-edit-todo-app-${todo.id}`}
-                    >
-                      <option value="">{t('todo.allTopics', 'Tanpa Topik')}</option>
-                      {#each apps as app}
-                        <option value={app.id}>{app.icon} {app.name}</option>
-                      {/each}
-                    </select>
+                      dataTestId={`select-edit-todo-app-${todo.id}`}
+                      placeholder={t("todo.selectAppTopic")}
+                      searchPlaceholder={t("todo.searchAppTopic")}
+                      size="sm"
+                    />
                   {/if}
                   <CustomSelect
                     bind:value={editingTodoPriority}
                     options={priority}
-                    placeholder={t('todo.priorityPlaceholder', 'Pilih Prioritas')}
+                    placeholder={t("todo.priorityPlaceholder", "Pilih Prioritas")}
                     dataTestId={`select-edit-todo-priority-${todo.id}`}
-                    searchPlaceholder={t('todo.searchPlaceholder', 'Cari Prioritas')}
+                    searchPlaceholder={t("todo.searchPlaceholder", "Cari Prioritas")}
                     width="w-32 sm:w-36"
                     size="sm"
                   />
-                  <DatePicker
-                    bind:value={editingTodoDueDate}
-                    dataTestId={`input-edit-todo-due-date-${todo.id}`}
-                    width="w-32 sm:w-36"
-                  />
+                  <DatePicker bind:value={editingTodoDueDate} dataTestId={`input-edit-todo-due-date-${todo.id}`} width="w-32 sm:w-36" />
                   <div class="flex items-center gap-2 ml-auto shrink-0">
-                    <button
-                      type="button"
-                      class="nb-btn bg-nb-green text-black text-xs font-bold px-3 py-1.5 shadow-nb-xs cursor-pointer"
-                      onclick={() => saveEditTodo(todo.id)}
-                      data-testid={`btn-save-edit-todo-${todo.id}`}
-                    >
-                      ✓ {t('action.save', 'Simpan')}
+                    <button type="button" class="nb-btn bg-nb-green text-black text-xs font-bold px-3 py-1.5 shadow-nb-xs cursor-pointer" onclick={() => saveEditTodo(todo.id)} data-testid={`btn-save-edit-todo-${todo.id}`}>
+                      ✓ {t("action.save", "Simpan")}
                     </button>
-                    <button
-                      type="button"
-                      class="nb-btn bg-gray-200 text-black text-xs font-bold px-3 py-1.5 shadow-nb-xs cursor-pointer"
-                      onclick={cancelEditTodo}
-                      data-testid={`btn-cancel-edit-todo-${todo.id}`}
-                    >
-                      ✕ {t('action.cancel', 'Batal')}
+                    <button type="button" class="nb-btn bg-gray-200 text-black text-xs font-bold px-3 py-1.5 shadow-nb-xs cursor-pointer" onclick={cancelEditTodo} data-testid={`btn-cancel-edit-todo-${todo.id}`}>
+                      ✕ {t("action.cancel", "Batal")}
                     </button>
                   </div>
                 </div>
@@ -1006,7 +950,7 @@
                   <button
                     type="button"
                     class="cursor-grab active:cursor-grabbing p-1 text-gray-500 hover:text-black transition-colors"
-                    title={t('todo.dragHandleTooltip', 'Tekan lama catatan atau drag handle ini untuk mengubah posisi')}
+                    title={t("todo.dragHandleTooltip", "Tekan lama catatan atau drag handle ini untuk mengubah posisi")}
                     onpointerdown={() => (isTodoDragReady[todo.id] = true)}
                     data-testid={`drag-handle-todo-${todo.id}`}
                     aria-label={`Drag to rearrange todo ${todo.text}`}
@@ -1019,23 +963,19 @@
                     type="button"
                     class="w-7 h-7 shrink-0 border-2 border-nb-black bg-white rounded flex items-center justify-center font-bold text-xs cursor-pointer shadow-nb-xs hover:bg-nb-yellow transition-colors"
                     onclick={() => toggleExpand(todo.id)}
-                    ondragover={() => { if ((draggedTodo && draggedTodo.id !== todo.id) || draggedSubTask) expandedTodoIds[todo.id] = true; }}
-                    title={isExpanded ? 'Tutup sub-tasks' : 'Buka sub-tasks'}
-                    aria-label={isExpanded ? 'Tutup sub-tasks' : 'Buka sub-tasks'}
+                    ondragover={() => {
+                      if ((draggedTodo && draggedTodo.id !== todo.id) || draggedSubTask) expandedTodoIds[todo.id] = true;
+                    }}
+                    title={isExpanded ? "Tutup sub-tasks" : "Buka sub-tasks"}
+                    aria-label={isExpanded ? "Tutup sub-tasks" : "Buka sub-tasks"}
                   >
-                    {isExpanded ? '▼' : '▶'}
+                    {isExpanded ? "▼" : "▶"}
                   </button>
                 </div>
 
                 <!-- Checkbox & Text -->
                 <label class="flex items-center gap-3 cursor-pointer grow select-none">
-                  <input
-                    type="checkbox"
-                    checked={todo.done}
-                    onchange={() => toggleTodo(todo.id)}
-                    class="nb-checkbox shrink-0"
-                    data-testid={`checkbox-todo-${todo.id}`}
-                  />
+                  <input type="checkbox" checked={todo.done} onchange={() => toggleTodo(todo.id)} class="nb-checkbox shrink-0" data-testid={`checkbox-todo-${todo.id}`} />
                   <div class="flex flex-col sm:flex-row sm:items-center gap-2 grow">
                     {#if todo.appId}
                       {@const linkedApp = apps.find((a) => a.id === todo.appId)}
@@ -1052,22 +992,28 @@
                       {/if}
                     {/if}
 
-                    {#if todo.priority && todo.priority !== 'normal'}
+                    {#if todo.priority && todo.priority !== "normal"}
                       <span
-                        class="inline-flex items-center gap-1 px-1.5 py-0.5 border-2 border-nb-black text-[10px] font-black uppercase rounded shadow-nb-xs shrink-0 self-start sm:self-auto {todo.priority === 'urgent' ? 'bg-red-500 text-white' : todo.priority === 'high' ? 'bg-amber-400 text-black' : 'bg-gray-200 text-black'}"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.5 border-2 border-nb-black text-[10px] font-black uppercase rounded shadow-nb-xs shrink-0 self-start sm:self-auto {todo.priority === 'urgent'
+                          ? 'bg-red-500 text-white'
+                          : todo.priority === 'high'
+                            ? 'bg-amber-400 text-black'
+                            : 'bg-gray-200 text-black'}"
                         data-testid={`todo-priority-badge-${todo.id}`}
                       >
-                        {todo.priority === 'urgent' ? '🚨 URGENT' : todo.priority === 'high' ? '⚡ HIGH' : '🟢 LOW'}
+                        {todo.priority === "urgent" ? "🚨 URGENT" : todo.priority === "high" ? "⚡ HIGH" : "🟢 LOW"}
                       </span>
                     {/if}
 
                     {#if todo.dueDate}
                       <span
-                        class="inline-flex items-center gap-1 px-1.5 py-0.5 border-2 border-nb-black text-[10px] font-black rounded shadow-nb-xs shrink-0 self-start sm:self-auto {isOverdue(todo.dueDate, todo.done) ? 'bg-nb-red text-white animate-pulse' : 'bg-yellow-100 text-black'}"
+                        class="inline-flex items-center gap-1 px-1.5 py-0.5 border-2 border-nb-black text-[10px] font-black rounded shadow-nb-xs shrink-0 self-start sm:self-auto {isOverdue(todo.dueDate, todo.done)
+                          ? 'bg-nb-red text-white animate-pulse'
+                          : 'bg-yellow-100 text-black'}"
                         data-testid={`todo-due-date-badge-${todo.id}`}
-                        title={isOverdue(todo.dueDate, todo.done) ? t('todo.overdue', 'Terlambat') : t('todo.dueDateLabel', 'Tenggat')}
+                        title={isOverdue(todo.dueDate, todo.done) ? t("todo.overdue", "Terlambat") : t("todo.dueDateLabel", "Tenggat")}
                       >
-                        <span>{isOverdue(todo.dueDate, todo.done) ? '⚠️' : '📅'}</span>
+                        <span>{isOverdue(todo.dueDate, todo.done) ? "⚠️" : "📅"}</span>
                         <span>{todo.dueDate}</span>
                       </span>
                     {/if}
@@ -1077,10 +1023,10 @@
                         role="button"
                         tabindex="0"
                         ondblclick={() => startEditTodo(todo)}
-                        onkeydown={(e) => { if (e.key === 'Enter') startEditTodo(todo); }}
-                        class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap cursor-pointer {todo.done
-                          ? 'line-through decoration-2 decoration-nb-black text-gray-500'
-                          : 'text-nb-black'}"
+                        onkeydown={(e) => {
+                          if (e.key === "Enter") startEditTodo(todo);
+                        }}
+                        class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap cursor-pointer {todo.done ? 'line-through decoration-2 decoration-nb-black text-gray-500' : 'text-nb-black'}"
                       >
                         {todo.text}
                       </span>
@@ -1092,10 +1038,10 @@
                             class="inline-flex items-center gap-1.5 px-2 py-0.5 border-2 border-nb-black text-[11px] font-black uppercase rounded shadow-nb-xs bg-blue-100 hover:bg-blue-200 text-nb-black cursor-pointer transition-colors"
                             onclick={() => openTodoImageModal(todo)}
                             data-testid={`btn-view-image-todo-${todo.id}`}
-                            title={t('todo.viewImage', 'Lihat Gambar')}
+                            title={t("todo.viewImage", "Lihat Gambar")}
                           >
                             <span>📷</span>
-                            <span>{t('todo.viewImage', 'Lihat Gambar')}{imgCount > 1 ? ` (${imgCount})` : ''}</span>
+                            <span>{t("todo.viewImage", "Lihat Gambar")}{imgCount > 1 ? ` (${imgCount})` : ""}</span>
                           </button>
                         </div>
                       {/if}
@@ -1108,8 +1054,8 @@
                   type="button"
                   class="w-8 h-8 shrink-0 border-2 border-nb-black bg-white hover:bg-nb-yellow text-black font-black text-xs rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
                   onclick={() => startEditTodo(todo)}
-                  title={t('todo.edit', 'Edit')}
-                  aria-label={t('todo.edit', 'Edit')}
+                  title={t("todo.edit", "Edit")}
+                  aria-label={t("todo.edit", "Edit")}
                   data-testid={`btn-edit-todo-${todo.id}`}
                 >
                   ✏️
@@ -1118,10 +1064,12 @@
                 <!-- Upload Image Button for Todo -->
                 <button
                   type="button"
-                  class="w-8 h-8 shrink-0 border-2 border-nb-black {(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? 'bg-blue-100 text-blue-900' : 'bg-white hover:bg-nb-yellow text-black'} font-bold text-xs rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
+                  class="w-8 h-8 shrink-0 border-2 border-nb-black {(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl
+                    ? 'bg-blue-100 text-blue-900'
+                    : 'bg-white hover:bg-nb-yellow text-black'} font-bold text-xs rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
                   onclick={() => openTodoImageModal(todo)}
-                  title={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t('todo.viewImage', 'Lihat / Ubah Gambar') : t('todo.uploadImage', 'Upload Gambar')}
-                  aria-label={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t('todo.viewImage', 'Lihat / Ubah Gambar') : t('todo.uploadImage', 'Upload Gambar')}
+                  title={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t("todo.viewImage", "Lihat / Ubah Gambar") : t("todo.uploadImage", "Upload Gambar")}
+                  aria-label={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t("todo.viewImage", "Lihat / Ubah Gambar") : t("todo.uploadImage", "Upload Gambar")}
                   data-testid={`btn-upload-image-todo-${todo.id}`}
                 >
                   📷
@@ -1129,13 +1077,9 @@
 
                 <!-- Sub-tasks Progress Badge -->
                 {#if subList.length > 0}
-                  <button
-                    type="button"
-                    onclick={() => toggleExpand(todo.id)}
-                    class="nb-badge shrink-0 cursor-pointer {subDoneCount === subList.length ? 'bg-nb-green' : 'bg-nb-yellow'}"
-                    title={t('todo.subtasksTitle')}
-                  >
-                    {subDoneCount}/{subList.length} {t('todo.subtasksCount')}
+                  <button type="button" onclick={() => toggleExpand(todo.id)} class="nb-badge shrink-0 cursor-pointer {subDoneCount === subList.length ? 'bg-nb-green' : 'bg-nb-yellow'}" title={t("todo.subtasksTitle")}>
+                    {subDoneCount}/{subList.length}
+                    {t("todo.subtasksCount")}
                   </button>
                 {/if}
 
@@ -1144,8 +1088,8 @@
                   type="button"
                   class="w-8 h-8 shrink-0 border-2 border-nb-black bg-nb-red text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
                   onclick={() => promptDeleteTodo(todo)}
-                  title={t('todo.deleteNote')}
-                  aria-label={t('todo.deleteNote')}
+                  title={t("todo.deleteNote")}
+                  aria-label={t("todo.deleteNote")}
                   data-testid={`delete-todo-${todo.id}`}
                 >
                   ✕
@@ -1157,8 +1101,11 @@
             {#if isExpanded}
               <div
                 role="region"
-                aria-label={t('todo.subtasksTitle', 'Sub-tasks')}
-                class="p-3 sm:px-5 bg-[#faf8f5] flex flex-col gap-2.5 border-t border-dashed border-gray-300 transition-colors {dragOverSubTodoContainerId === todo.id ? 'bg-green-50 ring-2 ring-nb-green' : ''} {draggedTodo && draggedTodo.id !== todo.id ? 'border-2 border-dashed border-nb-green bg-green-50/20' : ''}"
+                aria-label={t("todo.subtasksTitle", "Sub-tasks")}
+                class="p-3 sm:px-5 bg-[#faf8f5] flex flex-col gap-2.5 border-t border-dashed border-gray-300 transition-colors {dragOverSubTodoContainerId === todo.id ? 'bg-green-50 ring-2 ring-nb-green' : ''} {draggedTodo &&
+                draggedTodo.id !== todo.id
+                  ? 'border-2 border-dashed border-nb-green bg-green-50/20'
+                  : ''}"
                 ondragover={(e) => handleSubContainerDragOver(todo.id, e)}
                 ondragleave={(e) => handleSubContainerDragLeave(todo.id, e)}
                 ondrop={(e) => handleSubContainerDrop(todo.id, e)}
@@ -1168,7 +1115,8 @@
                 {#if draggedTodo && draggedTodo.id !== todo.id}
                   <div class="p-1.5 border border-dashed border-nb-green bg-green-100 rounded text-center">
                     <p class="text-xs text-green-900 font-bold m-0 flex items-center justify-center gap-1">
-                      <span>✨</span> {t('todo.dropTodoAsSubtask', 'Lepaskan di sini untuk mengubah menjadi sub-task')}
+                      <span>✨</span>
+                      {t("todo.dropTodoAsSubtask", "Lepaskan di sini untuk mengubah menjadi sub-task")}
                     </p>
                   </div>
                 {/if}
@@ -1192,7 +1140,7 @@
                         ondrop={(e) => handleSubDrop(sub, todo.id, e)}
                         ondragend={handleSubDragEnd}
                         data-testid={`subtask-item-${sub.id}`}
-                        data-drag-ready={isSubDragReady[sub.id] ? 'true' : 'false'}
+                        data-drag-ready={isSubDragReady[sub.id] ? "true" : "false"}
                       >
                         {#if editingSubTaskId === sub.id && editingSubTaskParentId === todo.id}
                           <div class="flex items-center gap-2 grow p-1 bg-yellow-50 rounded border border-nb-black" data-testid={`inline-edit-subtask-${sub.id}`}>
@@ -1202,37 +1150,23 @@
                               class="nb-input grow text-xs py-1 px-2 font-bold"
                               data-testid={`input-edit-subtask-text-${sub.id}`}
                               onkeydown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (e.key === "Enter") {
                                   e.preventDefault();
                                   saveEditSubTask(todo.id, sub.id);
-                                } else if (e.key === 'Escape') {
+                                } else if (e.key === "Escape") {
                                   cancelEditSubTask();
                                 }
                               }}
                             />
-                            <button
-                              type="button"
-                              class="nb-btn bg-nb-green text-black text-xs px-2 py-1 font-bold"
-                              onclick={() => saveEditSubTask(todo.id, sub.id)}
-                              data-testid={`btn-save-edit-subtask-${sub.id}`}
-                            >
-                              ✓
-                            </button>
-                            <button
-                              type="button"
-                              class="nb-btn bg-gray-200 text-black text-xs px-2 py-1 font-bold"
-                              onclick={cancelEditSubTask}
-                              data-testid={`btn-cancel-edit-subtask-${sub.id}`}
-                            >
-                              ✕
-                            </button>
+                            <button type="button" class="nb-btn bg-nb-green text-black text-xs px-2 py-1 font-bold" onclick={() => saveEditSubTask(todo.id, sub.id)} data-testid={`btn-save-edit-subtask-${sub.id}`}> ✓ </button>
+                            <button type="button" class="nb-btn bg-gray-200 text-black text-xs px-2 py-1 font-bold" onclick={cancelEditSubTask} data-testid={`btn-cancel-edit-subtask-${sub.id}`}> ✕ </button>
                           </div>
                         {:else}
                           <div class="flex items-center gap-1.5 grow">
                             <button
                               type="button"
                               class="cursor-grab active:cursor-grabbing p-0.5 text-gray-500 hover:text-black transition-colors shrink-0"
-                              title={t('todo.dragSubtaskTooltip', 'Tekan lama sub-task atau drag handle ini untuk mengubah posisi atau memindahkan ke catatan lain')}
+                              title={t("todo.dragSubtaskTooltip", "Tekan lama sub-task atau drag handle ini untuk mengubah posisi atau memindahkan ke catatan lain")}
                               onpointerdown={() => (isSubDragReady[sub.id] = true)}
                               data-testid={`drag-handle-subtask-${sub.id}`}
                               aria-label={`Drag to rearrange subtask ${sub.text}`}
@@ -1252,10 +1186,10 @@
                                 role="button"
                                 tabindex="0"
                                 ondblclick={() => startEditSubTask(todo.id, sub)}
-                                onkeydown={(e) => { if (e.key === 'Enter') startEditSubTask(todo.id, sub); }}
-                                class="text-sm font-semibold leading-tight wrap-break-word whitespace-pre-wrap cursor-pointer {sub.done
-                                  ? 'line-through text-gray-500'
-                                  : 'text-nb-black'}"
+                                onkeydown={(e) => {
+                                  if (e.key === "Enter") startEditSubTask(todo.id, sub);
+                                }}
+                                class="text-sm font-semibold leading-tight wrap-break-word whitespace-pre-wrap cursor-pointer {sub.done ? 'line-through text-gray-500' : 'text-nb-black'}"
                               >
                                 {sub.text}
                               </span>
@@ -1267,8 +1201,8 @@
                             type="button"
                             class="w-6 h-6 shrink-0 border border-nb-black bg-white hover:bg-nb-yellow text-black font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
                             onclick={() => startEditSubTask(todo.id, sub)}
-                            title={t('todo.edit', 'Edit')}
-                            aria-label={t('todo.edit', 'Edit')}
+                            title={t("todo.edit", "Edit")}
+                            aria-label={t("todo.edit", "Edit")}
                             data-testid={`btn-edit-subtask-${sub.id}`}
                           >
                             ✏️
@@ -1278,8 +1212,8 @@
                             type="button"
                             class="w-6 h-6 shrink-0 border border-nb-black bg-gray-100 hover:bg-nb-red hover:text-white text-gray-600 font-bold text-xs rounded flex items-center justify-center cursor-pointer transition-colors"
                             onclick={() => promptDeleteSubTask(todo.id, sub)}
-                            title={t('todo.deleteSubtask')}
-                            aria-label={t('todo.deleteSubtask')}
+                            title={t("todo.deleteSubtask")}
+                            aria-label={t("todo.deleteSubtask")}
                             data-testid={`delete-subtask-${sub.id}`}
                           >
                             ✕
@@ -1289,38 +1223,28 @@
                     {/each}
                   </ul>
                 {:else}
-                  <div
-                    class="p-2 border-2 border-dashed border-gray-300 rounded text-center {draggedSubTask || (draggedTodo && draggedTodo.id !== todo.id) ? 'border-nb-blue bg-blue-50/50' : ''}"
-                  >
+                  <div class="p-2 border-2 border-dashed border-gray-300 rounded text-center {draggedSubTask || (draggedTodo && draggedTodo.id !== todo.id) ? 'border-nb-blue bg-blue-50/50' : ''}">
                     <p class="text-xs text-gray-500 font-semibold italic m-0">
                       {draggedTodo && draggedTodo.id !== todo.id
-                        ? t('todo.dropTodoAsSubtask', 'Lepaskan di sini untuk mengubah menjadi sub-task')
-                        : (draggedSubTask
-                          ? t('todo.dropSubtaskHere', 'Lepaskan sub-task di sini...')
-                          : t('todo.subtasksEmpty'))}
+                        ? t("todo.dropTodoAsSubtask", "Lepaskan di sini untuk mengubah menjadi sub-task")
+                        : draggedSubTask
+                          ? t("todo.dropSubtaskHere", "Lepaskan sub-task di sini...")
+                          : t("todo.subtasksEmpty")}
                     </p>
                   </div>
                 {/if}
 
                 <!-- Add Sub-task Input Form -->
-                <form
-                  onsubmit={(e) => addSubTask(todo.id, e)}
-                  class="flex gap-2 pl-4 sm:pl-6 pt-1 items-stretch"
-                >
+                <form onsubmit={(e) => addSubTask(todo.id, e)} class="flex gap-2 pl-4 sm:pl-6 pt-1 items-stretch">
                   <textarea
                     bind:value={subTaskInputs[todo.id]}
                     onkeydown={(e) => handleSubTaskKeydown(todo.id, e)}
-                    placeholder={t('todo.subtaskPlaceholder')}
+                    placeholder={t("todo.subtaskPlaceholder")}
                     rows="1"
                     class="w-full text-xs font-semibold px-3 py-1.5 border-2 border-nb-black rounded shadow-nb-xs bg-white outline-none focus:shadow-nb-sm resize-y min-h-8.5 leading-snug"
-                    data-testid={`input-subtask-${todo.id}`}
-                  ></textarea>
-                  <button
-                    type="submit"
-                    class="nb-btn bg-nb-blue text-xs font-bold px-3 py-1.5 shadow-nb-xs border-2 border-nb-black shrink-0 self-start h-auto"
-                    data-testid={`button-add-subtask-${todo.id}`}
-                  >
-                    {t('todo.subtaskAddButton')}
+                    data-testid={`input-subtask-${todo.id}`}></textarea>
+                  <button type="submit" class="nb-btn bg-nb-blue text-xs font-bold px-3 py-1.5 shadow-nb-xs border-2 border-nb-black shrink-0 self-start h-auto" data-testid={`button-add-subtask-${todo.id}`}>
+                    {t("todo.subtaskAddButton")}
                   </button>
                 </form>
               </div>
@@ -1330,12 +1254,15 @@
         {#if draggedSubTask}
           <li
             class="p-3 border-2 border-dashed border-nb-green bg-green-50 rounded-md text-center cursor-pointer transition-all animate-pulse"
-            ondragover={(e) => { e.preventDefault(); }}
+            ondragover={(e) => {
+              e.preventDefault();
+            }}
             ondrop={handleListDrop}
             data-testid="subtask-to-todo-dropzone"
           >
             <p class="text-sm text-green-900 font-extrabold m-0 flex items-center justify-center gap-2">
-              <span>🚀</span> {t('todo.dropSubtaskAsTodo', 'Lepaskan di sini untuk mengubah menjadi catatan mandiri')}
+              <span>🚀</span>
+              {t("todo.dropSubtaskAsTodo", "Lepaskan di sini untuk mengubah menjadi catatan mandiri")}
             </p>
           </li>
         {/if}
@@ -1346,13 +1273,11 @@
   <!-- Deletion Confirmation Modal -->
   <ConfirmModal
     isOpen={deleteTarget !== null}
-    title={deleteTarget?.type === 'todo' ? t('todo.confirmModalDeleteNoteTitle') : deleteTarget?.type === 'subtask' ? t('todo.confirmModalDeleteSubtaskTitle') : t('todo.confirmModalDeleteAllTitle')}
-    message={deleteTarget?.type === 'todo'
-      ? t('todo.confirmModalDeleteNoteMsg')
-      : deleteTarget?.type == 'subtask' ? t('todo.confirmModalDeleteSubtaskMsg') : t('todo.confirmModalDeleteAllMsg')}
-    itemText={deleteTarget?.text || ''}
-    confirmText={t('action.delete')}
-    cancelText={t('action.cancel')}
+    title={deleteTarget?.type === "todo" ? t("todo.confirmModalDeleteNoteTitle") : deleteTarget?.type === "subtask" ? t("todo.confirmModalDeleteSubtaskTitle") : t("todo.confirmModalDeleteAllTitle")}
+    message={deleteTarget?.type === "todo" ? t("todo.confirmModalDeleteNoteMsg") : deleteTarget?.type == "subtask" ? t("todo.confirmModalDeleteSubtaskMsg") : t("todo.confirmModalDeleteAllMsg")}
+    itemText={deleteTarget?.text || ""}
+    confirmText={t("action.delete")}
+    cancelText={t("action.cancel")}
     onConfirm={handleConfirmDelete}
     onCancel={handleCancelDelete}
   />
@@ -1360,9 +1285,11 @@
   <!-- Image Upload & Preview Modal -->
   <ImageUploadModal
     isOpen={isImageModalOpen}
-    initialImageUrls={imageModalMode === 'new' ? newTodoImageUrls : (activeImageTodo?.imageUrls || (activeImageTodo?.imageUrl ? [activeImageTodo.imageUrl] : []))}
-    initialImageUrl={imageModalMode === 'new' ? newTodoImageUrl : (activeImageTodo?.imageUrl || null)}
-    title={imageModalMode === 'new' ? `<span class="font-black uppercase text-nb-black m-0">${t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR')}:</span>` : `<span class="font-black uppercase text-nb-black m-0">${t('imageModal.title', 'UPLOAD & PREVIEW GAMBAR')}:</span> </br> <span class="font-bold text-gray-500 m-0">${activeImageTodo?.text || ''}</span>`}
+    initialImageUrls={imageModalMode === "new" ? newTodoImageUrls : activeImageTodo?.imageUrls || (activeImageTodo?.imageUrl ? [activeImageTodo.imageUrl] : [])}
+    initialImageUrl={imageModalMode === "new" ? newTodoImageUrl : activeImageTodo?.imageUrl || null}
+    title={imageModalMode === "new"
+      ? `<span class="font-black uppercase text-nb-black m-0">${t("imageModal.title", "UPLOAD & PREVIEW GAMBAR")}:</span>`
+      : `<span class="font-black uppercase text-nb-black m-0">${t("imageModal.title", "UPLOAD & PREVIEW GAMBAR")}:</span> </br> <span class="font-bold text-gray-500 m-0">${activeImageTodo?.text || ""}</span>`}
     onClose={handleImageModalClose}
     onSave={handleImageModalSave}
     onRemove={handleImageModalRemove}
