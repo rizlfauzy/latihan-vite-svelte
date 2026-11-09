@@ -12,6 +12,7 @@
   import DatePicker from "./DatePicker.svelte";
   import { Warning } from "@/exceptions/CustomError";
   import { GripVertical } from "@lucide/svelte";
+  import AppIcon from "./AppIcon.svelte";
 
   const t = $derived((key: string, defaultValue?: string): string => $i18nStore.t(key, defaultValue));
   let canManage = $derived($authStore.hasDebugAccess);
@@ -915,7 +916,7 @@
                   {#if apps.length > 0}
                     <CustomSelect
                       id="select-edit-todo-app"
-                      options={[{icon: '', label: t("todo.allTopics", "Tanpa Topik"), value: ''}, ...apps.map((app) => ({ icon: `${app.icon}`, label: `${app.name}`, value: app.id }))]}
+                      options={[{ icon: "", label: t("todo.allTopics", "Tanpa Topik"), value: "" }, ...apps.map((app) => ({ icon: `${app.icon}`, label: `${app.name}`, value: app.id }))]}
                       width="w-32 sm:w-46"
                       bind:value={editingTodoAppId}
                       dataTestId={`select-edit-todo-app-${todo.id}`}
@@ -945,38 +946,47 @@
                 </div>
               </div>
             {:else}
-              <div class="flex items-center justify-between gap-3 p-3.5 sm:px-4.5 bg-gray-50 border-b-2 border-nb-black">
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    class="cursor-grab active:cursor-grabbing p-1 text-gray-500 hover:text-black transition-colors"
-                    title={t("todo.dragHandleTooltip", "Tekan lama catatan atau drag handle ini untuk mengubah posisi")}
-                    onpointerdown={() => (isTodoDragReady[todo.id] = true)}
-                    data-testid={`drag-handle-todo-${todo.id}`}
-                    aria-label={`Drag to rearrange todo ${todo.text}`}
-                  >
-                    <GripVertical size={16} />
-                  </button>
+              <div class="flex items-center justify-between gap-3 p-3.5 sm:px-4.5 bg-gray-50 border-b-2 border-nb-black flex-col sm:flex-row">
+                <!-- Dragable, Expand & Checkbox Button -->
+                <div class="flex items-center gap-3 me-auto">
+                  <!-- Dragable & Expand Button -->
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <!-- dragable -->
+                    <button
+                      type="button"
+                      class="cursor-grab active:cursor-grabbing p-1 text-gray-500 hover:text-black transition-colors"
+                      title={t("todo.dragHandleTooltip", "Tekan lama catatan atau drag handle ini untuk mengubah posisi")}
+                      onpointerdown={() => (isTodoDragReady[todo.id] = true)}
+                      data-testid={`drag-handle-todo-${todo.id}`}
+                      aria-label={`Drag to rearrange todo ${todo.text}`}
+                    >
+                      <GripVertical size={16} />
+                    </button>
 
-                  <!-- Expand / Collapse Button -->
-                  <button
-                    type="button"
-                    class="w-7 h-7 shrink-0 border-2 border-nb-black bg-white rounded flex items-center justify-center font-bold text-xs cursor-pointer shadow-nb-xs hover:bg-nb-yellow transition-colors"
-                    onclick={() => toggleExpand(todo.id)}
-                    ondragover={() => {
-                      if ((draggedTodo && draggedTodo.id !== todo.id) || draggedSubTask) expandedTodoIds[todo.id] = true;
-                    }}
-                    title={isExpanded ? "Tutup sub-tasks" : "Buka sub-tasks"}
-                    aria-label={isExpanded ? "Tutup sub-tasks" : "Buka sub-tasks"}
-                  >
-                    {isExpanded ? "▼" : "▶"}
-                  </button>
+                    <!-- Expand / Collapse Button -->
+                    <button
+                      type="button"
+                      class="w-7 h-7 shrink-0 border-2 border-nb-black bg-white rounded flex items-center justify-center font-bold text-xs cursor-pointer shadow-nb-xs hover:bg-nb-yellow transition-colors"
+                      onclick={() => toggleExpand(todo.id)}
+                      ondragover={() => {
+                        if ((draggedTodo && draggedTodo.id !== todo.id) || draggedSubTask) expandedTodoIds[todo.id] = true;
+                      }}
+                      title={isExpanded ? "Tutup sub-tasks" : "Buka sub-tasks"}
+                      aria-label={isExpanded ? "Tutup sub-tasks" : "Buka sub-tasks"}
+                    >
+                      {isExpanded ? "▼" : "▶"}
+                    </button>
+                  </div>
+
+                  <!-- Checkbox -->
+                  <label class="flex items-center gap-3 cursor-pointer select-none">
+                    <input type="checkbox" checked={todo.done} onchange={() => toggleTodo(todo.id)} class="nb-checkbox shrink-0" data-testid={`checkbox-todo-${todo.id}`} />
+                  </label>
                 </div>
 
-                <!-- Checkbox & Text -->
-                <label class="flex items-center gap-3 cursor-pointer grow select-none">
-                  <input type="checkbox" checked={todo.done} onchange={() => toggleTodo(todo.id)} class="nb-checkbox shrink-0" data-testid={`checkbox-todo-${todo.id}`} />
-                  <div class="flex flex-col sm:flex-row sm:items-center gap-2 grow">
+                <!-- Text -->
+                <div class="flex items-center gap-3 cursor-pointer grow select-none flex-col sm:flex-row me-auto">
+                  <div class="flex flex-col sm:items-start gap-2 me-auto">
                     {#if todo.appId}
                       {@const linkedApp = apps.find((a) => a.id === todo.appId)}
                       {#if linkedApp}
@@ -986,7 +996,7 @@
                           data-testid={`todo-topic-badge-${todo.id}`}
                           title={linkedApp.name}
                         >
-                          <span>{linkedApp.icon}</span>
+                          <AppIcon name={linkedApp.icon} size={20} />
                           <span>{linkedApp.name}</span>
                         </span>
                       {/if}
@@ -1017,83 +1027,85 @@
                         <span>{todo.dueDate}</span>
                       </span>
                     {/if}
-
-                    <div class="flex flex-col gap-1 grow">
-                      <span
-                        role="button"
-                        tabindex="0"
-                        ondblclick={() => startEditTodo(todo)}
-                        onkeydown={(e) => {
-                          if (e.key === "Enter") startEditTodo(todo);
-                        }}
-                        class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap cursor-pointer {todo.done ? 'line-through decoration-2 decoration-nb-black text-gray-500' : 'text-nb-black'}"
-                      >
-                        {todo.text}
-                      </span>
-                      {#if (todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl}
-                        {@const imgCount = todo.imageUrls?.length || (todo.imageUrl ? 1 : 0)}
-                        <div class="flex items-center gap-2 mt-0.5">
-                          <button
-                            type="button"
-                            class="inline-flex items-center gap-1.5 px-2 py-0.5 border-2 border-nb-black text-[11px] font-black uppercase rounded shadow-nb-xs bg-blue-100 hover:bg-blue-200 text-nb-black cursor-pointer transition-colors"
-                            onclick={() => openTodoImageModal(todo)}
-                            data-testid={`btn-view-image-todo-${todo.id}`}
-                            title={t("todo.viewImage", "Lihat Gambar")}
-                          >
-                            <span>📷</span>
-                            <span>{t("todo.viewImage", "Lihat Gambar")}{imgCount > 1 ? ` (${imgCount})` : ""}</span>
-                          </button>
-                        </div>
-                      {/if}
-                    </div>
                   </div>
-                </label>
+                  <div class="flex flex-col gap-1 grow">
+                    <span
+                      role="button"
+                      tabindex="0"
+                      ondblclick={() => startEditTodo(todo)}
+                      onkeydown={(e) => {
+                        if (e.key === "Enter") startEditTodo(todo);
+                      }}
+                      class="text-base font-bold leading-snug wrap-break-word whitespace-pre-wrap cursor-pointer {todo.done ? 'line-through decoration-2 decoration-nb-black text-gray-500' : 'text-nb-black'}"
+                    >
+                      {todo.text}
+                    </span>
+                    {#if (todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl}
+                      {@const imgCount = todo.imageUrls?.length || (todo.imageUrl ? 1 : 0)}
+                      <div class="flex items-center gap-2 mt-0.5">
+                        <button
+                          type="button"
+                          class="inline-flex items-center gap-1.5 px-2 py-0.5 border-2 border-nb-black text-[11px] font-black uppercase rounded shadow-nb-xs bg-blue-100 hover:bg-blue-200 text-nb-black cursor-pointer transition-colors"
+                          onclick={() => openTodoImageModal(todo)}
+                          data-testid={`btn-view-image-todo-${todo.id}`}
+                          title={t("todo.viewImage", "Lihat Gambar")}
+                        >
+                          <span>📷</span>
+                          <span>{t("todo.viewImage", "Lihat Gambar")}{imgCount > 1 ? ` (${imgCount})` : ""}</span>
+                        </button>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
 
-                <!-- Edit Button for Todo -->
-                <button
-                  type="button"
-                  class="w-8 h-8 shrink-0 border-2 border-nb-black bg-white hover:bg-nb-yellow text-black font-black text-xs rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
-                  onclick={() => startEditTodo(todo)}
-                  title={t("todo.edit", "Edit")}
-                  aria-label={t("todo.edit", "Edit")}
-                  data-testid={`btn-edit-todo-${todo.id}`}
-                >
-                  ✏️
-                </button>
-
-                <!-- Upload Image Button for Todo -->
-                <button
-                  type="button"
-                  class="w-8 h-8 shrink-0 border-2 border-nb-black {(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl
-                    ? 'bg-blue-100 text-blue-900'
-                    : 'bg-white hover:bg-nb-yellow text-black'} font-bold text-xs rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
-                  onclick={() => openTodoImageModal(todo)}
-                  title={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t("todo.viewImage", "Lihat / Ubah Gambar") : t("todo.uploadImage", "Upload Gambar")}
-                  aria-label={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t("todo.viewImage", "Lihat / Ubah Gambar") : t("todo.uploadImage", "Upload Gambar")}
-                  data-testid={`btn-upload-image-todo-${todo.id}`}
-                >
-                  📷
-                </button>
-
-                <!-- Sub-tasks Progress Badge -->
-                {#if subList.length > 0}
-                  <button type="button" onclick={() => toggleExpand(todo.id)} class="nb-badge shrink-0 cursor-pointer {subDoneCount === subList.length ? 'bg-nb-green' : 'bg-nb-yellow'}" title={t("todo.subtasksTitle")}>
-                    {subDoneCount}/{subList.length}
-                    {t("todo.subtasksCount")}
+                <!-- Buttons -->
+                <div class="flex gap-3">
+                  <!-- Edit Button for Todo -->
+                  <button
+                    type="button"
+                    class="w-8 h-8 shrink-0 border-2 border-nb-black bg-white hover:bg-nb-yellow text-black font-black text-xs rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
+                    onclick={() => startEditTodo(todo)}
+                    title={t("todo.edit", "Edit")}
+                    aria-label={t("todo.edit", "Edit")}
+                    data-testid={`btn-edit-todo-${todo.id}`}
+                  >
+                    ✏️
                   </button>
-                {/if}
 
-                <!-- Delete Parent Button -->
-                <button
-                  type="button"
-                  class="w-8 h-8 shrink-0 border-2 border-nb-black bg-nb-red text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
-                  onclick={() => promptDeleteTodo(todo)}
-                  title={t("todo.deleteNote")}
-                  aria-label={t("todo.deleteNote")}
-                  data-testid={`delete-todo-${todo.id}`}
-                >
-                  ✕
-                </button>
+                  <!-- Upload Image Button for Todo -->
+                  <button
+                    type="button"
+                    class="w-8 h-8 shrink-0 border-2 border-nb-black {(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl
+                      ? 'bg-blue-100 text-blue-900'
+                      : 'bg-white hover:bg-nb-yellow text-black'} font-bold text-xs rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
+                    onclick={() => openTodoImageModal(todo)}
+                    title={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t("todo.viewImage", "Lihat / Ubah Gambar") : t("todo.uploadImage", "Upload Gambar")}
+                    aria-label={(todo.imageUrls && todo.imageUrls.length > 0) || todo.imageUrl ? t("todo.viewImage", "Lihat / Ubah Gambar") : t("todo.uploadImage", "Upload Gambar")}
+                    data-testid={`btn-upload-image-todo-${todo.id}`}
+                  >
+                    📷
+                  </button>
+
+                  <!-- Sub-tasks Progress Badge -->
+                  {#if subList.length > 0}
+                    <button type="button" onclick={() => toggleExpand(todo.id)} class="nb-badge shrink-0 cursor-pointer {subDoneCount === subList.length ? 'bg-nb-green' : 'bg-nb-yellow'}" title={t("todo.subtasksTitle")}>
+                      {subDoneCount}/{subList.length}
+                      {t("todo.subtasksCount")}
+                    </button>
+                  {/if}
+
+                  <!-- Delete Parent Button -->
+                  <button
+                    type="button"
+                    class="w-8 h-8 shrink-0 border-2 border-nb-black bg-nb-red text-white font-black text-sm rounded flex items-center justify-center cursor-pointer shadow-nb-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-nb-md active:translate-x-px active:translate-y-px active:shadow-nb-xs transition-all duration-100"
+                    onclick={() => promptDeleteTodo(todo)}
+                    title={t("todo.deleteNote")}
+                    aria-label={t("todo.deleteNote")}
+                    data-testid={`delete-todo-${todo.id}`}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             {/if}
 
