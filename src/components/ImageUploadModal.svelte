@@ -2,6 +2,7 @@
   import { alertStore } from '@/stores/alertStore';
   import { i18nStore } from '@/stores/i18nStore';
   import { env } from '@/lib/env';
+  import ImageCropModal from '@/components/ImageCropModal.svelte';
 
   interface ImageItem {
     id: string;
@@ -38,6 +39,9 @@
   let isDragging = $state(false);
   let isFullPreview = $state(false);
   let fileInputEl = $state<HTMLInputElement | null>(null);
+
+  let isCropOpen = $state(false);
+  let cropTargetItem = $state<ImageItem | null>(null);
 
   const activeItem = $derived(items[activeIndex] || null);
   const previewUrl = $derived(activeItem?.url || '');
@@ -167,6 +171,42 @@
     if (onRemove) {
       onRemove();
     }
+  }
+
+  function handleOpenCropForActive() {
+    if (!activeItem) return;
+    const isSvg = activeItem.name.toLowerCase().endsWith('.svg') || activeItem.file?.type === 'image/svg+xml';
+    if (isSvg) {
+      alertStore.throwAlert(new Error('File SVG tidak memerlukan crop (format vektor).'));
+      return;
+    }
+    cropTargetItem = activeItem;
+    isCropOpen = true;
+  }
+
+  function handleCropSuccess(croppedFile: File, newPreviewUrl: string) {
+    if (cropTargetItem) {
+      const targetId = cropTargetItem.id;
+      items = items.map((it) => {
+        if (it.id === targetId) {
+          return {
+            ...it,
+            file: croppedFile,
+            url: newPreviewUrl,
+            name: croppedFile.name,
+            size: croppedFile.size,
+          };
+        }
+        return it;
+      });
+    }
+    isCropOpen = false;
+    cropTargetItem = null;
+  }
+
+  function handleCropCancel() {
+    isCropOpen = false;
+    cropTargetItem = null;
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -341,7 +381,20 @@
               <span class="truncate max-w-60">🔗 {activeItem.name || 'Gambar tersimpan'}</span>
             {/if}
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+              {#if activeItem && !activeItem.name?.toLowerCase().endsWith('.svg')}
+                <button
+                  type="button"
+                  class="nb-btn bg-white hover:bg-nb-yellow text-xs px-2 py-0.5 border-2 border-nb-black font-bold flex items-center gap-1 cursor-pointer text-black shadow-nb-xs"
+                  onclick={handleOpenCropForActive}
+                  data-testid="btn-crop-image-upload"
+                  title="Atur area gambar / crop"
+                >
+                  <span>✂️</span>
+                  <span>{t('imageModal.cropButton', 'ATUR AREA (CROP)')}</span>
+                </button>
+              {/if}
+
               <button
                 type="button"
                 class="text-nb-red hover:underline font-bold cursor-pointer text-xs flex items-center gap-1"
@@ -435,4 +488,15 @@
       </div>
     </div>
   {/if}
+
+  <!-- Modal Crop untuk Mengatur Frame Gambar To-Do -->
+  <ImageCropModal
+    isOpen={isCropOpen}
+    imageFile={cropTargetItem?.file || null}
+    imageSrc={cropTargetItem?.file ? null : cropTargetItem?.url}
+    aspectRatio="square"
+    allowRatioToggle={true}
+    onCrop={handleCropSuccess}
+    onCancel={handleCropCancel}
+  />
 {/if}

@@ -2103,6 +2103,9 @@ test.describe('Apps Hub — UI & E2E Tests', () => {
       buffer: Buffer.from(dummyPngBase64, 'base64'),
     });
 
+    // Terapkan crop pada modal pemotongan gambar
+    await page.locator('[data-testid="btn-apply-crop"]').click();
+
     // Preview hero banner harus muncul
     await expect(page.locator('[data-testid="preview-app-hero-image"]')).toBeVisible();
 

@@ -86,6 +86,17 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
   - Mendukung penyeretan file langsung dari file explorer OS (drag-and-drop dropzone) serta pemilihan manual dengan feedback hover taktil.
   - Menampilkan thumbnail preview secara instan begitu file dipilih atau di-drop.
   - Icon aplikasi mendukung format `.jpg`, `.jpeg`, `.png`, dan `.svg` dengan fallback otomatis ke icon Lucide.
+- **Fitur Image Crop & Atur Area Gambar Sebelum Upload (`ImageCropModal`)**:
+  - Menyediakan modal interaktif untuk mengatur area gambar yang terlihat di dalam bingkai sebelum berkas disimpan/diunggah (terinspirasi oleh antarmuka crop foto profil WhatsApp).
+  - **Bentuk Bingkai Khusus**:
+    - **Frame Persegi Panjang (Banner 2:1)**: Diterapkan khusus untuk Hero Banner pada kartu aplikasi agar gambar pas dengan rasio cover card tanpa terpotong acak oleh `object-cover`.
+    - **Frame Kotak (Square 1:1)**: Diterapkan untuk Icon/Logo aplikasi agar komposisi logo simetris dan rapi.
+  - **Kemampuan Interaksi**:
+    - **Pan / Geser**: Pengguna dapat menggeser gambar dengan kursor (desktop drag) maupun sentuhan (mobile touch) untuk menentukan area yang ingin ditampilkan.
+    - **Zoom In / Out**: Pengaturan perbesaran gambar melalui slider range, tombol navigasi `+` / `-`, serta scroll mouse wheel. Batas skala terkunci (*boundary constraint*) sehingga gambar tidak dapat digeser sampai menampilkan ruang kosong pada frame.
+    - **Reset Posisi**: Mengembalikan skala dan posisi gambar ke titik tengah awal.
+    - **Batal & Simpan**: Membatalkan pemilihan berkas tanpa upload, atau memotong gambar via HTML5 Canvas beresolusi tinggi lalu meneruskannya ke alur kompresi `compressImage` dan upload Supabase Storage.
+    - **Pengecualian Format Vektor (SVG)**: File berekstensi `.svg` secara otomatis melewati alur pemotongan raster guna mempertahankan ketajaman dan skalabilitas grafik vektor.
 - **Drag-and-Drop Rearrange Posisi Apps (Mode Admin)**:
   - Kolom `order_index` pada tabel database `apps` untuk menyimpan posisi urutan.
   - Saat login sebagai admin/debug mode, pengguna dapat menata ulang urutan kartu aplikasi dengan drag-and-drop.
@@ -109,6 +120,7 @@ Aplikasi ini mengusung estetika visual **Neo Brutalism** yang tegas dan taktil, 
 - **Pop-up Modal Interaktif (`ImageUploadModal`)**:
   - Mendukung interaksi *Drag and Drop* banyak file sekaligus maupun seleksi file explorer.
   - Fitur **Click to Preview & Galeri Thumbnail**: Menampilkan strip thumbnail semua lampiran dan memungkinkan pengguna mengklik gambar untuk membuka overlay pratinjau resolusi penuh.
+  - Fitur **Atur Area / Crop Lampiran**: Tombol `[✂️ ATUR AREA (CROP)]` pada setiap gambar aktif, dilengkapi pengalih rasio fleksibel antara **Kotak (1:1)** dan **Persegi Panjang (2:1)** sebelum lampiran disimpan.
 - **Validasi Berbasis `throwAlert`**: Jika ukuran atau ekstensi file tidak memenuhi kriteria, sistem memunculkan toast alert error menggunakan fungsi `throwAlert(new Error(...))`.
 - **Cascade Deletion File Storage**: Saat item To-Do dihapus (baik satuan, per aplikasi, maupun pembersihan selesai), seluruh file gambar terkait di bucket Supabase Storage (`todo-images`) dihapus secara otomatis untuk mencegah penumpukan berkas tak terpakai.
 
@@ -275,6 +287,7 @@ Pipeline integrasi dan deployment berkelanjutan dijalankan melalui GitLab CI pad
 │   ├── components/              # Komponen UI Neo Brutalism
 │   │   ├── AddAppModal.svelte
 │   │   ├── EditAppModal.svelte
+│   │   ├── ImageCropModal.svelte # Modal crop gambar (pan, zoom, frame banner & kotak)
 │   │   ├── ConfirmModal.svelte
 │   │   ├── WhatsAppPreviewModal.svelte # Modal preview & edit pesan WA PIC
 │   │   ├── CustomSelect.svelte
@@ -303,7 +316,8 @@ Pipeline integrasi dan deployment berkelanjutan dijalankan melalui GitLab CI pad
 │   │   └── 20260924000001_add_viewer_role_and_registration.sql
 │   └── schema.sql               # Konsolidasi skema database & RPC
 ├── tests/
-│   └── hub.spec.ts              # Playwright E2E automated test suite (50 tests)
+│   ├── hub.spec.ts              # Playwright E2E automated test suite (58 tests)
+│   └── image-crop.spec.ts       # E2E test suite fitur crop & penyesuaian frame gambar (9 tests)
 ├── .gitlab-ci.yml               # Konfigurasi GitLab CI/CD Pipeline
 ├── Dockerfile                   # Multi-stage production container build
 ├── docker-compose.yml           # Docker Compose orchestrator
@@ -340,6 +354,9 @@ Pipeline integrasi dan deployment berkelanjutan dijalankan melalui GitLab CI pad
 - [x] Fitur konversi catatan To-Do menjadi sub-task dengan drag-and-drop ke area sub-task catatan lain beserta proteksi validasi.
 - [x] Fitur konversi sub-task menjadi catatan To-Do mandiri dengan drag-and-drop keluar dari kontainer parent ke list utama.
 - [x] Optimasi vendor code splitting (`manualChunks`), eliminasi peringatan bundle `> 500 KB`, dan kompresi gambar otomatis di client-side.
-- [x] Seluruh 50 skenario automated E2E test cases Playwright lulus pengujian (`bun run test`) dengan auto-cleanup data test.
+- [x] Fitur Image Crop & Atur Area Gambar dengan bingkai Persegi Panjang (Banner 2:1) untuk Hero Image, Kotak (1:1) untuk Icon, dan pemilihan rasio fleksibel untuk To-Do List.
+- [x] Kontrol crop interaktif lengkap (pan/drag, zoom slider, tombol reset, batal, simpan) dengan pencegahan area kosong pada bingkai.
+- [x] Pengecualian otomatis untuk format SVG agar ketajaman dan skalabilitas grafik vektor tetap terjaga.
+- [x] Seluruh 67 skenario automated E2E test cases Playwright (58 hub + 9 image-crop) lulus pengujian (`bun run test`) dengan auto-cleanup data test.
 - [x] Svelte check dan TypeScript compiler bersih dari error maupun warning (`bun run check`).
 - [x] Production build berhasil dibuat tanpa kendala (`bun run build`).
