@@ -3,6 +3,7 @@
   import { alertStore } from '@/stores/alertStore';
   import { i18nStore } from '@/stores/i18nStore';
   import { env } from '@/lib/env';
+  import ImageCropModal from '@/components/ImageCropModal.svelte';
 
   let {
     label,
@@ -36,7 +37,27 @@
   let isUploading = $state(false);
   let fileInputRef = $state<HTMLInputElement | null>(null);
 
+  let isCropOpen = $state(false);
+  let pendingCropFile = $state<File | null>(null);
+  let cropExistingUrl = $state<string | null>(null);
+
   const allowedStr = $derived(allowedExtensions.map((e) => `.${e}`).join(','));
+
+  async function uploadFileDirectly(file: File) {
+    isUploading = true;
+    try {
+      const url = await appStore.uploadAppImage(file, {
+        allowedExtensions,
+        subfolder,
+      });
+      onUpload(url);
+    } catch (err: any) {
+      alertStore.showError(err?.message || 'Gagal mengupload gambar');
+    } finally {
+      isUploading = false;
+      if (fileInputRef) fileInputRef.value = '';
+    }
+  }
 
   async function processFile(file: File) {
     const ext = file.name.split('.').pop()?.toLowerCase();
@@ -57,19 +78,30 @@
       return;
     }
 
-    isUploading = true;
-    try {
-      const url = await appStore.uploadAppImage(file, {
-        allowedExtensions,
-        subfolder,
-      });
-      onUpload(url);
-    } catch (err: any) {
-      alertStore.showError(err?.message || 'Gagal mengupload gambar');
-    } finally {
-      isUploading = false;
-      if (fileInputRef) fileInputRef.value = '';
+    // File SVG adalah grafik vektor, dilewati tanpa crop agar ketajaman vektor tetap terjaga
+    if (ext === 'svg' || file.type === 'image/svg+xml') {
+      await uploadFileDirectly(file);
+      return;
     }
+
+    // Tampilkan modal crop untuk gambar raster
+    pendingCropFile = file;
+    cropExistingUrl = null;
+    isCropOpen = true;
+  }
+
+  async function handleCropDone(croppedFile: File) {
+    isCropOpen = false;
+    pendingCropFile = null;
+    cropExistingUrl = null;
+    await uploadFileDirectly(croppedFile);
+  }
+
+  function handleCropCancel() {
+    isCropOpen = false;
+    pendingCropFile = null;
+    cropExistingUrl = null;
+    if (fileInputRef) fileInputRef.value = '';
   }
 
   function handleFileChange(e: Event) {
@@ -196,3 +228,13 @@
     </div>
   {/if}
 </div>
+
+<!-- Modal Crop Gambar -->
+<ImageCropModal
+  isOpen={isCropOpen}
+  imageFile={pendingCropFile}
+  imageSrc={cropExistingUrl}
+  {aspectRatio}
+  onCrop={handleCropDone}
+  onCancel={handleCropCancel}
+/>

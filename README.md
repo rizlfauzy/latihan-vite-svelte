@@ -9,7 +9,7 @@
 ![Storage](https://img.shields.io/badge/Storage-Supabase_Storage-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![RBAC](https://img.shields.io/badge/Auth-RBAC_Ready-blueviolet?style=for-the-badge)
 ![GitLab CI](https://img.shields.io/badge/CI%2FCD-GitLab_Pipeline-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-56_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-67_E2E_Tests-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)
 ![i18n](https://img.shields.io/badge/i18n-EN_%26_ID-1d76db?style=for-the-badge)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -39,6 +39,12 @@
 - 📷 **Drag-and-Drop Image Input dengan Instant Preview**:
   - Komponen upload reusable `DragDropImageInput.svelte` untuk hero banner dan icon aplikasi.
   - Drag and drop file explorer OS dengan hover feedback taktil dan preview thumbnail instan sebelum disimpan.
+- ✂️ **Fitur Image Crop & Atur Area Gambar Sebelum Upload**:
+  - Modal crop interaktif (`ImageCropModal.svelte`) untuk mengatur area gambar yang terlihat di dalam bingkai sebelum disimpan ke storage.
+  - Bingkai **Persegi Panjang / Banner (2:1)** untuk Hero Image dan **Kotak (1:1)** untuk Icon / Logo aplikasi.
+  - Dilengkapi kontrol interaktif: Geser / Pan (mouse drag & touch mobile), Zoom slider/wheel dengan batas skala tanpa area kosong, Reset Posisi, Batal, dan Terapkan Crop via HTML5 Canvas.
+  - Pengecualian otomatis untuk berkas SVG agar format vektor tidak terpotong atau terdegradasi.
+  - Integrasi tombol crop pada lampiran catatan tugas di modal `ImageUploadModal` dengan pemilihan rasio frame yang fleksibel.
 - 🔑 **Ganti Password di Halaman Profile**:
   - Modal pop-up `ChangePasswordModal.svelte` di rute `/profile` untuk memperbarui password akun.
   - Dilengkapi input password lama & password baru dengan tombol toggle visibilitas (show/hide password).
@@ -92,7 +98,7 @@
 | **Routing** | `sv-router` | Client-side Single Page Application (SPA) routing |
 | **Styling** | Tailwind CSS v4 | Utility-first CSS dengan custom theme tokens Neo Brutalism |
 | **Localization** | JSON-based i18n | Kamus kata modular dwibahasa di `src/i18n/*.json` |
-| **Testing** | Playwright | E2E browser automation & UI regression test suite (50 tests) |
+| **Testing** | Playwright | E2E browser automation & UI regression test suite (66 tests) |
 | **CI/CD** | GitLab CI | Pipeline otomasi: Test, Build, Supabase Migration, dan Deploy ke VPS |
 | **PWA** | Service Worker | Offline caching dan instalasi web app |
 | **Container** | Docker + Nginx | Multi-stage builder & production web server |
@@ -157,13 +163,13 @@ Aplikasi akan berjalan di `http://localhost:8888`.
 
 ### 2. Menjalankan Automated E2E Test (Playwright)
 
-Suite pengujian E2E mencakup 36 skenario yang menguji alur autentikasi, otorisasi RBAC, manajemen aplikasi, subtodos, dan lokalisasi.
+Suite pengujian E2E mencakup 66 skenario yang menguji alur autentikasi, otorisasi RBAC, manajemen aplikasi, subtodos, image cropping, dan lokalisasi.
 
 > 💡 **Aturan Penamaan Data Pengujian (Auto-Cleanup)**:
 > Seluruh skenario pengujian yang membuat data dummy (baik aplikasi maupun item to-do) menggunakan konvensi penamaan yang mengandung kata `"test"`. Hal ini memudahkan mekanisme pembersihan otomatis pada blok `test.afterAll` untuk menghapus seluruh data sisa pengujian secara tuntas dari database.
 
 ```bash
-# Jalankan seluruh 36 test cases secara headless
+# Jalankan seluruh 66 test cases secara headless
 bun run test
 
 # Jalankan test dengan mode visual UI
@@ -246,6 +252,7 @@ Setiap *commit* atau *merge* ke branch `main` akan memicu pipeline GitLab CI den
 │   │   ├── ConfirmModal.svelte  # Modal konfirmasi hapus data
 │   │   ├── CustomSelect.svelte  # Custom Neo Brutalism accessible dropdown
 │   │   ├── EditAppModal.svelte  # Modal form edit data aplikasi
+│   │   ├── ImageCropModal.svelte# Modal crop gambar (pan, zoom, frame banner & kotak)
 │   │   ├── Hero.svelte          # Hero branding & tech badges
 │   │   ├── Navbar.svelte        # Sticky header navigasi, status user & i18n
 │   │   └── TodoList.svelte      # Catatan to-do list, subtodos & app association
@@ -282,7 +289,8 @@ Setiap *commit* atau *merge* ke branch `main` akan memicu pipeline GitLab CI den
 │   │   └── 20260923000002_seed_defaults.sql
 │   └── schema.sql               # Konsolidasi skema database & RPC
 ├── tests/
-│   └── hub.spec.ts              # Playwright E2E automated test suite (50 tests)
+│   ├── hub.spec.ts              # Playwright E2E automated test suite (58 tests)
+│   └── image-crop.spec.ts       # E2E test suite fitur crop & penyesuaian frame gambar (9 tests)
 ├── .gitlab-ci.yml               # Konfigurasi GitLab CI/CD Pipeline
 ├── Dockerfile                   # Multi-stage production container build
 ├── docker-compose.yml           # Docker Compose orchestrator
